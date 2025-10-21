@@ -3,11 +3,9 @@ Routes API pour la gestion des formulaires
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from flask_restx import Resource, fields, marshal_with
 from models.form import Form
 from models.question import Question
 from models.response import Response
-from docs.schemas import *
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,7 +14,6 @@ forms_bp = Blueprint("forms", __name__)
 
 
 @forms_bp.route("/forms", methods=["POST"])
-@marshal_with(SuccessSchema)
 def create_form():
     """
     Créer un nouveau formulaire
@@ -50,19 +47,18 @@ def create_form():
 
         logger.info(f"Formulaire créé: {form_id}")
 
-        return {
+        return jsonify({
             "success": True,
             "message": "Formulaire créé avec succès",
-            "data": {"form_id": form_id},
-        }, 201
+            "data": {"form_id": form_id}
+        }), 201
 
     except Exception as e:
         logger.error(f"Erreur création formulaire: {e}")
-        return {"error": str(e)}, 500
+        return jsonify({"error": str(e)}), 500
 
 
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
-@marshal_with(FormSchema)
 def get_form(form_id):
     """
     Récupérer un formulaire par ID
@@ -74,13 +70,13 @@ def get_form(form_id):
         form = form_model.get_with_questions(form_id)
 
         if not form:
-            return {"error": "Formulaire non trouvé"}, 404
+            return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        return {"success": True, "form": form}
+        return jsonify({"success": True, "form": form})
 
     except Exception as e:
         logger.error(f"Erreur récupération formulaire: {e}")
-        return {"error": str(e)}, 500
+        return jsonify({"error": str(e)}), 500
 
 
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
