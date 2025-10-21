@@ -15,6 +15,7 @@ forms_bp = Blueprint("forms", __name__)
 
 
 @forms_bp.route("/forms", methods=["POST"])
+@require_auth
 def create_form():
     """
     Créer un nouveau formulaire
@@ -69,6 +70,7 @@ def create_form():
 
 
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
+@require_auth
 def get_form(form_id):
     """
     Récupérer un formulaire par ID
@@ -158,6 +160,7 @@ def delete_form(form_id):
 
 
 @forms_bp.route("/forms", methods=["GET"])
+@require_auth
 def list_forms():
     """Lister tous les formulaires"""
     try:
