@@ -69,23 +69,28 @@ class Question:
     def get_by_id(self, question_id: str) -> Optional[Dict]:
         """Récupérer une question par ID"""
         query = "SELECT * FROM questions WHERE id = ?"
-        result = self.db.execute_query(query, (question_id,), fetch=True)
+        results = self.db.execute_query(query, (question_id,), fetch=True)
 
-        if result:
-            question_data = dict(result)
-            # Désérialiser les options et validation JSON
-            if question_data.get("options"):
+        if results and len(results) > 0:
+            question_data = results[0]  # Premier résultat
+            # Désérialiser les options et validation JSON de manière sécurisée
+            options_str = question_data.get("options", "[]")
+            if options_str and options_str != "[]":
                 try:
-                    question_data["options"] = json.loads(question_data["options"])
-                except (json.JSONDecodeError, TypeError):
+                    question_data["options"] = json.loads(options_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     question_data["options"] = []
-            if question_data.get("validation"):
+            else:
+                question_data["options"] = []
+            
+            validation_str = question_data.get("validation", "{}")
+            if validation_str and validation_str != "{}":
                 try:
-                    question_data["validation"] = json.loads(
-                        question_data["validation"]
-                    )
-                except (json.JSONDecodeError, TypeError):
+                    question_data["validation"] = json.loads(validation_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     question_data["validation"] = {}
+            else:
+                question_data["validation"] = {}
             return question_data
         return None
 
@@ -100,19 +105,24 @@ class Question:
         questions = []
         for row in results:
             question_data = dict(row)
-            # Désérialiser les options et validation JSON
-            if question_data.get("options"):
+            # Désérialiser les options et validation JSON de manière sécurisée
+            options_str = question_data.get("options", "[]")
+            if options_str and options_str != "[]":
                 try:
-                    question_data["options"] = json.loads(question_data["options"])
-                except (json.JSONDecodeError, TypeError):
+                    question_data["options"] = json.loads(options_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     question_data["options"] = []
-            if question_data.get("validation"):
+            else:
+                question_data["options"] = []
+            
+            validation_str = question_data.get("validation", "{}")
+            if validation_str and validation_str != "{}":
                 try:
-                    question_data["validation"] = json.loads(
-                        question_data["validation"]
-                    )
-                except (json.JSONDecodeError, TypeError):
+                    question_data["validation"] = json.loads(validation_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     question_data["validation"] = {}
+            else:
+                question_data["validation"] = {}
             questions.append(question_data)
         return questions
 
