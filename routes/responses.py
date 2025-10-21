@@ -221,7 +221,7 @@ def export_responses_csv(form_id):
         return jsonify(
             {
                 "success": True,
-                "csv_content": export_result["content"].decode('utf-8'),
+                "csv_content": export_result["content"],
                 "filename": f"form_{form_id}_responses.csv",
             }
         )
@@ -258,7 +258,7 @@ def export_responses_excel(form_id):
         return jsonify(
             {
                 "success": True,
-                "excel_content": export_result["content"].decode('utf-8'),
+                "excel_content": export_result["content"],
                 "filename": f"form_{form_id}_responses.xlsx",
             }
         )
