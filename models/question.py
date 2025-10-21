@@ -3,6 +3,7 @@ Modèle Question pour FormForge
 """
 
 import uuid
+import json
 from typing import Optional, List, Dict, Any
 from .database import DatabaseManager
 
@@ -50,8 +51,6 @@ class Question:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-        import json
-        
         self.db.execute_query(
             query,
             (
@@ -75,16 +74,18 @@ class Question:
         if result:
             question_data = dict(result)
             # Désérialiser les options et validation JSON
-            if question_data.get('options'):
+            if question_data.get("options"):
                 try:
-                    question_data['options'] = json.loads(question_data['options'])
+                    question_data["options"] = json.loads(question_data["options"])
                 except (json.JSONDecodeError, TypeError):
-                    question_data['options'] = []
-            if question_data.get('validation'):
+                    question_data["options"] = []
+            if question_data.get("validation"):
                 try:
-                    question_data['validation'] = json.loads(question_data['validation'])
+                    question_data["validation"] = json.loads(
+                        question_data["validation"]
+                    )
                 except (json.JSONDecodeError, TypeError):
-                    question_data['validation'] = {}
+                    question_data["validation"] = {}
             return question_data
         return None
 
@@ -100,16 +101,18 @@ class Question:
         for row in results:
             question_data = dict(row)
             # Désérialiser les options et validation JSON
-            if question_data.get('options'):
+            if question_data.get("options"):
                 try:
-                    question_data['options'] = json.loads(question_data['options'])
+                    question_data["options"] = json.loads(question_data["options"])
                 except (json.JSONDecodeError, TypeError):
-                    question_data['options'] = []
-            if question_data.get('validation'):
+                    question_data["options"] = []
+            if question_data.get("validation"):
                 try:
-                    question_data['validation'] = json.loads(question_data['validation'])
+                    question_data["validation"] = json.loads(
+                        question_data["validation"]
+                    )
                 except (json.JSONDecodeError, TypeError):
-                    question_data['validation'] = {}
+                    question_data["validation"] = {}
             questions.append(question_data)
         return questions
 

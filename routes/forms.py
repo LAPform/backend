@@ -42,8 +42,12 @@ def create_form():
         settings = data.get("settings", {})
 
         # Créer le formulaire
-        form_model = Form(current_app.db)
-        form_id = form_model.create(title, description, settings)
+        try:
+            form_model = Form(current_app.db)
+            form_id = form_model.create(title, description, settings)
+        except Exception as e:
+            logger.error(f"Error creating form: {e}")
+            return jsonify({"error": f"Erreur création formulaire: {str(e)}"}), 500
 
         logger.info(f"Formulaire créé: {form_id}")
 
@@ -66,8 +70,12 @@ def get_form(form_id):
     Retourne le formulaire complet avec toutes ses questions.
     """
     try:
-        form_model = Form(current_app.db)
-        form = form_model.get_with_questions(form_id)
+        try:
+            form_model = Form(current_app.db)
+            form = form_model.get_with_questions(form_id)
+        except Exception as e:
+            logger.error(f"Error retrieving form: {e}")
+            return jsonify({"error": f"Erreur récupération formulaire: {str(e)}"}), 500
 
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404

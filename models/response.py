@@ -3,6 +3,7 @@ Modèle Response pour FormForge
 """
 
 import uuid
+import json
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from .database import DatabaseManager
@@ -25,8 +26,6 @@ class Response:
             VALUES (?, ?, ?, ?, ?)
         """
 
-        import json
-        
         self.db.execute_query(
             query, (response_id, form_id, json.dumps(answers), user_id, ip_address)
         )
@@ -40,11 +39,11 @@ class Response:
         if result:
             response_data = dict(result)
             # Désérialiser les answers JSON
-            if response_data.get('answers'):
+            if response_data.get("answers"):
                 try:
-                    response_data['answers'] = json.loads(response_data['answers'])
+                    response_data["answers"] = json.loads(response_data["answers"])
                 except (json.JSONDecodeError, TypeError):
-                    response_data['answers'] = {}
+                    response_data["answers"] = {}
             return response_data
         return None
 
@@ -63,11 +62,11 @@ class Response:
         for row in results:
             response_data = dict(row)
             # Désérialiser les answers JSON
-            if response_data.get('answers'):
+            if response_data.get("answers"):
                 try:
-                    response_data['answers'] = json.loads(response_data['answers'])
+                    response_data["answers"] = json.loads(response_data["answers"])
                 except (json.JSONDecodeError, TypeError):
-                    response_data['answers'] = {}
+                    response_data["answers"] = {}
             responses.append(response_data)
         return responses
 
