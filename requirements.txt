@@ -4,6 +4,7 @@
 # Framework web
 Flask==3.0.0
 flask-cors==4.0.0
+flask-restx==1.3.0
 
 # Base de données
 # psycopg2-binary==2.9.7  # PostgreSQL (non utilisé avec SQLite)

@@ -30,7 +30,7 @@ class DatabaseManager:
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
-            
+
             # Table forms
             cursor.execute(
                 """
