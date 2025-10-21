@@ -110,7 +110,7 @@ class DatabaseManager:
             self.return_connection(conn)
 
     def execute_query(self, query: str, params: tuple = None, fetch: bool = False):
-        """Exécuter une requête SQL"""
+        """Exécuter une requête SQL avec gestion d'erreur robuste"""
         conn = self.get_connection()
         try:
             cursor = conn.cursor()
@@ -118,6 +118,7 @@ class DatabaseManager:
 
             if fetch:
                 if "SELECT" in query.upper():
+                    # Pour les requêtes SELECT, toujours retourner une liste
                     if cursor.description:
                         columns = [description[0] for description in cursor.description]
                         rows = cursor.fetchall()
@@ -125,7 +126,11 @@ class DatabaseManager:
                     else:
                         return []
                 else:
+                    # Pour les autres requêtes, retourner le premier résultat
                     result = cursor.fetchone()
+                    if result and cursor.description:
+                        columns = [description[0] for description in cursor.description]
+                        return dict(zip(columns, result))
                     return result
             else:
                 conn.commit()
@@ -133,7 +138,9 @@ class DatabaseManager:
 
         except Exception as e:
             conn.rollback()
-            logger.error(f"Erreur requête: {e}")
+            logger.error(f"Erreur requête SQL: {e}")
+            logger.error(f"Query: {query}")
+            logger.error(f"Params: {params}")
             raise
         finally:
             cursor.close()

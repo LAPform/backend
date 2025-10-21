@@ -33,10 +33,10 @@ class Form:
     def get_by_id(self, form_id: str) -> Optional[Dict]:
         """Récupérer un formulaire par ID"""
         query = "SELECT * FROM forms WHERE id = ?"
-        result = self.db.execute_query(query, (form_id,), fetch=True)
+        results = self.db.execute_query(query, (form_id,), fetch=True)
 
-        if result:
-            form_data = dict(result)
+        if results and len(results) > 0:
+            form_data = results[0]  # Premier résultat
             # Désérialiser les settings JSON de manière sécurisée
             settings_str = form_data.get("settings", "{}")
             if settings_str and settings_str != "{}":
@@ -185,14 +185,14 @@ class Form:
         responses_result = self.db.execute_query(
             responses_query, (form_id,), fetch=True
         )
-        total_responses = responses_result[0]["total"] if responses_result else 0
+        total_responses = responses_result[0]["total"] if responses_result and len(responses_result) > 0 else 0
 
         # Compter les questions
         questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = ?"
         questions_result = self.db.execute_query(
             questions_query, (form_id,), fetch=True
         )
-        total_questions = questions_result[0]["total"] if questions_result else 0
+        total_questions = questions_result[0]["total"] if questions_result and len(questions_result) > 0 else 0
 
         return {
             "total_questions": total_questions,
