@@ -7,6 +7,7 @@ import io
 import json
 from typing import List, Dict, Any
 from datetime import datetime
+
 # import pandas as pd  # Supprimé pour éviter les problèmes de compilation
 
 
@@ -69,13 +70,13 @@ class ExcelExporter:
 
         # Générer un CSV au lieu d'Excel pour éviter pandas
         csv_content = CSVExporter.generate_csv(data)
-        return csv_content.encode('utf-8')
+        return csv_content.encode("utf-8")
 
     @staticmethod
     def save_excel_file(data: List[Dict], filename: str) -> str:
         """Sauvegarder un fichier Excel (version CSV)"""
         # Sauvegarder comme CSV au lieu d'Excel
-        csv_filename = filename.replace('.xlsx', '.csv')
+        csv_filename = filename.replace(".xlsx", ".csv")
         CSVExporter.save_csv_file(data, csv_filename)
         return csv_filename
 

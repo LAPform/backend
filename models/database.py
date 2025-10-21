@@ -29,82 +29,84 @@ class DatabaseManager:
         """Initialiser la base de données avec les tables"""
         conn = self.get_connection()
         try:
-            with conn.cursor() as cursor:
-                # Table forms
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS forms (
-                        id TEXT PRIMARY KEY,
-                        title TEXT NOT NULL,
-                        description TEXT,
-                        settings TEXT DEFAULT '{}',
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
+            cursor = conn.cursor()
+            
+            # Table forms
+            cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS forms (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    settings TEXT DEFAULT '{}',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """
+            )
 
-                # Table questions
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS questions (
-                        id TEXT PRIMARY KEY,
-                        form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
-                        type TEXT NOT NULL,
-                        text TEXT NOT NULL,
-                        options TEXT DEFAULT '[]',
-                        required BOOLEAN DEFAULT FALSE,
-                        validation TEXT DEFAULT '{}',
-                        order_index INTEGER NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
+            # Table questions
+            cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS questions (
+                    id TEXT PRIMARY KEY,
+                    form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
+                    type TEXT NOT NULL,
+                    text TEXT NOT NULL,
+                    options TEXT DEFAULT '[]',
+                    required BOOLEAN DEFAULT FALSE,
+                    validation TEXT DEFAULT '{}',
+                    order_index INTEGER NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
+            """
+            )
 
-                # Table responses
-                cursor.execute(
-                    """
-                    CREATE TABLE IF NOT EXISTS responses (
-                        id TEXT PRIMARY KEY,
-                        form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
-                        answers TEXT NOT NULL,
-                        submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        user_id TEXT,
-                        ip_address TEXT
-                    )
+            # Table responses
+            cursor.execute(
                 """
+                CREATE TABLE IF NOT EXISTS responses (
+                    id TEXT PRIMARY KEY,
+                    form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
+                    answers TEXT NOT NULL,
+                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    user_id TEXT,
+                    ip_address TEXT
                 )
+            """
+            )
 
-                # Index pour améliorer les performances
-                cursor.execute(
-                    """
-                    CREATE INDEX IF NOT EXISTS idx_questions_form_id 
-                    ON questions(form_id)
+            # Index pour améliorer les performances
+            cursor.execute(
                 """
-                )
+                CREATE INDEX IF NOT EXISTS idx_questions_form_id 
+                ON questions(form_id)
+            """
+            )
 
-                cursor.execute(
-                    """
-                    CREATE INDEX IF NOT EXISTS idx_responses_form_id 
-                    ON responses(form_id)
+            cursor.execute(
                 """
-                )
+                CREATE INDEX IF NOT EXISTS idx_responses_form_id 
+                ON responses(form_id)
+            """
+            )
 
-                cursor.execute(
-                    """
-                    CREATE INDEX IF NOT EXISTS idx_responses_submitted_at 
-                    ON responses(submitted_at)
+            cursor.execute(
                 """
-                )
+                CREATE INDEX IF NOT EXISTS idx_responses_submitted_at 
+                ON responses(submitted_at)
+            """
+            )
 
-                conn.commit()
-                logger.info("Base de données initialisée avec succès")
+            conn.commit()
+            logger.info("Base de données initialisée avec succès")
 
         except Exception as e:
             conn.rollback()
             logger.error(f"Erreur initialisation base: {e}")
             raise
         finally:
+            cursor.close()
             self.return_connection(conn)
 
     def execute_query(self, query: str, params: tuple = None, fetch: bool = False):
@@ -130,26 +132,26 @@ class DatabaseManager:
             logger.error(f"Erreur requête: {e}")
             raise
         finally:
+            cursor.close()
             self.return_connection(conn)
 
     def execute_transaction(self, queries: List[tuple]):
         """Exécuter plusieurs requêtes dans une transaction"""
         conn = self.get_connection()
         try:
-            with conn.cursor() as cursor:
-                for query, params in queries:
-                    cursor.execute(query, params)
-                conn.commit()
-                return True
+            cursor = conn.cursor()
+            for query, params in queries:
+                cursor.execute(query, params)
+            conn.commit()
+            return True
         except Exception as e:
             conn.rollback()
             logger.error(f"Erreur transaction: {e}")
             raise
         finally:
+            cursor.close()
             self.return_connection(conn)
 
     def close_pool(self):
-        """Fermer le pool de connexions"""
-        if self.connection_pool:
-            self.connection_pool.closeall()
-            logger.info("Pool de connexions fermé")
+        """Fermer le pool de connexions (non utilisé avec SQLite)"""
+        pass
