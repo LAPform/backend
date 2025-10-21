@@ -37,12 +37,15 @@ class Form:
 
         if result:
             form_data = dict(result)
-            # Désérialiser les settings JSON
-            if form_data.get("settings"):
+            # Désérialiser les settings JSON de manière sécurisée
+            settings_str = form_data.get("settings", "{}")
+            if settings_str and settings_str != "{}":
                 try:
-                    form_data["settings"] = json.loads(form_data["settings"])
-                except (json.JSONDecodeError, TypeError):
+                    form_data["settings"] = json.loads(settings_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     form_data["settings"] = {}
+            else:
+                form_data["settings"] = {}
             return form_data
         return None
 
@@ -57,12 +60,15 @@ class Form:
         forms = []
         for row in results:
             form_data = dict(row)
-            # Désérialiser les settings JSON
-            if form_data.get("settings"):
+            # Désérialiser les settings JSON de manière sécurisée
+            settings_str = form_data.get("settings", "{}")
+            if settings_str and settings_str != "{}":
                 try:
-                    form_data["settings"] = json.loads(form_data["settings"])
-                except (json.JSONDecodeError, TypeError):
+                    form_data["settings"] = json.loads(settings_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     form_data["settings"] = {}
+            else:
+                form_data["settings"] = {}
             forms.append(form_data)
         return forms
 
@@ -134,27 +140,34 @@ class Form:
             questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
             logger.info(f"Questions trouvées: {len(questions) if questions else 0}")
 
-            # Traiter les questions avec désérialisation JSON
+            # Traiter les questions avec désérialisation JSON sécurisée
             processed_questions = []
             if questions:  # Vérifier que questions n'est pas None
                 logger.info(f"Traitement de {len(questions)} questions")
                 for q in questions:
                     question_data = dict(q)
-                    # Désérialiser les options et validation JSON
-                    if question_data.get("options"):
+                    # Désérialiser les options JSON de manière sécurisée
+                    options_str = question_data.get("options", "[]")
+                    if options_str and options_str != "[]":
                         try:
-                            question_data["options"] = json.loads(question_data["options"])
-                        except (json.JSONDecodeError, TypeError) as e:
-                            logger.warning(f"Erreur désérialisation options: {e}")
+                            question_data["options"] = json.loads(options_str)
+                        except (json.JSONDecodeError, TypeError, ValueError) as e:
+                            logger.warning(f"Erreur désérialisation options: {e}, valeur: {options_str}")
                             question_data["options"] = []
-                    if question_data.get("validation"):
+                    else:
+                        question_data["options"] = []
+                    
+                    # Désérialiser la validation JSON de manière sécurisée
+                    validation_str = question_data.get("validation", "{}")
+                    if validation_str and validation_str != "{}":
                         try:
-                            question_data["validation"] = json.loads(
-                                question_data["validation"]
-                            )
-                        except (json.JSONDecodeError, TypeError) as e:
-                            logger.warning(f"Erreur désérialisation validation: {e}")
+                            question_data["validation"] = json.loads(validation_str)
+                        except (json.JSONDecodeError, TypeError, ValueError) as e:
+                            logger.warning(f"Erreur désérialisation validation: {e}, valeur: {validation_str}")
                             question_data["validation"] = {}
+                    else:
+                        question_data["validation"] = {}
+                    
                     processed_questions.append(question_data)
 
             form["questions"] = processed_questions
