@@ -14,9 +14,9 @@ gunicorn==21.2.0
 # Configuration
 python-dotenv==1.0.0
 
-# Export de données
-pandas==2.0.3
-openpyxl==3.1.2
+# Export de données (simplifié pour Render)
+# pandas==2.0.3  # Problème de compilation sur Python 3.13
+# openpyxl==3.1.2  # Dépend de pandas
 
 # Validation et utilitaires
 email-validator==2.0.0

@@ -6,8 +6,8 @@ import csv
 import io
 import json
 from typing import List, Dict, Any
-import pandas as pd
 from datetime import datetime
+# import pandas as pd  # Supprimé pour éviter les problèmes de compilation
 
 
 class CSVExporter:
@@ -59,55 +59,25 @@ class CSVExporter:
 
 
 class ExcelExporter:
-    """Exportateur Excel pour les réponses"""
+    """Exportateur Excel pour les réponses (version simplifiée)"""
 
     @staticmethod
     def generate_excel(data: List[Dict]) -> bytes:
-        """Générer un fichier Excel à partir des données"""
+        """Générer un fichier Excel à partir des données (version CSV)"""
         if not data:
             return b""
 
-        # Convertir en DataFrame pandas
-        df = pd.DataFrame(data)
-
-        # Nettoyer les données
-        for col in df.columns:
-            if df[col].dtype == "object":
-                df[col] = df[col].astype(str)
-
-        # Générer le fichier Excel en mémoire
-        output = io.BytesIO()
-
-        with pd.ExcelWriter(output, engine="openpyxl") as writer:
-            df.to_excel(writer, sheet_name="Responses", index=False)
-
-            # Ajuster la largeur des colonnes
-            worksheet = writer.sheets["Responses"]
-            for column in worksheet.columns:
-                max_length = 0
-                column_letter = column[0].column_letter
-
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-
-                adjusted_width = min(max_length + 2, 50)
-                worksheet.column_dimensions[column_letter].width = adjusted_width
-
-        return output.getvalue()
+        # Générer un CSV au lieu d'Excel pour éviter pandas
+        csv_content = CSVExporter.generate_csv(data)
+        return csv_content.encode('utf-8')
 
     @staticmethod
     def save_excel_file(data: List[Dict], filename: str) -> str:
-        """Sauvegarder un fichier Excel"""
-        excel_content = ExcelExporter.generate_excel(data)
-
-        with open(filename, "wb") as f:
-            f.write(excel_content)
-
-        return filename
+        """Sauvegarder un fichier Excel (version CSV)"""
+        # Sauvegarder comme CSV au lieu d'Excel
+        csv_filename = filename.replace('.xlsx', '.csv')
+        CSVExporter.save_csv_file(data, csv_filename)
+        return csv_filename
 
 
 class JSONExporter:
@@ -160,19 +130,17 @@ class ExportManager:
                 result["mime_type"] = "text/csv"
                 result["extension"] = ".csv"
 
-            elif format.lower() == "excel":
-                content = ExcelExporter.generate_excel(data)
-                result["content"] = content
-                result["mime_type"] = (
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-                result["extension"] = ".xlsx"
+                elif format.lower() == "excel":
+                    content = ExcelExporter.generate_excel(data)
+                    result["content"] = content
+                    result["mime_type"] = "text/csv"  # CSV au lieu d'Excel
+                    result["extension"] = ".csv"  # CSV au lieu d'Excel
 
-            elif format.lower() == "json":
-                content = JSONExporter.generate_json(data)
-                result["content"] = content
-                result["mime_type"] = "application/json"
-                result["extension"] = ".json"
+                elif format.lower() == "json":
+                    content = JSONExporter.generate_json(data)
+                    result["content"] = content
+                    result["mime_type"] = "application/json"
+                    result["extension"] = ".json"
 
             else:
                 raise ValueError(f"Format non supporté: {format}")

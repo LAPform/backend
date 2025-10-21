@@ -14,9 +14,7 @@ class DatabaseManager:
     """Gestionnaire de base de données SQLite"""
 
     def __init__(self):
-        self.database_url = os.environ.get(
-            "DATABASE_URL", "sqlite:///formforge_poc.db"
-        )
+        self.database_url = os.environ.get("DATABASE_URL", "sqlite:///formforge_poc.db")
         self.db_path = self.database_url.replace("sqlite:///", "")
 
     def get_connection(self):

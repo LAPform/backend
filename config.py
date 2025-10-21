@@ -13,9 +13,7 @@ class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 
     # Configuration base de données
-    DATABASE_URL = os.environ.get(
-        "DATABASE_URL", "sqlite:///formforge_poc.db"
-    )
+    DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///formforge_poc.db")
 
     # Configuration upload
     UPLOAD_FOLDER = "static/uploads"
