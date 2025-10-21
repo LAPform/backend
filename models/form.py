@@ -15,18 +15,24 @@ class Form:
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
 
-    def create(self, title: str, description: str = None, settings: Dict = None) -> str:
+    def create(
+        self,
+        title: str,
+        description: str = None,
+        settings: Dict = None,
+        created_by: str = None,
+    ) -> str:
         """Créer un nouveau formulaire"""
         form_id = str(uuid.uuid4())
         settings = settings or {}
 
         query = """
-            INSERT INTO forms (id, title, description, settings)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO forms (id, title, description, settings, created_by)
+            VALUES (?, ?, ?, ?, ?)
         """
 
         self.db.execute_query(
-            query, (form_id, title, description, json.dumps(settings))
+            query, (form_id, title, description, json.dumps(settings), created_by)
         )
         return form_id
 

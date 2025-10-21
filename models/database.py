@@ -31,19 +31,20 @@ class DatabaseManager:
         try:
             cursor = conn.cursor()
 
-            # Table forms
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS forms (
-                    id TEXT PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    description TEXT,
-                    settings TEXT DEFAULT '{}',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """
-            )
+                   # Table forms
+                   cursor.execute(
+                       """
+                       CREATE TABLE IF NOT EXISTS forms (
+                           id TEXT PRIMARY KEY,
+                           title TEXT NOT NULL,
+                           description TEXT,
+                           settings TEXT DEFAULT '{}',
+                           created_by TEXT,
+                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                       )
+                   """
+                   )
 
             # Table questions
             cursor.execute(
@@ -62,19 +63,34 @@ class DatabaseManager:
             """
             )
 
-            # Table responses
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS responses (
-                    id TEXT PRIMARY KEY,
-                    form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
-                    answers TEXT NOT NULL,
-                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    user_id TEXT,
-                    ip_address TEXT
-                )
-            """
-            )
+                   # Table users
+                   cursor.execute(
+                       """
+                       CREATE TABLE IF NOT EXISTS users (
+                           id TEXT PRIMARY KEY,
+                           email TEXT UNIQUE NOT NULL,
+                           password_hash TEXT NOT NULL,
+                           salt TEXT NOT NULL,
+                           name TEXT,
+                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           last_login TIMESTAMP
+                       )
+                   """
+                   )
+
+                   # Table responses
+                   cursor.execute(
+                       """
+                       CREATE TABLE IF NOT EXISTS responses (
+                           id TEXT PRIMARY KEY,
+                           form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
+                           answers TEXT NOT NULL,
+                           submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                           user_id TEXT,
+                           ip_address TEXT
+                       )
+                   """
+                   )
 
             # Index pour améliorer les performances
             cursor.execute(

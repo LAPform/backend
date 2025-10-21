@@ -204,14 +204,23 @@ def export_responses_csv(form_id):
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
+        # Paramètres de pagination pour éviter les timeouts
+        limit = request.args.get("limit", 1000, type=int)
+        offset = request.args.get("offset", 0, type=int)
+
+        # Limiter à 1000 réponses maximum pour éviter les timeouts
+        if limit > 1000:
+            limit = 1000
+
         response_model = Response(current_app.db)
-        data_to_export = response_model.prepare_for_export(form_id)
+        data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:
             return jsonify({"error": "Aucune réponse à exporter"}), 404
 
         # Générer le CSV
         from utils.exporters import ExportManager
+
         export_result = ExportManager.export_responses(data_to_export, "csv")
 
         if not export_result["success"]:
@@ -241,14 +250,23 @@ def export_responses_excel(form_id):
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
+        # Paramètres de pagination pour éviter les timeouts
+        limit = request.args.get("limit", 1000, type=int)
+        offset = request.args.get("offset", 0, type=int)
+
+        # Limiter à 1000 réponses maximum pour éviter les timeouts
+        if limit > 1000:
+            limit = 1000
+
         response_model = Response(current_app.db)
-        data_to_export = response_model.prepare_for_export(form_id)
+        data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:
             return jsonify({"error": "Aucune réponse à exporter"}), 404
 
         # Générer l'Excel
         from utils.exporters import ExportManager
+
         export_result = ExportManager.export_responses(data_to_export, "excel")
 
         if not export_result["success"]:
@@ -278,14 +296,23 @@ def export_responses_json(form_id):
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
+        # Paramètres de pagination pour éviter les timeouts
+        limit = request.args.get("limit", 1000, type=int)
+        offset = request.args.get("offset", 0, type=int)
+
+        # Limiter à 1000 réponses maximum pour éviter les timeouts
+        if limit > 1000:
+            limit = 1000
+
         response_model = Response(current_app.db)
-        data_to_export = response_model.prepare_for_export(form_id)
+        data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:
             return jsonify({"error": "Aucune réponse à exporter"}), 404
 
         # Générer le JSON
         from utils.exporters import ExportManager
+
         export_result = ExportManager.export_responses(data_to_export, "json")
 
         if not export_result["success"]:

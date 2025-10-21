@@ -17,6 +17,8 @@ from routes.forms import forms_bp
 from routes.questions import questions_bp
 from routes.responses import responses_bp
 from routes.docs import docs_bp
+from routes.auth import auth_bp
+from routes.files import files_bp
 from config import Config
 
 
@@ -46,6 +48,8 @@ def create_app():
     app.register_blueprint(questions_bp, url_prefix="/api")
     app.register_blueprint(responses_bp, url_prefix="/api")
     app.register_blueprint(docs_bp, url_prefix="/api")
+    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(files_bp, url_prefix="/api")
 
     # Route de santé simple
     @app.route("/api/health")

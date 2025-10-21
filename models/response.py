@@ -181,8 +181,10 @@ class Response:
             "analytics": analytics,
         }
 
-    def export_to_csv_data(self, form_id: str) -> List[Dict]:
-        """Exporter les données pour CSV"""
+    def export_to_csv_data(
+        self, form_id: str, limit: int = 1000, offset: int = 0
+    ) -> List[Dict]:
+        """Exporter les données pour CSV avec pagination"""
         # Récupérer le formulaire avec ses questions
         from .form import Form
 
@@ -192,10 +194,8 @@ class Response:
         if not form_data:
             return []
 
-        # Récupérer toutes les réponses
-        responses = self.get_by_form_id(
-            form_id, limit=10000
-        )  # Limite élevée pour export
+        # Récupérer les réponses avec pagination
+        responses = self.get_by_form_id(form_id, limit=limit, offset=offset)
 
         # Construire les données CSV
         csv_data = []
