@@ -17,16 +17,23 @@ def create_question(form_id):
     """Créer une nouvelle question"""
     try:
         data = request.get_json()
+        logger.info(f"Creating question for form {form_id} with data: {data}")
 
         # Validation des données requises
         if not data or "type" not in data or "text" not in data:
+            logger.error("Missing required fields: type and text")
             return jsonify({"error": "Type and text are required"}), 400
 
-        # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
-        form = form_model.get_by_id(form_id)
-        if not form:
-            return jsonify({"error": "Formulaire non trouvé"}), 404
+        # Vérifier que le formulaire existe (simplifié)
+        try:
+            form_model = Form(current_app.db)
+            form = form_model.get_by_id(form_id)
+            if not form:
+                logger.error(f"Form {form_id} not found")
+                return jsonify({"error": "Formulaire non trouvé"}), 404
+        except Exception as e:
+            logger.error(f"Error checking form existence: {e}")
+            return jsonify({"error": f"Erreur vérification formulaire: {str(e)}"}), 500
 
         # Créer la question
         question_model = Question(current_app.db)
