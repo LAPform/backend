@@ -14,7 +14,7 @@ class Config:
 
     # Configuration base de données
     DATABASE_URL = os.environ.get(
-        "DATABASE_URL", "postgresql://localhost/formforge_poc"
+        "DATABASE_URL", "sqlite:///formforge_poc.db"
     )
 
     # Configuration upload

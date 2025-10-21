@@ -1,10 +1,8 @@
 """
-Gestionnaire de base de données PostgreSQL pour FormForge
+Gestionnaire de base de données SQLite pour FormForge
 """
 
-import psycopg2
-import psycopg2.extras
-from psycopg2.pool import SimpleConnectionPool
+import sqlite3
 import os
 from typing import Optional, List, Dict, Any
 import logging
@@ -13,33 +11,21 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseManager:
-    """Gestionnaire de base de données PostgreSQL"""
+    """Gestionnaire de base de données SQLite"""
 
     def __init__(self):
         self.database_url = os.environ.get(
-            "DATABASE_URL", "postgresql://localhost/formforge_poc"
+            "DATABASE_URL", "sqlite:///formforge_poc.db"
         )
-        self.connection_pool = None
-        self.init_connection_pool()
-
-    def init_connection_pool(self):
-        """Initialiser le pool de connexions"""
-        try:
-            self.connection_pool = SimpleConnectionPool(
-                minconn=1, maxconn=20, dsn=self.database_url
-            )
-            logger.info("Pool de connexions PostgreSQL initialisé")
-        except Exception as e:
-            logger.error(f"Erreur initialisation pool: {e}")
-            raise
+        self.db_path = self.database_url.replace("sqlite:///", "")
 
     def get_connection(self):
-        """Obtenir une connexion du pool"""
-        return self.connection_pool.getconn()
+        """Obtenir une connexion SQLite"""
+        return sqlite3.connect(self.db_path)
 
     def return_connection(self, conn):
-        """Retourner une connexion au pool"""
-        self.connection_pool.putconn(conn)
+        """Fermer une connexion SQLite"""
+        conn.close()
 
     def init_database(self):
         """Initialiser la base de données avec les tables"""
@@ -50,10 +36,10 @@ class DatabaseManager:
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS forms (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        id TEXT PRIMARY KEY,
                         title TEXT NOT NULL,
                         description TEXT,
-                        settings JSONB DEFAULT '{}',
+                        settings TEXT DEFAULT '{}',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -64,13 +50,13 @@ class DatabaseManager:
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS questions (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
+                        id TEXT PRIMARY KEY,
+                        form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
                         type TEXT NOT NULL,
                         text TEXT NOT NULL,
-                        options JSONB DEFAULT '[]',
+                        options TEXT DEFAULT '[]',
                         required BOOLEAN DEFAULT FALSE,
-                        validation JSONB DEFAULT '{}',
+                        validation TEXT DEFAULT '{}',
                         order_index INTEGER NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -81,12 +67,12 @@ class DatabaseManager:
                 cursor.execute(
                     """
                     CREATE TABLE IF NOT EXISTS responses (
-                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                        form_id UUID REFERENCES forms(id) ON DELETE CASCADE,
-                        answers JSONB NOT NULL,
+                        id TEXT PRIMARY KEY,
+                        form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
+                        answers TEXT NOT NULL,
                         submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         user_id TEXT,
-                        ip_address INET
+                        ip_address TEXT
                     )
                 """
                 )
@@ -127,17 +113,19 @@ class DatabaseManager:
         """Exécuter une requête SQL"""
         conn = self.get_connection()
         try:
-            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cursor:
-                cursor.execute(query, params)
+            cursor = conn.cursor()
+            cursor.execute(query, params)
 
-                if fetch:
-                    if "SELECT" in query.upper():
-                        return cursor.fetchall()
-                    else:
-                        return cursor.fetchone()
+            if fetch:
+                if "SELECT" in query.upper():
+                    columns = [description[0] for description in cursor.description]
+                    rows = cursor.fetchall()
+                    return [dict(zip(columns, row)) for row in rows]
                 else:
-                    conn.commit()
-                    return cursor.rowcount
+                    return cursor.fetchone()
+            else:
+                conn.commit()
+                return cursor.rowcount
 
         except Exception as e:
             conn.rollback()

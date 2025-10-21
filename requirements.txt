@@ -6,7 +6,7 @@ Flask==3.0.0
 flask-cors==4.0.0
 
 # Base de données
-psycopg2-binary==2.9.7
+# psycopg2-binary==2.9.7  # PostgreSQL (non utilisé avec SQLite)
 
 # Serveur de production
 gunicorn==21.2.0

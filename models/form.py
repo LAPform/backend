@@ -24,7 +24,8 @@ class Form:
             VALUES (%s, %s, %s, %s)
         """
 
-        self.db.execute_query(query, (form_id, title, description, settings))
+        import json
+        self.db.execute_query(query, (form_id, title, description, json.dumps(settings)))
         return form_id
 
     def get_by_id(self, form_id: str) -> Optional[Dict]:
