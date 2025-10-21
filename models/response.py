@@ -74,7 +74,7 @@ class Response:
         """Compter le nombre de réponses d'un formulaire"""
         query = "SELECT COUNT(*) as total FROM responses WHERE form_id = ?"
         result = self.db.execute_query(query, (form_id,), fetch=True)
-        return result["total"] if result else 0
+        return result[0]["total"] if result else 0
 
     def get_analytics(self, form_id: str) -> Dict:
         """Récupérer les analytics d'un formulaire"""

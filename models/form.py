@@ -152,14 +152,16 @@ class Form:
         """Récupérer les statistiques d'un formulaire"""
         # Compter les réponses
         responses_query = "SELECT COUNT(*) as total FROM responses WHERE form_id = ?"
-        total_responses = self.db.execute_query(responses_query, (form_id,), fetch=True)
+        responses_result = self.db.execute_query(responses_query, (form_id,), fetch=True)
+        total_responses = responses_result[0]["total"] if responses_result else 0
 
         # Compter les questions
         questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = ?"
-        total_questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
+        questions_result = self.db.execute_query(questions_query, (form_id,), fetch=True)
+        total_questions = questions_result[0]["total"] if questions_result else 0
 
         return {
-            "total_questions": total_questions["total"] if total_questions else 0,
-            "total_responses": total_responses["total"] if total_responses else 0,
+            "total_questions": total_questions,
+            "total_responses": total_responses,
             "form_id": form_id,
         }

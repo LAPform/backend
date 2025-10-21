@@ -7,13 +7,11 @@ import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-# from flask_restx import Api, Resource, fields  # Supprimé pour simplifier
 from models.database import DatabaseManager
 from routes.forms import forms_bp
 from routes.questions import questions_bp
 from routes.responses import responses_bp
 from routes.docs import docs_bp
-from docs.schemas import *
 from config import Config
 
 

@@ -118,11 +118,15 @@ class DatabaseManager:
 
             if fetch:
                 if "SELECT" in query.upper():
-                    columns = [description[0] for description in cursor.description]
-                    rows = cursor.fetchall()
-                    return [dict(zip(columns, row)) for row in rows]
+                    if cursor.description:
+                        columns = [description[0] for description in cursor.description]
+                        rows = cursor.fetchall()
+                        return [dict(zip(columns, row)) for row in rows]
+                    else:
+                        return []
                 else:
-                    return cursor.fetchone()
+                    result = cursor.fetchone()
+                    return result
             else:
                 conn.commit()
                 return cursor.rowcount
