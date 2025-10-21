@@ -51,11 +51,16 @@ def create_form():
 
         logger.info(f"Formulaire créé: {form_id}")
 
-        return jsonify({
-            "success": True,
-            "message": "Formulaire créé avec succès",
-            "data": {"form_id": form_id}
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Formulaire créé avec succès",
+                    "data": {"form_id": form_id},
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.error(f"Erreur création formulaire: {e}")

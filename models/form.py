@@ -127,22 +127,23 @@ class Form:
 
         # Traiter les questions avec désérialisation JSON
         processed_questions = []
-        for q in questions:
-            question_data = dict(q)
-            # Désérialiser les options et validation JSON
-            if question_data.get("options"):
-                try:
-                    question_data["options"] = json.loads(question_data["options"])
-                except (json.JSONDecodeError, TypeError):
-                    question_data["options"] = []
-            if question_data.get("validation"):
-                try:
-                    question_data["validation"] = json.loads(
-                        question_data["validation"]
-                    )
-                except (json.JSONDecodeError, TypeError):
-                    question_data["validation"] = {}
-            processed_questions.append(question_data)
+        if questions:  # Vérifier que questions n'est pas None
+            for q in questions:
+                question_data = dict(q)
+                # Désérialiser les options et validation JSON
+                if question_data.get("options"):
+                    try:
+                        question_data["options"] = json.loads(question_data["options"])
+                    except (json.JSONDecodeError, TypeError):
+                        question_data["options"] = []
+                if question_data.get("validation"):
+                    try:
+                        question_data["validation"] = json.loads(
+                            question_data["validation"]
+                        )
+                    except (json.JSONDecodeError, TypeError):
+                        question_data["validation"] = {}
+                processed_questions.append(question_data)
 
         form["questions"] = processed_questions
         return form
