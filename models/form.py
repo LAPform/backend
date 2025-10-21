@@ -37,7 +37,14 @@ class Form:
         result = self.db.execute_query(query, (form_id,), fetch=True)
 
         if result:
-            return dict(result)
+            form_data = dict(result)
+            # Désérialiser les settings JSON
+            if form_data.get('settings'):
+                try:
+                    form_data['settings'] = json.loads(form_data['settings'])
+                except (json.JSONDecodeError, TypeError):
+                    form_data['settings'] = {}
+            return form_data
         return None
 
     def get_all(self, limit: int = 100, offset: int = 0) -> List[Dict]:
@@ -48,7 +55,17 @@ class Form:
             LIMIT ? OFFSET ?
         """
         results = self.db.execute_query(query, (limit, offset), fetch=True)
-        return [dict(row) for row in results]
+        forms = []
+        for row in results:
+            form_data = dict(row)
+            # Désérialiser les settings JSON
+            if form_data.get('settings'):
+                try:
+                    form_data['settings'] = json.loads(form_data['settings'])
+                except (json.JSONDecodeError, TypeError):
+                    form_data['settings'] = {}
+            forms.append(form_data)
+        return forms
 
     def update(
         self,
@@ -71,7 +88,7 @@ class Form:
 
         if settings is not None:
             updates.append("settings = ?")
-            params.append(settings)
+            params.append(json.dumps(settings))
 
         if not updates:
             return False
@@ -109,7 +126,24 @@ class Form:
         """
         questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
 
-        form["questions"] = [dict(q) for q in questions]
+        # Traiter les questions avec désérialisation JSON
+        processed_questions = []
+        for q in questions:
+            question_data = dict(q)
+            # Désérialiser les options et validation JSON
+            if question_data.get('options'):
+                try:
+                    question_data['options'] = json.loads(question_data['options'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['options'] = []
+            if question_data.get('validation'):
+                try:
+                    question_data['validation'] = json.loads(question_data['validation'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['validation'] = {}
+            processed_questions.append(question_data)
+        
+        form["questions"] = processed_questions
         return form
 
     def get_stats(self, form_id: str) -> Dict:

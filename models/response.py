@@ -25,8 +25,10 @@ class Response:
             VALUES (?, ?, ?, ?, ?)
         """
 
+        import json
+        
         self.db.execute_query(
-            query, (response_id, form_id, answers, user_id, ip_address)
+            query, (response_id, form_id, json.dumps(answers), user_id, ip_address)
         )
         return response_id
 
@@ -36,7 +38,14 @@ class Response:
         result = self.db.execute_query(query, (response_id,), fetch=True)
 
         if result:
-            return dict(result)
+            response_data = dict(result)
+            # Désérialiser les answers JSON
+            if response_data.get('answers'):
+                try:
+                    response_data['answers'] = json.loads(response_data['answers'])
+                except (json.JSONDecodeError, TypeError):
+                    response_data['answers'] = {}
+            return response_data
         return None
 
     def get_by_form_id(
@@ -50,7 +59,17 @@ class Response:
             LIMIT ? OFFSET ?
         """
         results = self.db.execute_query(query, (form_id, limit, offset), fetch=True)
-        return [dict(row) for row in results]
+        responses = []
+        for row in results:
+            response_data = dict(row)
+            # Désérialiser les answers JSON
+            if response_data.get('answers'):
+                try:
+                    response_data['answers'] = json.loads(response_data['answers'])
+                except (json.JSONDecodeError, TypeError):
+                    response_data['answers'] = {}
+            responses.append(response_data)
+        return responses
 
     def get_count_by_form_id(self, form_id: str) -> int:
         """Compter le nombre de réponses d'un formulaire"""

@@ -50,6 +50,8 @@ class Question:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
+        import json
+        
         self.db.execute_query(
             query,
             (
@@ -57,9 +59,9 @@ class Question:
                 form_id,
                 type,
                 text,
-                options,
+                json.dumps(options),
                 required,
-                validation,
+                json.dumps(validation),
                 order_index,
             ),
         )
@@ -71,7 +73,19 @@ class Question:
         result = self.db.execute_query(query, (question_id,), fetch=True)
 
         if result:
-            return dict(result)
+            question_data = dict(result)
+            # Désérialiser les options et validation JSON
+            if question_data.get('options'):
+                try:
+                    question_data['options'] = json.loads(question_data['options'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['options'] = []
+            if question_data.get('validation'):
+                try:
+                    question_data['validation'] = json.loads(question_data['validation'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['validation'] = {}
+            return question_data
         return None
 
     def get_by_form_id(self, form_id: str) -> List[Dict]:
@@ -82,7 +96,22 @@ class Question:
             ORDER BY order_index
         """
         results = self.db.execute_query(query, (form_id,), fetch=True)
-        return [dict(row) for row in results]
+        questions = []
+        for row in results:
+            question_data = dict(row)
+            # Désérialiser les options et validation JSON
+            if question_data.get('options'):
+                try:
+                    question_data['options'] = json.loads(question_data['options'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['options'] = []
+            if question_data.get('validation'):
+                try:
+                    question_data['validation'] = json.loads(question_data['validation'])
+                except (json.JSONDecodeError, TypeError):
+                    question_data['validation'] = {}
+            questions.append(question_data)
+        return questions
 
     def update(
         self,
@@ -109,7 +138,7 @@ class Question:
 
         if options is not None:
             updates.append("options = ?")
-            params.append(options)
+            params.append(json.dumps(options))
 
         if required is not None:
             updates.append("required = ?")
@@ -117,7 +146,7 @@ class Question:
 
         if validation is not None:
             updates.append("validation = ?")
-            params.append(validation)
+            params.append(json.dumps(validation))
 
         if not updates:
             return False

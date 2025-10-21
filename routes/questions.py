@@ -36,16 +36,20 @@ def create_question(form_id):
             return jsonify({"error": f"Erreur vérification formulaire: {str(e)}"}), 500
 
         # Créer la question
-        question_model = Question(current_app.db)
-        question_id = question_model.create(
-            form_id=form_id,
-            type=data["type"],
-            text=data["text"],
-            options=data.get("options", []),
-            required=data.get("required", False),
-            validation=data.get("validation", {}),
-            order_index=data.get("order_index", 0),
-        )
+        try:
+            question_model = Question(current_app.db)
+            question_id = question_model.create(
+                form_id=form_id,
+                type=data["type"],
+                text=data["text"],
+                options=data.get("options", []),
+                required=data.get("required", False),
+                validation=data.get("validation", {}),
+                order_index=data.get("order_index", 0),
+            )
+        except Exception as e:
+            logger.error(f"Error creating question: {e}")
+            return jsonify({"error": f"Erreur création question: {str(e)}"}), 500
 
         logger.info(f"Question créée: {question_id}")
 
