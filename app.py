@@ -4,8 +4,13 @@ POC - Google Forms Clone Backend
 """
 
 import os
+import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
+
+# Configuration du logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from models.database import DatabaseManager
 from routes.forms import forms_bp
@@ -28,8 +33,13 @@ def create_app():
     # Configuration API simple (sans Flask-RESTX pour éviter les conflits)
 
     # Initialiser la base de données
-    app.db = DatabaseManager()
-    app.db.init_database()
+    try:
+        app.db = DatabaseManager()
+        app.db.init_database()
+        logger.info("Base de données initialisée avec succès")
+    except Exception as e:
+        logger.error(f"Erreur initialisation base de données: {e}")
+        raise
 
     # Enregistrer les blueprints
     app.register_blueprint(forms_bp, url_prefix="/api")
@@ -52,11 +62,13 @@ def create_app():
     # Gestion des erreurs
     @app.errorhandler(404)
     def not_found(error):
+        logger.warning(f"404 Error: {error}")
         return jsonify({"error": "Endpoint not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
-        return jsonify({"error": "Internal server error"}), 500
+        logger.error(f"500 Error: {error}")
+        return jsonify({"error": "Internal server error", "details": str(error)}), 500
 
     return app
 

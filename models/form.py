@@ -112,52 +112,73 @@ class Form:
 
     def get_with_questions(self, form_id: str) -> Optional[Dict]:
         """Récupérer un formulaire avec ses questions"""
-        # Récupérer le formulaire
-        form = self.get_by_id(form_id)
-        if not form:
-            return None
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            logger.info(f"Récupération formulaire avec questions: {form_id}")
+            
+            # Récupérer le formulaire
+            form = self.get_by_id(form_id)
+            if not form:
+                logger.warning(f"Formulaire non trouvé: {form_id}")
+                return None
 
-        # Récupérer les questions
-        questions_query = """
-            SELECT * FROM questions 
-            WHERE form_id = ? 
-            ORDER BY order_index
-        """
-        questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
+            # Récupérer les questions
+            questions_query = """
+                SELECT * FROM questions 
+                WHERE form_id = ? 
+                ORDER BY order_index
+            """
+            logger.info(f"Exécution requête questions pour form_id: {form_id}")
+            questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
+            logger.info(f"Questions trouvées: {len(questions) if questions else 0}")
 
-        # Traiter les questions avec désérialisation JSON
-        processed_questions = []
-        if questions:  # Vérifier que questions n'est pas None
-            for q in questions:
-                question_data = dict(q)
-                # Désérialiser les options et validation JSON
-                if question_data.get("options"):
-                    try:
-                        question_data["options"] = json.loads(question_data["options"])
-                    except (json.JSONDecodeError, TypeError):
-                        question_data["options"] = []
-                if question_data.get("validation"):
-                    try:
-                        question_data["validation"] = json.loads(
-                            question_data["validation"]
-                        )
-                    except (json.JSONDecodeError, TypeError):
-                        question_data["validation"] = {}
-                processed_questions.append(question_data)
+            # Traiter les questions avec désérialisation JSON
+            processed_questions = []
+            if questions:  # Vérifier que questions n'est pas None
+                logger.info(f"Traitement de {len(questions)} questions")
+                for q in questions:
+                    question_data = dict(q)
+                    # Désérialiser les options et validation JSON
+                    if question_data.get("options"):
+                        try:
+                            question_data["options"] = json.loads(question_data["options"])
+                        except (json.JSONDecodeError, TypeError) as e:
+                            logger.warning(f"Erreur désérialisation options: {e}")
+                            question_data["options"] = []
+                    if question_data.get("validation"):
+                        try:
+                            question_data["validation"] = json.loads(
+                                question_data["validation"]
+                            )
+                        except (json.JSONDecodeError, TypeError) as e:
+                            logger.warning(f"Erreur désérialisation validation: {e}")
+                            question_data["validation"] = {}
+                    processed_questions.append(question_data)
 
-        form["questions"] = processed_questions
-        return form
+            form["questions"] = processed_questions
+            logger.info(f"Formulaire récupéré avec succès: {form_id}")
+            return form
+            
+        except Exception as e:
+            logger.error(f"Erreur dans get_with_questions: {e}")
+            raise
 
     def get_stats(self, form_id: str) -> Dict:
         """Récupérer les statistiques d'un formulaire"""
         # Compter les réponses
         responses_query = "SELECT COUNT(*) as total FROM responses WHERE form_id = ?"
-        responses_result = self.db.execute_query(responses_query, (form_id,), fetch=True)
+        responses_result = self.db.execute_query(
+            responses_query, (form_id,), fetch=True
+        )
         total_responses = responses_result[0]["total"] if responses_result else 0
 
         # Compter les questions
         questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = ?"
-        questions_result = self.db.execute_query(questions_query, (form_id,), fetch=True)
+        questions_result = self.db.execute_query(
+            questions_query, (form_id,), fetch=True
+        )
         total_questions = questions_result[0]["total"] if questions_result else 0
 
         return {
