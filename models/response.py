@@ -77,37 +77,46 @@ class Response:
         return result[0]["total"] if result else 0
 
     def get_analytics(self, form_id: str) -> Dict:
-        """Récupérer les analytics d'un formulaire"""
-        # Statistiques générales
-        total_responses = self.get_count_by_form_id(form_id)
+        """Récupérer les analytics d'un formulaire - Version SQLite"""
+        try:
+            # Statistiques générales
+            total_responses = self.get_count_by_form_id(form_id)
 
-        # Réponses par jour (derniers 30 jours)
-        daily_query = """
-            SELECT DATE(submitted_at) as date, COUNT(*) as count
-            FROM responses 
-            WHERE form_id = ? 
-            AND submitted_at >= CURRENT_DATE - INTERVAL '30 days'
-            GROUP BY DATE(submitted_at)
-            ORDER BY date
-        """
-        daily_stats = self.db.execute_query(daily_query, (form_id,), fetch=True)
+            # Réponses par jour (derniers 30 jours) - SQLite compatible
+            daily_query = """
+                SELECT strftime('%Y-%m-%d', submitted_at) as date, COUNT(*) as count
+                FROM responses 
+                WHERE form_id = ? 
+                AND submitted_at >= datetime('now', '-30 days')
+                GROUP BY strftime('%Y-%m-%d', submitted_at)
+                ORDER BY date
+            """
+            daily_stats = self.db.execute_query(daily_query, (form_id,), fetch=True)
 
-        # Réponses par heure
-        hourly_query = """
-            SELECT EXTRACT(HOUR FROM submitted_at) as hour, COUNT(*) as count
-            FROM responses 
-            WHERE form_id = ? 
-            AND submitted_at >= CURRENT_DATE - INTERVAL '7 days'
-            GROUP BY EXTRACT(HOUR FROM submitted_at)
-            ORDER BY hour
-        """
-        hourly_stats = self.db.execute_query(hourly_query, (form_id,), fetch=True)
+            # Réponses par heure - SQLite compatible
+            hourly_query = """
+                SELECT strftime('%H', submitted_at) as hour, COUNT(*) as count
+                FROM responses 
+                WHERE form_id = ? 
+                AND submitted_at >= datetime('now', '-7 days')
+                GROUP BY strftime('%H', submitted_at)
+                ORDER BY hour
+            """
+            hourly_stats = self.db.execute_query(hourly_query, (form_id,), fetch=True)
 
-        return {
-            "total_responses": total_responses,
-            "daily_stats": [dict(row) for row in daily_stats],
-            "hourly_stats": [dict(row) for row in hourly_stats],
-        }
+            return {
+                "total_responses": total_responses,
+                "daily_stats": daily_stats if daily_stats else [],
+                "hourly_stats": hourly_stats if hourly_stats else [],
+            }
+        except Exception as e:
+            # En cas d'erreur, retourner des statistiques basiques
+            return {
+                "total_responses": self.get_count_by_form_id(form_id),
+                "daily_stats": [],
+                "hourly_stats": [],
+                "error": str(e)
+            }
 
     def get_question_analytics(self, form_id: str, question_id: str) -> Dict:
         """Analytics pour une question spécifique"""

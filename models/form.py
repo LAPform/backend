@@ -119,11 +119,12 @@ class Form:
     def get_with_questions(self, form_id: str) -> Optional[Dict]:
         """Récupérer un formulaire avec ses questions"""
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         try:
             logger.info(f"Récupération formulaire avec questions: {form_id}")
-            
+
             # Récupérer le formulaire
             form = self.get_by_id(form_id)
             if not form:
@@ -152,28 +153,32 @@ class Form:
                         try:
                             question_data["options"] = json.loads(options_str)
                         except (json.JSONDecodeError, TypeError, ValueError) as e:
-                            logger.warning(f"Erreur désérialisation options: {e}, valeur: {options_str}")
+                            logger.warning(
+                                f"Erreur désérialisation options: {e}, valeur: {options_str}"
+                            )
                             question_data["options"] = []
                     else:
                         question_data["options"] = []
-                    
+
                     # Désérialiser la validation JSON de manière sécurisée
                     validation_str = question_data.get("validation", "{}")
                     if validation_str and validation_str != "{}":
                         try:
                             question_data["validation"] = json.loads(validation_str)
                         except (json.JSONDecodeError, TypeError, ValueError) as e:
-                            logger.warning(f"Erreur désérialisation validation: {e}, valeur: {validation_str}")
+                            logger.warning(
+                                f"Erreur désérialisation validation: {e}, valeur: {validation_str}"
+                            )
                             question_data["validation"] = {}
                     else:
                         question_data["validation"] = {}
-                    
+
                     processed_questions.append(question_data)
 
             form["questions"] = processed_questions
             logger.info(f"Formulaire récupéré avec succès: {form_id}")
             return form
-            
+
         except Exception as e:
             logger.error(f"Erreur dans get_with_questions: {e}")
             raise
@@ -185,14 +190,22 @@ class Form:
         responses_result = self.db.execute_query(
             responses_query, (form_id,), fetch=True
         )
-        total_responses = responses_result[0]["total"] if responses_result and len(responses_result) > 0 else 0
+        total_responses = (
+            responses_result[0]["total"]
+            if responses_result and len(responses_result) > 0
+            else 0
+        )
 
         # Compter les questions
         questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = ?"
         questions_result = self.db.execute_query(
             questions_query, (form_id,), fetch=True
         )
-        total_questions = questions_result[0]["total"] if questions_result and len(questions_result) > 0 else 0
+        total_questions = (
+            questions_result[0]["total"]
+            if questions_result and len(questions_result) > 0
+            else 0
+        )
 
         return {
             "total_questions": total_questions,
