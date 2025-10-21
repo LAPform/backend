@@ -20,7 +20,7 @@ forms_bp = Blueprint("forms", __name__)
 def create_form():
     """
     Créer un nouveau formulaire
-    
+
     Exemple de requête:
     ```json
     {
@@ -53,7 +53,7 @@ def create_form():
         return {
             "success": True,
             "message": "Formulaire créé avec succès",
-            "data": {"form_id": form_id}
+            "data": {"form_id": form_id},
         }, 201
 
     except Exception as e:
@@ -66,7 +66,7 @@ def create_form():
 def get_form(form_id):
     """
     Récupérer un formulaire par ID
-    
+
     Retourne le formulaire complet avec toutes ses questions.
     """
     try:

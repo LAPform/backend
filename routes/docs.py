@@ -7,60 +7,75 @@ from docs.examples import *
 
 docs_bp = Blueprint("docs", __name__)
 
+
 @docs_bp.route("/docs/examples")
 def get_examples():
     """Obtenir tous les exemples d'utilisation de l'API"""
-    return jsonify({
-        "form_create": FORM_CREATE_EXAMPLE,
-        "question_create": QUESTION_CREATE_EXAMPLE,
-        "response_create": RESPONSE_CREATE_EXAMPLE,
-        "form_response": FORM_RESPONSE_EXAMPLE,
-        "stats_response": STATS_RESPONSE_EXAMPLE,
-        "error_response": ERROR_RESPONSE_EXAMPLE,
-        "success_response": SUCCESS_RESPONSE_EXAMPLE
-    })
+    return jsonify(
+        {
+            "form_create": FORM_CREATE_EXAMPLE,
+            "question_create": QUESTION_CREATE_EXAMPLE,
+            "response_create": RESPONSE_CREATE_EXAMPLE,
+            "form_response": FORM_RESPONSE_EXAMPLE,
+            "stats_response": STATS_RESPONSE_EXAMPLE,
+            "error_response": ERROR_RESPONSE_EXAMPLE,
+            "success_response": SUCCESS_RESPONSE_EXAMPLE,
+        }
+    )
+
 
 @docs_bp.route("/docs/guide")
 def get_guide():
     """Guide d'utilisation de l'API"""
-    return jsonify({
-        "title": "Guide d'utilisation FormForge API",
-        "version": "1.0.0",
-        "base_url": "/api",
-        "authentication": "Aucune authentification requise pour le POC",
-        "content_type": "application/json",
-        "endpoints": {
-            "forms": {
-                "GET /api/forms": "Lister tous les formulaires",
-                "POST /api/forms": "Créer un nouveau formulaire",
-                "GET /api/forms/{id}": "Récupérer un formulaire",
-                "PUT /api/forms/{id}": "Modifier un formulaire",
-                "DELETE /api/forms/{id}": "Supprimer un formulaire",
-                "GET /api/forms/{id}/stats": "Statistiques d'un formulaire"
+    return jsonify(
+        {
+            "title": "Guide d'utilisation FormForge API",
+            "version": "1.0.0",
+            "base_url": "/api",
+            "authentication": "Aucune authentification requise pour le POC",
+            "content_type": "application/json",
+            "endpoints": {
+                "forms": {
+                    "GET /api/forms": "Lister tous les formulaires",
+                    "POST /api/forms": "Créer un nouveau formulaire",
+                    "GET /api/forms/{id}": "Récupérer un formulaire",
+                    "PUT /api/forms/{id}": "Modifier un formulaire",
+                    "DELETE /api/forms/{id}": "Supprimer un formulaire",
+                    "GET /api/forms/{id}/stats": "Statistiques d'un formulaire",
+                },
+                "questions": {
+                    "POST /api/forms/{id}/questions": "Ajouter une question",
+                    "GET /api/forms/{id}/questions": "Lister les questions",
+                    "PUT /api/questions/{id}": "Modifier une question",
+                    "DELETE /api/questions/{id}": "Supprimer une question",
+                },
+                "responses": {
+                    "POST /api/forms/{id}/responses": "Soumettre une réponse",
+                    "GET /api/forms/{id}/responses": "Voir les réponses",
+                    "GET /api/forms/{id}/export/csv": "Exporter en CSV",
+                    "GET /api/forms/{id}/export/excel": "Exporter en Excel",
+                },
             },
-            "questions": {
-                "POST /api/forms/{id}/questions": "Ajouter une question",
-                "GET /api/forms/{id}/questions": "Lister les questions",
-                "PUT /api/questions/{id}": "Modifier une question",
-                "DELETE /api/questions/{id}": "Supprimer une question"
+            "question_types": [
+                "text",
+                "textarea",
+                "multiple",
+                "checkbox",
+                "scale",
+                "date",
+                "time",
+                "file",
+                "email",
+                "number",
+            ],
+            "examples": {
+                "create_form": FORM_CREATE_EXAMPLE,
+                "create_question": QUESTION_CREATE_EXAMPLE,
+                "submit_response": RESPONSE_CREATE_EXAMPLE,
             },
-            "responses": {
-                "POST /api/forms/{id}/responses": "Soumettre une réponse",
-                "GET /api/forms/{id}/responses": "Voir les réponses",
-                "GET /api/forms/{id}/export/csv": "Exporter en CSV",
-                "GET /api/forms/{id}/export/excel": "Exporter en Excel"
-            }
-        },
-        "question_types": [
-            "text", "textarea", "multiple", "checkbox", 
-            "scale", "date", "time", "file", "email", "number"
-        ],
-        "examples": {
-            "create_form": FORM_CREATE_EXAMPLE,
-            "create_question": QUESTION_CREATE_EXAMPLE,
-            "submit_response": RESPONSE_CREATE_EXAMPLE
         }
-    })
+    )
+
 
 # Template HTML pour la documentation
 DOCS_HTML_TEMPLATE = """
@@ -131,7 +146,79 @@ Content-Type: application/json
 </html>
 """
 
+
 @docs_bp.route("/docs")
 def docs_html():
     """Documentation HTML simple"""
     return render_template_string(DOCS_HTML_TEMPLATE)
+
+@docs_bp.route("/swagger.json")
+def swagger_json():
+    """Endpoint Swagger JSON simple"""
+    return jsonify({
+        "swagger": "2.0",
+        "info": {
+            "title": "FormForge API",
+            "version": "1.0.0",
+            "description": "API REST pour FormForge - Clone de Google Forms"
+        },
+        "host": "backend-skum.onrender.com",
+        "basePath": "/api",
+        "schemes": ["https"],
+        "paths": {
+            "/health": {
+                "get": {
+                    "summary": "Health Check",
+                    "description": "Vérifier l'état de l'API",
+                    "responses": {
+                        "200": {
+                            "description": "API is healthy",
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "status": {"type": "string"},
+                                    "message": {"type": "string"},
+                                    "version": {"type": "string"}
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "/forms": {
+                "get": {
+                    "summary": "List Forms",
+                    "description": "Lister tous les formulaires",
+                    "responses": {
+                        "200": {
+                            "description": "Liste des formulaires"
+                        }
+                    }
+                },
+                "post": {
+                    "summary": "Create Form",
+                    "description": "Créer un nouveau formulaire",
+                    "parameters": [
+                        {
+                            "name": "body",
+                            "in": "body",
+                            "required": True,
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {"type": "string"},
+                                    "description": {"type": "string"},
+                                    "settings": {"type": "object"}
+                                }
+                            }
+                        }
+                    ],
+                    "responses": {
+                        "201": {
+                            "description": "Formulaire créé avec succès"
+                        }
+                    }
+                }
+            }
+        }
+    })

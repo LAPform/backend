@@ -29,11 +29,13 @@ def create_app():
     # Initialiser l'API REST avec Swagger
     api = Api(
         app,
-        version='1.0.0',
-        title='FormForge API',
-        description='API REST pour FormForge - Clone de Google Forms',
-        doc='/api/docs/',  # URL de la documentation
-        prefix='/api'
+        version="1.0.0",
+        title="FormForge API",
+        description="API REST pour FormForge - Clone de Google Forms",
+        doc="/api/docs/",  # URL de la documentation
+        prefix="/api",
+        validate=True,
+        catch_all_404s=True
     )
 
     # Initialiser la base de données
@@ -46,18 +48,15 @@ def create_app():
     app.register_blueprint(responses_bp, url_prefix="/api")
     app.register_blueprint(docs_bp, url_prefix="/api")
 
-    # Route de santé avec documentation
-    @api.route('/health')
-    class Health(Resource):
-        @api.marshal_with(HealthSchema)
-        @api.doc('health_check')
-        def get(self):
-            """Vérifier l'état de l'API"""
-            return {
-                "status": "healthy",
-                "message": "FormForge POC Backend is running",
-                "version": "1.0.0",
-            }
+    # Route de santé simple
+    @app.route("/api/health")
+    def health():
+        """Vérifier l'état de l'API"""
+        return jsonify({
+            "status": "healthy",
+            "message": "FormForge POC Backend is running",
+            "version": "1.0.0",
+        })
 
     # Gestion des erreurs
     @app.errorhandler(404)
