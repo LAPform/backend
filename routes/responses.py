@@ -62,16 +62,23 @@ def submit_response(form_id):
 
         # Créer la réponse
         try:
+            logger.info(f"Création réponse pour formulaire: {form_id}")
+            logger.info(f"Réponses reçues: {data['answers']}")
+            
             response_model = Response(current_app.db)
             user_id = data.get("user_id")
             ip_address = request.remote_addr
 
+            logger.info(f"Paramètres: user_id={user_id}, ip_address={ip_address}")
+            
             response_id = response_model.create(
                 form_id=form_id,
                 answers=data["answers"],
                 user_id=user_id,
                 ip_address=ip_address,
             )
+            
+            logger.info(f"Réponse créée avec succès: {response_id}")
         except Exception as e:
             logger.error(f"Error creating response: {e}")
             return jsonify({"error": f"Erreur création réponse: {str(e)}"}), 500

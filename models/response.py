@@ -34,16 +34,19 @@ class Response:
     def get_by_id(self, response_id: str) -> Optional[Dict]:
         """Récupérer une réponse par ID"""
         query = "SELECT * FROM responses WHERE id = ?"
-        result = self.db.execute_query(query, (response_id,), fetch=True)
+        results = self.db.execute_query(query, (response_id,), fetch=True)
 
-        if result:
-            response_data = dict(result)
-            # Désérialiser les answers JSON
-            if response_data.get("answers"):
+        if results and len(results) > 0:
+            response_data = results[0]  # Premier résultat
+            # Désérialiser les answers JSON de manière sécurisée
+            answers_str = response_data.get("answers", "{}")
+            if answers_str and answers_str != "{}":
                 try:
-                    response_data["answers"] = json.loads(response_data["answers"])
-                except (json.JSONDecodeError, TypeError):
+                    response_data["answers"] = json.loads(answers_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     response_data["answers"] = {}
+            else:
+                response_data["answers"] = {}
             return response_data
         return None
 
@@ -61,12 +64,15 @@ class Response:
         responses = []
         for row in results:
             response_data = dict(row)
-            # Désérialiser les answers JSON
-            if response_data.get("answers"):
+            # Désérialiser les answers JSON de manière sécurisée
+            answers_str = response_data.get("answers", "{}")
+            if answers_str and answers_str != "{}":
                 try:
-                    response_data["answers"] = json.loads(response_data["answers"])
-                except (json.JSONDecodeError, TypeError):
+                    response_data["answers"] = json.loads(answers_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
                     response_data["answers"] = {}
+            else:
+                response_data["answers"] = {}
             responses.append(response_data)
         return responses
 
@@ -115,7 +121,7 @@ class Response:
                 "total_responses": self.get_count_by_form_id(form_id),
                 "daily_stats": [],
                 "hourly_stats": [],
-                "error": str(e)
+                "error": str(e),
             }
 
     def get_question_analytics(self, form_id: str, question_id: str) -> Dict:
