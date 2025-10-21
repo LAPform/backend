@@ -205,19 +205,23 @@ def export_responses_csv(form_id):
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         response_model = Response(current_app.db)
-        csv_data = response_model.export_to_csv_data(form_id)
+        data_to_export = response_model.prepare_for_export(form_id)
 
-        if not csv_data:
+        if not data_to_export:
             return jsonify({"error": "Aucune réponse à exporter"}), 404
 
         # Générer le CSV
-        exporter = CSVExporter()
-        csv_content = exporter.generate_csv(csv_data)
+        from utils.exporters import ExportManager
+        export_result = ExportManager.export_responses(data_to_export, "csv")
 
+        if not export_result["success"]:
+            return jsonify({"error": export_result["error"]}), 500
+
+        # Retourner le contenu CSV
         return jsonify(
             {
                 "success": True,
-                "csv_content": csv_content,
+                "csv_content": export_result["content"].decode('utf-8'),
                 "filename": f"form_{form_id}_responses.csv",
             }
         )
@@ -238,23 +242,64 @@ def export_responses_excel(form_id):
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         response_model = Response(current_app.db)
-        csv_data = response_model.export_to_csv_data(form_id)
+        data_to_export = response_model.prepare_for_export(form_id)
 
-        if not csv_data:
+        if not data_to_export:
             return jsonify({"error": "Aucune réponse à exporter"}), 404
 
         # Générer l'Excel
-        exporter = CSVExporter()
-        excel_content = exporter.generate_excel(csv_data)
+        from utils.exporters import ExportManager
+        export_result = ExportManager.export_responses(data_to_export, "excel")
 
+        if not export_result["success"]:
+            return jsonify({"error": export_result["error"]}), 500
+
+        # Retourner le contenu Excel
         return jsonify(
             {
                 "success": True,
-                "excel_content": excel_content,
+                "excel_content": export_result["content"].decode('utf-8'),
                 "filename": f"form_{form_id}_responses.xlsx",
             }
         )
 
     except Exception as e:
         logger.error(f"Erreur export Excel: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@responses_bp.route("/forms/<form_id>/export/json", methods=["GET"])
+def export_responses_json(form_id):
+    """Exporter les réponses en JSON"""
+    try:
+        # Vérifier que le formulaire existe
+        form_model = Form(current_app.db)
+        form = form_model.get_by_id(form_id)
+        if not form:
+            return jsonify({"error": "Formulaire non trouvé"}), 404
+
+        response_model = Response(current_app.db)
+        data_to_export = response_model.prepare_for_export(form_id)
+
+        if not data_to_export:
+            return jsonify({"error": "Aucune réponse à exporter"}), 404
+
+        # Générer le JSON
+        from utils.exporters import ExportManager
+        export_result = ExportManager.export_responses(data_to_export, "json")
+
+        if not export_result["success"]:
+            return jsonify({"error": export_result["error"]}), 500
+
+        # Retourner le contenu JSON
+        return jsonify(
+            {
+                "success": True,
+                "json_content": export_result["content"],
+                "filename": f"form_{form_id}_responses.json",
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur export JSON: {e}")
         return jsonify({"error": str(e)}), 500
