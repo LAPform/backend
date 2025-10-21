@@ -130,17 +130,17 @@ class ExportManager:
                 result["mime_type"] = "text/csv"
                 result["extension"] = ".csv"
 
-                elif format.lower() == "excel":
-                    content = ExcelExporter.generate_excel(data)
-                    result["content"] = content
-                    result["mime_type"] = "text/csv"  # CSV au lieu d'Excel
-                    result["extension"] = ".csv"  # CSV au lieu d'Excel
+            elif format.lower() == "excel":
+                content = ExcelExporter.generate_excel(data)
+                result["content"] = content
+                result["mime_type"] = "text/csv"  # CSV au lieu d'Excel
+                result["extension"] = ".csv"  # CSV au lieu d'Excel
 
-                elif format.lower() == "json":
-                    content = JSONExporter.generate_json(data)
-                    result["content"] = content
-                    result["mime_type"] = "application/json"
-                    result["extension"] = ".json"
+            elif format.lower() == "json":
+                content = JSONExporter.generate_json(data)
+                result["content"] = content
+                result["mime_type"] = "application/json"
+                result["extension"] = ".json"
 
             else:
                 raise ValueError(f"Format non supporté: {format}")
