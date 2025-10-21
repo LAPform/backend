@@ -1,0 +1,29 @@
+# FormForge POC - Dépendances Python
+# Backend Flask pour Google Forms Clone
+
+# Framework web
+Flask==3.0.0
+flask-cors==4.0.0
+
+# Base de données
+psycopg2-binary==2.9.7
+
+# Serveur de production
+gunicorn==21.2.0
+
+# Configuration
+python-dotenv==1.0.0
+
+# Export de données
+pandas==2.0.3
+openpyxl==3.1.2
+
+# Validation et utilitaires
+email-validator==2.0.0
+
+# Logging
+structlog==23.1.0
+
+# Tests (développement)
+pytest==7.4.0
+pytest-flask==1.2.0
