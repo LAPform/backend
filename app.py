@@ -6,7 +6,7 @@ POC - Google Forms Clone Backend
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_restx import Api, Resource, fields
+# from flask_restx import Api, Resource, fields  # Supprimé pour simplifier
 from models.database import DatabaseManager
 from routes.forms import forms_bp
 from routes.questions import questions_bp
@@ -26,17 +26,7 @@ def create_app():
     # CORS pour les requêtes frontend
     CORS(app)
 
-    # Initialiser l'API REST avec Swagger
-    api = Api(
-        app,
-        version="1.0.0",
-        title="FormForge API",
-        description="API REST pour FormForge - Clone de Google Forms",
-        doc="/api/docs/",  # URL de la documentation
-        prefix="/api",
-        validate=True,
-        catch_all_404s=True
-    )
+    # Configuration API simple (sans Flask-RESTX pour éviter les conflits)
 
     # Initialiser la base de données
     app.db = DatabaseManager()
@@ -52,11 +42,13 @@ def create_app():
     @app.route("/api/health")
     def health():
         """Vérifier l'état de l'API"""
-        return jsonify({
-            "status": "healthy",
-            "message": "FormForge POC Backend is running",
-            "version": "1.0.0",
-        })
+        return jsonify(
+            {
+                "status": "healthy",
+                "message": "FormForge POC Backend is running",
+                "version": "1.0.0",
+            }
+        )
 
     # Gestion des erreurs
     @app.errorhandler(404)

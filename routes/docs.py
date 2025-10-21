@@ -152,73 +152,70 @@ def docs_html():
     """Documentation HTML simple"""
     return render_template_string(DOCS_HTML_TEMPLATE)
 
+
 @docs_bp.route("/swagger.json")
 def swagger_json():
     """Endpoint Swagger JSON simple"""
-    return jsonify({
-        "swagger": "2.0",
-        "info": {
-            "title": "FormForge API",
-            "version": "1.0.0",
-            "description": "API REST pour FormForge - Clone de Google Forms"
-        },
-        "host": "backend-skum.onrender.com",
-        "basePath": "/api",
-        "schemes": ["https"],
-        "paths": {
-            "/health": {
-                "get": {
-                    "summary": "Health Check",
-                    "description": "Vérifier l'état de l'API",
-                    "responses": {
-                        "200": {
-                            "description": "API is healthy",
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "status": {"type": "string"},
-                                    "message": {"type": "string"},
-                                    "version": {"type": "string"}
-                                }
-                            }
-                        }
-                    }
-                }
+    return jsonify(
+        {
+            "swagger": "2.0",
+            "info": {
+                "title": "FormForge API",
+                "version": "1.0.0",
+                "description": "API REST pour FormForge - Clone de Google Forms",
             },
-            "/forms": {
-                "get": {
-                    "summary": "List Forms",
-                    "description": "Lister tous les formulaires",
-                    "responses": {
-                        "200": {
-                            "description": "Liste des formulaires"
-                        }
+            "host": "backend-skum.onrender.com",
+            "basePath": "/api",
+            "schemes": ["https"],
+            "paths": {
+                "/health": {
+                    "get": {
+                        "summary": "Health Check",
+                        "description": "Vérifier l'état de l'API",
+                        "responses": {
+                            "200": {
+                                "description": "API is healthy",
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "status": {"type": "string"},
+                                        "message": {"type": "string"},
+                                        "version": {"type": "string"},
+                                    },
+                                },
+                            }
+                        },
                     }
                 },
-                "post": {
-                    "summary": "Create Form",
-                    "description": "Créer un nouveau formulaire",
-                    "parameters": [
-                        {
-                            "name": "body",
-                            "in": "body",
-                            "required": True,
-                            "schema": {
-                                "type": "object",
-                                "properties": {
-                                    "title": {"type": "string"},
-                                    "description": {"type": "string"},
-                                    "settings": {"type": "object"}
-                                }
+                "/forms": {
+                    "get": {
+                        "summary": "List Forms",
+                        "description": "Lister tous les formulaires",
+                        "responses": {"200": {"description": "Liste des formulaires"}},
+                    },
+                    "post": {
+                        "summary": "Create Form",
+                        "description": "Créer un nouveau formulaire",
+                        "parameters": [
+                            {
+                                "name": "body",
+                                "in": "body",
+                                "required": True,
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "title": {"type": "string"},
+                                        "description": {"type": "string"},
+                                        "settings": {"type": "object"},
+                                    },
+                                },
                             }
-                        }
-                    ],
-                    "responses": {
-                        "201": {
-                            "description": "Formulaire créé avec succès"
-                        }
-                    }
-                }
-            }
+                        ],
+                        "responses": {
+                            "201": {"description": "Formulaire créé avec succès"}
+                        },
+                    },
+                },
+            },
         }
-    })
+    )

@@ -21,7 +21,7 @@ class Form:
 
         query = """
             INSERT INTO forms (id, title, description, settings)
-            VALUES (%s, %s, %s, %s)
+            VALUES (?, ?, ?, ?)
         """
 
         import json
@@ -33,7 +33,7 @@ class Form:
 
     def get_by_id(self, form_id: str) -> Optional[Dict]:
         """Récupérer un formulaire par ID"""
-        query = "SELECT * FROM forms WHERE id = %s"
+        query = "SELECT * FROM forms WHERE id = ?"
         result = self.db.execute_query(query, (form_id,), fetch=True)
 
         if result:
@@ -45,7 +45,7 @@ class Form:
         query = """
             SELECT * FROM forms 
             ORDER BY created_at DESC 
-            LIMIT %s OFFSET %s
+            LIMIT ? OFFSET ?
         """
         results = self.db.execute_query(query, (limit, offset), fetch=True)
         return [dict(row) for row in results]
@@ -62,15 +62,15 @@ class Form:
         params = []
 
         if title is not None:
-            updates.append("title = %s")
+            updates.append("title = ?")
             params.append(title)
 
         if description is not None:
-            updates.append("description = %s")
+            updates.append("description = ?")
             params.append(description)
 
         if settings is not None:
-            updates.append("settings = %s")
+            updates.append("settings = ?")
             params.append(settings)
 
         if not updates:
@@ -82,7 +82,7 @@ class Form:
         query = f"""
             UPDATE forms 
             SET {', '.join(updates)}
-            WHERE id = %s
+            WHERE id = ?
         """
 
         rows_affected = self.db.execute_query(query, tuple(params))
@@ -90,7 +90,7 @@ class Form:
 
     def delete(self, form_id: str) -> bool:
         """Supprimer un formulaire"""
-        query = "DELETE FROM forms WHERE id = %s"
+        query = "DELETE FROM forms WHERE id = ?"
         rows_affected = self.db.execute_query(query, (form_id,))
         return rows_affected > 0
 
@@ -104,7 +104,7 @@ class Form:
         # Récupérer les questions
         questions_query = """
             SELECT * FROM questions 
-            WHERE form_id = %s 
+            WHERE form_id = ? 
             ORDER BY order_index
         """
         questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
@@ -115,11 +115,11 @@ class Form:
     def get_stats(self, form_id: str) -> Dict:
         """Récupérer les statistiques d'un formulaire"""
         # Compter les réponses
-        responses_query = "SELECT COUNT(*) as total FROM responses WHERE form_id = %s"
+        responses_query = "SELECT COUNT(*) as total FROM responses WHERE form_id = ?"
         total_responses = self.db.execute_query(responses_query, (form_id,), fetch=True)
 
         # Compter les questions
-        questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = %s"
+        questions_query = "SELECT COUNT(*) as total FROM questions WHERE form_id = ?"
         total_questions = self.db.execute_query(questions_query, (form_id,), fetch=True)
 
         return {

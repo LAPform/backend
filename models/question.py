@@ -47,7 +47,7 @@ class Question:
 
         query = """
             INSERT INTO questions (id, form_id, type, text, options, required, validation, order_index)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
         self.db.execute_query(
@@ -67,7 +67,7 @@ class Question:
 
     def get_by_id(self, question_id: str) -> Optional[Dict]:
         """Récupérer une question par ID"""
-        query = "SELECT * FROM questions WHERE id = %s"
+        query = "SELECT * FROM questions WHERE id = ?"
         result = self.db.execute_query(query, (question_id,), fetch=True)
 
         if result:
@@ -78,7 +78,7 @@ class Question:
         """Récupérer toutes les questions d'un formulaire"""
         query = """
             SELECT * FROM questions 
-            WHERE form_id = %s 
+            WHERE form_id = ? 
             ORDER BY order_index
         """
         results = self.db.execute_query(query, (form_id,), fetch=True)
@@ -100,23 +100,23 @@ class Question:
         if type is not None:
             if type not in self.QUESTION_TYPES:
                 raise ValueError(f"Type de question invalide: {type}")
-            updates.append("type = %s")
+            updates.append("type = ?")
             params.append(type)
 
         if text is not None:
-            updates.append("text = %s")
+            updates.append("text = ?")
             params.append(text)
 
         if options is not None:
-            updates.append("options = %s")
+            updates.append("options = ?")
             params.append(options)
 
         if required is not None:
-            updates.append("required = %s")
+            updates.append("required = ?")
             params.append(required)
 
         if validation is not None:
-            updates.append("validation = %s")
+            updates.append("validation = ?")
             params.append(validation)
 
         if not updates:
@@ -127,7 +127,7 @@ class Question:
         query = f"""
             UPDATE questions 
             SET {', '.join(updates)}
-            WHERE id = %s
+            WHERE id = ?
         """
 
         rows_affected = self.db.execute_query(query, tuple(params))
@@ -135,7 +135,7 @@ class Question:
 
     def delete(self, question_id: str) -> bool:
         """Supprimer une question"""
-        query = "DELETE FROM questions WHERE id = %s"
+        query = "DELETE FROM questions WHERE id = ?"
         rows_affected = self.db.execute_query(query, (question_id,))
         return rows_affected > 0
 
@@ -149,8 +149,8 @@ class Question:
 
             query = """
                 UPDATE questions 
-                SET order_index = %s 
-                WHERE id = %s AND form_id = %s
+                SET order_index = ? 
+                WHERE id = ? AND form_id = ?
             """
             queries.append((query, (order_index, question_id, form_id)))
 

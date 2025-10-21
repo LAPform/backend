@@ -22,7 +22,7 @@ class Response:
 
         query = """
             INSERT INTO responses (id, form_id, answers, user_id, ip_address)
-            VALUES (%s, %s, %s, %s, %s)
+            VALUES (?, ?, ?, ?, ?)
         """
 
         self.db.execute_query(
@@ -32,7 +32,7 @@ class Response:
 
     def get_by_id(self, response_id: str) -> Optional[Dict]:
         """Récupérer une réponse par ID"""
-        query = "SELECT * FROM responses WHERE id = %s"
+        query = "SELECT * FROM responses WHERE id = ?"
         result = self.db.execute_query(query, (response_id,), fetch=True)
 
         if result:
@@ -45,16 +45,16 @@ class Response:
         """Récupérer toutes les réponses d'un formulaire"""
         query = """
             SELECT * FROM responses 
-            WHERE form_id = %s 
+            WHERE form_id = ? 
             ORDER BY submitted_at DESC 
-            LIMIT %s OFFSET %s
+            LIMIT ? OFFSET ?
         """
         results = self.db.execute_query(query, (form_id, limit, offset), fetch=True)
         return [dict(row) for row in results]
 
     def get_count_by_form_id(self, form_id: str) -> int:
         """Compter le nombre de réponses d'un formulaire"""
-        query = "SELECT COUNT(*) as total FROM responses WHERE form_id = %s"
+        query = "SELECT COUNT(*) as total FROM responses WHERE form_id = ?"
         result = self.db.execute_query(query, (form_id,), fetch=True)
         return result["total"] if result else 0
 
@@ -67,7 +67,7 @@ class Response:
         daily_query = """
             SELECT DATE(submitted_at) as date, COUNT(*) as count
             FROM responses 
-            WHERE form_id = %s 
+            WHERE form_id = ? 
             AND submitted_at >= CURRENT_DATE - INTERVAL '30 days'
             GROUP BY DATE(submitted_at)
             ORDER BY date
@@ -78,7 +78,7 @@ class Response:
         hourly_query = """
             SELECT EXTRACT(HOUR FROM submitted_at) as hour, COUNT(*) as count
             FROM responses 
-            WHERE form_id = %s 
+            WHERE form_id = ? 
             AND submitted_at >= CURRENT_DATE - INTERVAL '7 days'
             GROUP BY EXTRACT(HOUR FROM submitted_at)
             ORDER BY hour
@@ -95,10 +95,10 @@ class Response:
         """Analytics pour une question spécifique"""
         # Récupérer toutes les réponses pour cette question
         query = """
-            SELECT answers->%s as answer
+            SELECT json_extract(answers, '$.' || ?) as answer
             FROM responses 
-            WHERE form_id = %s 
-            AND answers ? %s
+            WHERE form_id = ? 
+            AND json_extract(answers, '$.' || ?) IS NOT NULL
         """
         results = self.db.execute_query(
             query, (question_id, form_id, question_id), fetch=True
