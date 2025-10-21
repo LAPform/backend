@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models.form import Form
 from models.question import Question
 from models.response import Response
+from utils.auth import require_auth
 import logging
 
 logger = logging.getLogger(__name__)
@@ -181,6 +182,7 @@ def list_forms():
 
 
 @forms_bp.route("/forms/<form_id>/stats", methods=["GET"])
+@require_auth
 def get_form_stats(form_id):
     """Récupérer les statistiques d'un formulaire"""
     try:

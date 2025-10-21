@@ -7,6 +7,7 @@ from models.response import Response
 from models.form import Form
 from models.question import Question
 from utils.exporters import CSVExporter
+from utils.auth import require_auth
 import logging
 
 logger = logging.getLogger(__name__)
@@ -153,6 +154,7 @@ def get_response(response_id):
 
 
 @responses_bp.route("/forms/<form_id>/analytics", methods=["GET"])
+@require_auth
 def get_form_analytics(form_id):
     """Récupérer les analytics d'un formulaire"""
     try:
@@ -195,6 +197,7 @@ def get_question_analytics(form_id, question_id):
 
 
 @responses_bp.route("/forms/<form_id>/export/csv", methods=["GET"])
+@require_auth
 def export_responses_csv(form_id):
     """Exporter les réponses en CSV"""
     try:
@@ -241,6 +244,7 @@ def export_responses_csv(form_id):
 
 
 @responses_bp.route("/forms/<form_id>/export/excel", methods=["GET"])
+@require_auth
 def export_responses_excel(form_id):
     """Exporter les réponses en Excel"""
     try:
@@ -287,6 +291,7 @@ def export_responses_excel(form_id):
 
 
 @responses_bp.route("/forms/<form_id>/export/json", methods=["GET"])
+@require_auth
 def export_responses_json(form_id):
     """Exporter les réponses en JSON"""
     try:

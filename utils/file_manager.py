@@ -7,7 +7,7 @@ import uuid
 import hashlib
 from datetime import datetime
 from typing import Dict, Optional
-from werkzeug.utils import secure_filename
+import re
 from flask import current_app
 
 
@@ -61,8 +61,8 @@ class FileManager:
     @staticmethod
     def generate_filename(original_filename: str) -> str:
         """Générer un nom de fichier unique"""
-        # Sécuriser le nom original
-        safe_name = secure_filename(original_filename)
+        # Sécuriser le nom original (alternative à werkzeug)
+        safe_name = re.sub(r'[^\w\-_\.]', '_', original_filename)
         name, ext = os.path.splitext(safe_name)
 
         # Générer un nom unique

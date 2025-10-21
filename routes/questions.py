@@ -5,6 +5,7 @@ Routes API pour la gestion des questions
 from flask import Blueprint, request, jsonify, current_app
 from models.question import Question
 from models.form import Form
+from utils.auth import require_auth
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ questions_bp = Blueprint("questions", __name__)
 
 
 @questions_bp.route("/forms/<form_id>/questions", methods=["POST"])
+@require_auth
 def create_question(form_id):
     """Créer une nouvelle question"""
     try:
@@ -155,6 +157,7 @@ def delete_question(question_id):
 
 
 @questions_bp.route("/forms/<form_id>/questions", methods=["GET"])
+@require_auth
 def list_questions(form_id):
     """Lister toutes les questions d'un formulaire"""
     try:
