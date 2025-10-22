@@ -204,11 +204,7 @@ class Response:
         for response in responses:
             row = {
                 "response_id": response["id"],
-                "submitted_at": (
-                    response["submitted_at"].isoformat()
-                    if response["submitted_at"]
-                    else ""
-                ),
+                "submitted_at": response.get("submitted_at", ""),
                 "user_id": response.get("user_id", ""),
                 "ip_address": response.get("ip_address", ""),
             }

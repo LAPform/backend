@@ -54,39 +54,53 @@ POC/
 - **forms** : Métadonnées des formulaires
 - **questions** : Questions avec types et validation
 - **responses** : Réponses des utilisateurs
+- **users** : Utilisateurs du système
 
-### Schéma
+### Schéma SQLite
 ```sql
 -- Formulaires
 CREATE TABLE forms (
-    id UUID PRIMARY KEY,
+    id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    settings JSONB,
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP
+    settings TEXT DEFAULT '{}',
+    created_by TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Questions
 CREATE TABLE questions (
-    id UUID PRIMARY KEY,
-    form_id UUID REFERENCES forms(id),
+    id TEXT PRIMARY KEY,
+    form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
     type TEXT NOT NULL,
     text TEXT NOT NULL,
-    options JSONB,
-    required BOOLEAN,
-    validation JSONB,
-    order_index INTEGER
+    options TEXT DEFAULT '[]',
+    required BOOLEAN DEFAULT FALSE,
+    validation TEXT DEFAULT '{}',
+    order_index INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Réponses
 CREATE TABLE responses (
-    id UUID PRIMARY KEY,
-    form_id UUID REFERENCES forms(id),
-    answers JSONB NOT NULL,
-    submitted_at TIMESTAMP,
+    id TEXT PRIMARY KEY,
+    form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
+    answers TEXT NOT NULL,
+    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     user_id TEXT,
-    ip_address INET
+    ip_address TEXT
+);
+
+-- Utilisateurs
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    name TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP
 );
 ```
 
@@ -112,7 +126,8 @@ python app.py
 ```bash
 # Le fichier render.yaml est configuré pour un déploiement automatique
 # Connecter votre repository GitHub à Render
-# La base de données PostgreSQL sera créée automatiquement
+# La base de données SQLite sera créée automatiquement
+# Compatible avec le plan gratuit de Render
 ```
 
 ## 📡 API Endpoints
@@ -162,8 +177,8 @@ MAX_CONTENT_LENGTH=16777216
 ```
 
 ### Base de Données
-- **Développement** : PostgreSQL local
-- **Production** : PostgreSQL Render
+- **Développement** : SQLite local
+- **Production** : SQLite (compatible Render gratuit)
 - **Migration** : Automatique au démarrage
 
 ## 📊 Exemples d'Utilisation

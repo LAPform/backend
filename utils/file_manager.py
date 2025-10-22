@@ -62,7 +62,7 @@ class FileManager:
     def generate_filename(original_filename: str) -> str:
         """Générer un nom de fichier unique"""
         # Sécuriser le nom original (alternative à werkzeug)
-        safe_name = re.sub(r'[^\w\-_\.]', '_', original_filename)
+        safe_name = re.sub(r"[^\w\-_\.]", "_", original_filename)
         name, ext = os.path.splitext(safe_name)
 
         # Générer un nom unique

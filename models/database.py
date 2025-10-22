@@ -14,7 +14,16 @@ class DatabaseManager:
     """Gestionnaire de base de données SQLite"""
 
     def __init__(self):
+        # Configuration SQLite uniquement
         self.database_url = os.environ.get("DATABASE_URL", "sqlite:///formforge_poc.db")
+        # S'assurer que c'est bien SQLite
+        if not self.database_url.startswith("sqlite:///"):
+            logger.warning(
+                f"URL de base de données non-SQLite détectée: {self.database_url}"
+            )
+            logger.warning("Forçage vers SQLite pour la compatibilité Render gratuit")
+            self.database_url = "sqlite:///formforge_poc.db"
+
         self.db_path = self.database_url.replace("sqlite:///", "")
 
     def get_connection(self):

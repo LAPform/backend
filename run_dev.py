@@ -18,6 +18,8 @@ def main():
     if not os.environ.get("DATABASE_URL"):
         os.environ["DATABASE_URL"] = "sqlite:///formforge_dev.db"
 
+    print("🗄️ Base de données: SQLite (compatible Render gratuit)")
+
     # Créer l'application
     app = create_app()
 

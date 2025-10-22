@@ -6,8 +6,8 @@ Flask==3.0.0
 flask-cors==4.0.0
 flask-restx==1.3.0
 
-# Base de données
-# psycopg2-binary==2.9.7  # PostgreSQL (non utilisé avec SQLite)
+# Base de données SQLite (inclus dans Python standard)
+# Pas de dépendances externes nécessaires
 
 # Serveur de production
 gunicorn==21.2.0
@@ -18,9 +18,8 @@ python-dotenv==1.0.0
 # Authentification
 PyJWT==2.8.0
 
-# Export de données (simplifié pour Render)
-# pandas==2.0.3  # Problème de compilation sur Python 3.13
-# openpyxl==3.1.2  # Dépend de pandas
+# Export de données (version simplifiée pour Render gratuit)
+# Utilise les modules Python standard uniquement
 
 # Validation et utilitaires
 email-validator==2.0.0
