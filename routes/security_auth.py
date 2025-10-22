@@ -17,15 +17,13 @@ security_auth_bp = Blueprint("security_auth", __name__)
 @security_auth_bp.route("/auth/register", methods=["POST"])
 @rate_limit("auth_register")
 def register():
-    """Créer un nouveau compte utilisateur avec Flask-Security"""
+    """Créer un nouveau compte utilisateur avec Flask-Security - Version simplifiée"""
     try:
         data = request.get_json()
 
         # Validation des champs requis
         if not data or "email" not in data or "password" not in data:
-            return SecurityAuthManager.create_error_response(
-                "Email et mot de passe requis", 400
-            )
+            return jsonify({"error": "Email et mot de passe requis"}), 400
 
         email = data["email"].lower().strip()
         password = data["password"]
@@ -33,20 +31,16 @@ def register():
 
         # Validation de l'email
         if not SecurityAuthManager.validate_email(email):
-            return SecurityAuthManager.create_error_response(
-                "Format d'email invalide", 400
-            )
+            return jsonify({"error": "Format d'email invalide"}), 400
 
         # Validation du mot de passe
         is_valid, message = SecurityAuthManager.validate_password_strength(password)
         if not is_valid:
-            return SecurityAuthManager.create_error_response(message, 400)
+            return jsonify({"error": message}), 400
 
         # Validation du nom
         if name and len(name) > 100:
-            return SecurityAuthManager.create_error_response(
-                "Le nom ne peut pas dépasser 100 caractères", 400
-            )
+            return jsonify({"error": "Le nom ne peut pas dépasser 100 caractères"}), 400
 
         # Vérifier si l'utilisateur existe déjà
         from models.security_models import SecurityUserDatastore
@@ -55,9 +49,7 @@ def register():
         existing_user = datastore.find_user(email=email)
 
         if existing_user:
-            return SecurityAuthManager.create_error_response(
-                "Un compte avec cet email existe déjà", 409
-            )
+            return jsonify({"error": "Un compte avec cet email existe déjà"}), 409
 
         # Créer le nouvel utilisateur
         try:
@@ -82,21 +74,15 @@ def register():
                     201,
                 )
             else:
-                return SecurityAuthManager.create_error_response(
-                    "Erreur lors de la connexion", 500
-                )
+                return jsonify({"error": "Erreur lors de la connexion"}), 500
 
         except Exception as e:
             logger.error(f"Erreur création utilisateur: {e}")
-            return SecurityAuthManager.create_error_response(
-                "Erreur lors de la création du compte", 500
-            )
+            return jsonify({"error": f"Erreur lors de la création du compte: {str(e)}"}), 500
 
     except Exception as e:
         logger.error(f"Erreur inscription: {e}")
-        return SecurityAuthManager.create_error_response(
-            "Erreur interne du serveur", 500
-        )
+        return jsonify({"error": f"Erreur interne du serveur: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/login", methods=["POST"])
