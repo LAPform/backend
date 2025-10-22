@@ -44,6 +44,15 @@ def create_app():
 
     # Configuration API simple (sans Flask-RESTX pour éviter les conflits)
 
+    # Enregistrer les blueprints AVANT l'initialisation de la base de données
+    app.register_blueprint(forms_bp, url_prefix="/api")
+    app.register_blueprint(questions_bp, url_prefix="/api")
+    app.register_blueprint(responses_bp, url_prefix="/api")
+    app.register_blueprint(docs_bp, url_prefix="/api")
+    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(files_bp, url_prefix="/api")
+    app.register_blueprint(monitoring_bp, url_prefix="/api")
+
     # Initialiser la base de données
     try:
         app.db = DatabaseManager()
@@ -59,15 +68,6 @@ def create_app():
 
         structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
-
-    # Enregistrer les blueprints
-        app.register_blueprint(forms_bp, url_prefix="/api")
-        app.register_blueprint(questions_bp, url_prefix="/api")
-        app.register_blueprint(responses_bp, url_prefix="/api")
-        app.register_blueprint(docs_bp, url_prefix="/api")
-        app.register_blueprint(auth_bp, url_prefix="/api")
-        app.register_blueprint(files_bp, url_prefix="/api")
-        app.register_blueprint(monitoring_bp, url_prefix="/api")
 
     # Route de santé simple
     @app.route("/api/health")
