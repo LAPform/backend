@@ -1,12 +1,13 @@
 """
-Application principale FormForge Flask
-POC - Google Forms Clone Backend
+Application principale FormForge Flask avec Flask-Security-Too
 """
 
 import os
 import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_security import Security, SQLAlchemyUserDatastore
+from flask_security.utils import hash_password
 
 # Configuration du logging structuré
 from utils.logging_middleware import (
@@ -15,15 +16,13 @@ from utils.logging_middleware import (
     log_application_startup,
 )
 
-# Middleware de métriques
-from utils.metrics_middleware import MetricsMiddleware
-
 from models.database import DatabaseManager
+from models.security_models import User, Role, SecurityUserDatastore
 from routes.forms import forms_bp
 from routes.questions import questions_bp
 from routes.responses import responses_bp
 from routes.docs import docs_bp
-from routes.security_auth import security_auth_bp
+from routes.security_auth import security_auth_bp  # Nouveau blueprint
 from routes.files import files_bp
 from routes.monitoring import monitoring_bp
 from config import Config
@@ -31,55 +30,18 @@ from config_security import SecurityConfig
 
 
 def create_app():
-    """Factory pour créer l'application Flask"""
+    """Factory pour créer l'application Flask avec Flask-Security-Too"""
     app = Flask(__name__)
 
-    # Configuration
+    # Configuration de base
     app.config.from_object(Config)
     app.config.from_object(SecurityConfig)
 
     # Configuration du logging structuré
     setup_logging_config(app)
 
-    # Middleware de logging (désactivé temporairement pour éviter les erreurs de contexte)
-    # LoggingMiddleware(app)
-
     # CORS pour les requêtes frontend
     CORS(app)
-    
-    # Middleware de métriques
-    MetricsMiddleware(app)
-
-    # Configuration Flask-Security-Too
-    try:
-        from flask_security import Security
-        from models.security_models import SecurityUserDatastore
-        
-        # Créer le datastore personnalisé
-        user_datastore = SecurityUserDatastore(DatabaseManager())
-        
-        # Initialiser Flask-Security
-        security = Security(app, user_datastore)
-        
-        from utils.structured_logger import structured_logger
-        structured_logger.info("Flask-Security-Too initialisé avec succès")
-        
-    except Exception as e:
-        from utils.structured_logger import structured_logger
-        structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
-        # Continuer sans Flask-Security pour le moment
-        pass
-
-    # Configuration API simple (sans Flask-RESTX pour éviter les conflits)
-
-    # Enregistrer les blueprints AVANT l'initialisation de la base de données
-    app.register_blueprint(forms_bp, url_prefix="/api")
-    app.register_blueprint(questions_bp, url_prefix="/api")
-    app.register_blueprint(responses_bp, url_prefix="/api")
-    app.register_blueprint(docs_bp, url_prefix="/api")
-    app.register_blueprint(security_auth_bp, url_prefix="/api")
-    app.register_blueprint(files_bp, url_prefix="/api")
-    app.register_blueprint(monitoring_bp, url_prefix="/api")
 
     # Initialiser la base de données
     try:
@@ -97,6 +59,34 @@ def create_app():
         structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
 
+    # Configuration Flask-Security-Too
+    try:
+        # Créer le datastore personnalisé
+        user_datastore = SecurityUserDatastore(app.db)
+
+        # Initialiser Flask-Security
+        security = Security(app, user_datastore)
+
+        # Configuration des templates (désactivé pour API)
+        app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
+            "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
+        )
+
+        structured_logger.info("Flask-Security-Too initialisé avec succès")
+
+    except Exception as e:
+        structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
+        raise
+
+    # Enregistrer les blueprints
+    app.register_blueprint(forms_bp, url_prefix="/api")
+    app.register_blueprint(questions_bp, url_prefix="/api")
+    app.register_blueprint(responses_bp, url_prefix="/api")
+    app.register_blueprint(docs_bp, url_prefix="/api")
+    app.register_blueprint(security_auth_bp, url_prefix="/api")  # Nouveau blueprint
+    app.register_blueprint(files_bp, url_prefix="/api")
+    app.register_blueprint(monitoring_bp, url_prefix="/api")
+
     # Route de santé simple
     @app.route("/api/health")
     def health():
@@ -104,8 +94,9 @@ def create_app():
         return jsonify(
             {
                 "status": "healthy",
-                "message": "FormForge POC Backend is running",
-                "version": "1.0.0",
+                "message": "FormForge POC Backend with Flask-Security-Too is running",
+                "version": "2.0.0",
+                "security": "Flask-Security-Too",
             }
         )
 
