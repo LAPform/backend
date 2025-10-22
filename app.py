@@ -20,10 +20,11 @@ from routes.forms import forms_bp
 from routes.questions import questions_bp
 from routes.responses import responses_bp
 from routes.docs import docs_bp
-from routes.auth import auth_bp
+from routes.security_auth import security_auth_bp
 from routes.files import files_bp
 from routes.monitoring import monitoring_bp
 from config import Config
+from config_security import SecurityConfig
 
 
 def create_app():
@@ -32,6 +33,7 @@ def create_app():
 
     # Configuration
     app.config.from_object(Config)
+    app.config.from_object(SecurityConfig)
 
     # Configuration du logging structuré
     setup_logging_config(app)
@@ -42,6 +44,26 @@ def create_app():
     # CORS pour les requêtes frontend
     CORS(app)
 
+    # Configuration Flask-Security-Too
+    try:
+        from flask_security import Security
+        from models.security_models import SecurityUserDatastore
+        
+        # Créer le datastore personnalisé
+        user_datastore = SecurityUserDatastore(DatabaseManager())
+        
+        # Initialiser Flask-Security
+        security = Security(app, user_datastore)
+        
+        from utils.structured_logger import structured_logger
+        structured_logger.info("Flask-Security-Too initialisé avec succès")
+        
+    except Exception as e:
+        from utils.structured_logger import structured_logger
+        structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
+        # Continuer sans Flask-Security pour le moment
+        pass
+
     # Configuration API simple (sans Flask-RESTX pour éviter les conflits)
 
     # Enregistrer les blueprints AVANT l'initialisation de la base de données
@@ -49,7 +71,7 @@ def create_app():
     app.register_blueprint(questions_bp, url_prefix="/api")
     app.register_blueprint(responses_bp, url_prefix="/api")
     app.register_blueprint(docs_bp, url_prefix="/api")
-    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(security_auth_bp, url_prefix="/api")
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(monitoring_bp, url_prefix="/api")
 
