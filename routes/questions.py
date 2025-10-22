@@ -26,7 +26,7 @@ def create_question(form_id):
         logger.info(f"Creating question for form {form_id} with data: {data}")
 
         # Validation des données requises
-        validation_error = validate_request_data(["type", "text"], data)
+        validation_error, status_code = validate_request_data(["type", "text"], data)
         if validation_error:
             return validation_error
 

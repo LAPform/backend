@@ -51,7 +51,7 @@ def register():
         data = request.get_json()
 
         # Validation des champs requis
-        validation_error = validate_request_data(["email", "password"], data)
+        validation_error, status_code = validate_request_data(["email", "password"], data)
         if validation_error:
             return validation_error
 
@@ -132,7 +132,7 @@ def login():
         data = request.get_json()
 
         # Validation des champs requis
-        validation_error = validate_request_data(["email", "password"], data)
+        validation_error, status_code = validate_request_data(["email", "password"], data)
         if validation_error:
             return validation_error
 

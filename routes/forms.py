@@ -40,7 +40,7 @@ def create_form():
         data = request.get_json()
 
         # Validation des données requises
-        validation_error = validate_request_data(["title"], data)
+        validation_error, status_code = validate_request_data(["title"], data)
         if validation_error:
             return validation_error
 
