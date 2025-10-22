@@ -96,9 +96,7 @@ def create_question(form_id):
             order_index=data.get("order_index", 0),
         )
         
-        # Logger la création de la question
-        api_logger.question_created(question_id, form_id, "unknown_user", data["type"])
-        
+        # Logger la création de la question (simplifié pour debug)
         logger.info(f"Question créée: {question_id}")
 
         return (
