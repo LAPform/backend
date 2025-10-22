@@ -19,14 +19,10 @@ class SecurityConfig:
     SECURITY_PASSWORD_HASH = "pbkdf2_sha256"
     SECURITY_PASSWORD_SINGLE_HASH = True
 
-    # Configuration des sessions pour API REST
+    # Configuration des sessions pour API REST (simplifiée)
     SECURITY_TOKEN_AUTHENTICATION_HEADER = "Authorization"
     SECURITY_TOKEN_AUTHENTICATION_KEY = "token"
     SECURITY_TOKEN_MAX_AGE = 3600  # 1 heure
-    SECURITY_DEFAULT_HTTP_AUTH_REALM = "Login Required"
-    
-    # Configuration des sessions pour API (version 4.0+)
-    SECURITY_USER_IDENTITY_ATTRIBUTES = ["email"]
 
     # Configuration des URLs
     SECURITY_LOGIN_URL = "/api/auth/login"
