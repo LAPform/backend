@@ -3,7 +3,7 @@ Nouveau système d'authentification avec Flask-Security-Too
 """
 
 from flask import request, jsonify, current_app
-from flask_security import auth_required, current_user, login_user, logout_user
+from flask_security import current_user, login_user, logout_user
 from flask_security.utils import hash_password, verify_password
 from functools import wraps
 import logging

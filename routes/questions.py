@@ -5,7 +5,7 @@ Routes API pour la gestion des questions
 from flask import Blueprint, request, jsonify, current_app
 from models.question import Question
 from models.form import Form
-from utils.security_auth import require_auth
+from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.error_handler import (

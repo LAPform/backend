@@ -3,7 +3,7 @@ Routes de monitoring et métriques pour FormForge
 """
 
 from flask import Blueprint, jsonify, current_app
-from utils.security_auth import require_auth
+from utils.auth import require_auth
 from utils.rate_limiter import rate_limit
 import logging
 
