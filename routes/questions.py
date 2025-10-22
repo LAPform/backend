@@ -9,6 +9,7 @@ from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
+from utils.structured_logger import api_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -95,6 +96,10 @@ def create_question(form_id):
                 validation=data.get("validation", {}),
                 order_index=data.get("order_index", 0),
             )
+            
+            # Logger la création de la question
+            api_logger.question_created(question_id, form_id, "unknown_user", data["type"])
+            
         except Exception as e:
             return error_handler.handle_database_error("question_creation", e)
 

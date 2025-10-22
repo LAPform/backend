@@ -10,6 +10,7 @@ from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
+from utils.structured_logger import api_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -72,6 +73,10 @@ def create_form():
         try:
             form_model = Form(current_app.db)
             form_id = form_model.create(title, description, settings)
+            
+            # Logger la création du formulaire
+            api_logger.form_created(form_id, "unknown_user", title)
+            
         except Exception as e:
             return error_handler.handle_database_error("form_creation", e)
 

@@ -8,9 +8,9 @@ import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 
-# Configuration du logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Configuration du logging structuré
+from utils.structured_logger import structured_logger, api_logger, db_logger
+from utils.logging_middleware import LoggingMiddleware, setup_logging_config, log_application_startup
 
 from models.database import DatabaseManager
 from routes.forms import forms_bp
@@ -28,6 +28,12 @@ def create_app():
 
     # Configuration
     app.config.from_object(Config)
+    
+    # Configuration du logging structuré
+    setup_logging_config(app)
+    
+    # Middleware de logging
+    LoggingMiddleware(app)
 
     # CORS pour les requêtes frontend
     CORS(app)
@@ -38,9 +44,10 @@ def create_app():
     try:
         app.db = DatabaseManager()
         app.db.init_database()
-        logger.info("Base de données initialisée avec succès")
+        db_logger.connection_established(app.db.database_url)
+        structured_logger.info("Base de données initialisée avec succès")
     except Exception as e:
-        logger.error(f"Erreur initialisation base de données: {e}")
+        structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
 
     # Enregistrer les blueprints
@@ -63,15 +70,18 @@ def create_app():
             }
         )
 
+    # Logger le démarrage de l'application
+    log_application_startup(app)
+    
     # Gestion des erreurs
     @app.errorhandler(404)
     def not_found(error):
-        logger.warning(f"404 Error: {error}")
+        structured_logger.warning("404 Error", error=str(error))
         return jsonify({"error": "Endpoint not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
-        logger.error(f"500 Error: {error}")
+        structured_logger.error("500 Error", error=str(error))
         return jsonify({"error": "Internal server error", "details": str(error)}), 500
 
     return app

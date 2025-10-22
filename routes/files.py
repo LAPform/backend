@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify, current_app, send_file
 from utils.file_manager import FileManager
 from utils.auth import require_auth
 from utils.rate_limiter import rate_limit
+from utils.structured_logger import api_logger
 import os
 import logging
 

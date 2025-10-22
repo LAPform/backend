@@ -10,6 +10,7 @@ from utils.exporters import CSVExporter
 from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
+from utils.structured_logger import api_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,9 @@ def submit_response(form_id):
                 user_id=user_id,
                 ip_address=ip_address,
             )
+            
+            # Logger la soumission de réponse
+            api_logger.response_submitted(response_id, form_id, user_id)
 
             logger.info(f"Réponse créée avec succès: {response_id}")
         except Exception as e:

@@ -9,6 +9,7 @@ from utils.validators import DataValidator
 from utils.security_validators import SecurityValidator
 from utils.rate_limiter import rate_limit
 from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
+from utils.structured_logger import api_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -104,6 +105,9 @@ def register():
 
         # Créer l'utilisateur
         user_id = user_model.create(email, password, name)
+        
+        # Logger l'inscription réussie
+        api_logger.user_registered(user_id, email)
 
         # Générer le token
         token = AuthManager.generate_token(user_id, email)
@@ -151,10 +155,15 @@ def login():
         user = user_model.verify_password(email, password)
 
         if not user:
+            # Logger l'échec d'authentification
+            api_logger.authentication_failed(email, "Invalid credentials", request.remote_addr)
             return error_handler.handle_auth_error('AUTH_INVALID_CREDENTIALS')
 
         # Mettre à jour la dernière connexion
         user_model.update_last_login(user["id"])
+        
+        # Logger la connexion réussie
+        api_logger.authentication_success(user["id"], email, "login")
 
         # Générer le token
         token = AuthManager.generate_token(user["id"], user["email"])
