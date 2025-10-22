@@ -100,21 +100,21 @@ def create_question(form_id):
             # Logger la création de la question
             api_logger.question_created(question_id, form_id, "unknown_user", data["type"])
             
+            logger.info(f"Question créée: {question_id}")
+
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "question_id": question_id,
+                        "message": "Question créée avec succès",
+                    }
+                ),
+                201,
+            )
+            
         except Exception as e:
             return error_handler.handle_database_error("question_creation", e)
-
-        logger.info(f"Question créée: {question_id}")
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "question_id": question_id,
-                    "message": "Question créée avec succès",
-                }
-            ),
-            201,
-        )
 
     except ValueError as e:
         return error_handler.create_error_response('VALIDATION_INVALID_TYPE', 400, {'field': 'type'})

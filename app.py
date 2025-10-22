@@ -9,7 +9,11 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 
 # Configuration du logging structuré
-from utils.logging_middleware import LoggingMiddleware, setup_logging_config, log_application_startup
+from utils.logging_middleware import (
+    LoggingMiddleware,
+    setup_logging_config,
+    log_application_startup,
+)
 
 from models.database import DatabaseManager
 from routes.forms import forms_bp
@@ -27,10 +31,10 @@ def create_app():
 
     # Configuration
     app.config.from_object(Config)
-    
+
     # Configuration du logging structuré
     setup_logging_config(app)
-    
+
     # Middleware de logging (désactivé temporairement pour éviter les erreurs de contexte)
     # LoggingMiddleware(app)
 
@@ -43,13 +47,15 @@ def create_app():
     try:
         app.db = DatabaseManager()
         app.db.init_database()
-        
+
         # Logger la connexion à la base de données
         from utils.structured_logger import db_logger, structured_logger
+
         db_logger.connection_established(app.db.database_url)
         structured_logger.info("Base de données initialisée avec succès")
     except Exception as e:
         from utils.structured_logger import structured_logger
+
         structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
 
@@ -75,17 +81,19 @@ def create_app():
 
     # Logger le démarrage de l'application
     log_application_startup(app)
-    
+
     # Gestion des erreurs
     @app.errorhandler(404)
     def not_found(error):
         from utils.structured_logger import structured_logger
+
         structured_logger.warning("404 Error", error=str(error))
         return jsonify({"error": "Endpoint not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
         from utils.structured_logger import structured_logger
+
         structured_logger.error("500 Error", error=str(error))
         return jsonify({"error": "Internal server error", "details": str(error)}), 500
 
