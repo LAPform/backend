@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 security_auth_bp = Blueprint("security_auth", __name__)
 
 
+@security_auth_bp.route("/auth/test", methods=["GET"])
+def test_auth():
+    """Endpoint de test simple pour l'authentification"""
+    return jsonify({
+        "success": True,
+        "message": "Endpoint d'authentification accessible",
+        "timestamp": "2024-01-15T10:30:00Z"
+    })
+
+
 @security_auth_bp.route("/auth/register", methods=["POST"])
 @rate_limit("auth_register")
 def register():
