@@ -15,8 +15,13 @@ gunicorn==21.2.0
 # Configuration
 python-dotenv==1.0.0
 
-# Authentification
-PyJWT==2.8.0
+# Authentification - Migration vers Flask-Security-Too
+# PyJWT==2.8.0  # Remplacé par Flask-Security-Too
+Flask-Security-Too==5.3.0
+Flask-Login==0.6.3
+Flask-Mail==0.9.1
+Flask-WTF==1.2.1
+WTF-Peewee==3.0.0
 
 # Export de données (version simplifiée pour Render gratuit)
 # Utilise les modules Python standard uniquement
