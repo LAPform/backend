@@ -61,8 +61,8 @@ class SecurityConfig:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
 
-    # Configuration CSRF
-    WTF_CSRF_ENABLED = True
+    # Configuration CSRF - Désactivé pour API REST
+    WTF_CSRF_ENABLED = False
     WTF_CSRF_TIME_LIMIT = 3600
 
     # Configuration des messages

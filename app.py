@@ -100,6 +100,18 @@ def create_app():
             }
         )
 
+    # Route de test sans authentification
+    @app.route("/api/test")
+    def test():
+        """Route de test sans authentification"""
+        return jsonify(
+            {
+                "success": True,
+                "message": "API accessible sans authentification",
+                "timestamp": "2024-01-15T10:30:00Z",
+            }
+        )
+
     # Logger le démarrage de l'application
     log_application_startup(app)
 
