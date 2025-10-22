@@ -85,36 +85,32 @@ def create_question(form_id):
             return error_handler.handle_database_error("form_verification", e)
 
         # Créer la question
-        try:
-            question_model = Question(current_app.db)
-            question_id = question_model.create(
-                form_id=form_id,
-                type=data["type"],
-                text=data["text"],
-                options=data.get("options", []),
-                required=data.get("required", False),
-                validation=data.get("validation", {}),
-                order_index=data.get("order_index", 0),
-            )
-            
-            # Logger la création de la question
-            api_logger.question_created(question_id, form_id, "unknown_user", data["type"])
-            
-            logger.info(f"Question créée: {question_id}")
+        question_model = Question(current_app.db)
+        question_id = question_model.create(
+            form_id=form_id,
+            type=data["type"],
+            text=data["text"],
+            options=data.get("options", []),
+            required=data.get("required", False),
+            validation=data.get("validation", {}),
+            order_index=data.get("order_index", 0),
+        )
+        
+        # Logger la création de la question
+        api_logger.question_created(question_id, form_id, "unknown_user", data["type"])
+        
+        logger.info(f"Question créée: {question_id}")
 
-            return (
-                jsonify(
-                    {
-                        "success": True,
-                        "question_id": question_id,
-                        "message": "Question créée avec succès",
-                    }
-                ),
-                201,
-            )
-            
-        except Exception as e:
-            return error_handler.handle_database_error("question_creation", e)
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "question_id": question_id,
+                    "message": "Question créée avec succès",
+                }
+            ),
+            201,
+        )
 
     except ValueError as e:
         return error_handler.create_error_response('VALIDATION_INVALID_TYPE', 400, {'field': 'type'})
