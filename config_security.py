@@ -19,10 +19,15 @@ class SecurityConfig:
     SECURITY_PASSWORD_HASH = "pbkdf2_sha256"
     SECURITY_PASSWORD_SINGLE_HASH = True
 
-    # Configuration des sessions
+    # Configuration des sessions pour API REST
     SECURITY_TOKEN_AUTHENTICATION_HEADER = "Authorization"
     SECURITY_TOKEN_AUTHENTICATION_KEY = "token"
     SECURITY_TOKEN_MAX_AGE = 3600  # 1 heure
+    SECURITY_DEFAULT_HTTP_AUTH_REALM = "Login Required"
+    
+    # Configuration des sessions pour API
+    SECURITY_SESSION_USER_IDENTITY_ATTRIBUTES = ["email"]
+    SECURITY_USER_IDENTITY_ATTRIBUTES = ["email"]
 
     # Configuration des URLs
     SECURITY_LOGIN_URL = "/api/auth/login"
@@ -32,24 +37,27 @@ class SecurityConfig:
     SECURITY_CHANGE_URL = "/api/auth/change"
     SECURITY_CONFIRM_URL = "/api/auth/confirm"
 
-    # Configuration des réponses
+    # Configuration des réponses pour API REST
     SECURITY_RETURN_GENERIC_RESPONSES = True
     SECURITY_JSON_ENABLED = True
+    SECURITY_JSON = True  # Force les réponses JSON
 
-    # Configuration de l'email (pour le futur)
-    MAIL_SERVER = os.environ.get("MAIL_SERVER", "localhost")
-    MAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
-    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
-    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
-    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@formforge.com")
+    # Configuration de l'email (désactivé pour API REST)
+    MAIL_SERVER = None
+    MAIL_PORT = None
+    MAIL_USE_TLS = False
+    MAIL_USERNAME = None
+    MAIL_PASSWORD = None
+    MAIL_DEFAULT_SENDER = "noreply@formforge.com"
 
-    # Configuration des fonctionnalités
+    # Configuration des fonctionnalités pour API REST
     SECURITY_REGISTERABLE = True
-    SECURITY_RECOVERABLE = True
+    SECURITY_RECOVERABLE = False  # Désactivé pour API REST
     SECURITY_CHANGEABLE = True
-    SECURITY_CONFIRMABLE = False  # Désactivé pour le POC
+    SECURITY_CONFIRMABLE = False  # Désactivé pour API REST
     SECURITY_TRACKABLE = True
+    SECURITY_SEND_REGISTER_EMAIL = False  # Pas d'email d'inscription
+    SECURITY_SEND_PASSWORD_CHANGE_EMAIL = False  # Pas d'email de changement
 
     # Configuration des mots de passe
     SECURITY_PASSWORD_LENGTH_MIN = 8
@@ -64,6 +72,17 @@ class SecurityConfig:
     # Configuration CSRF - Désactivé pour API REST
     WTF_CSRF_ENABLED = False
     WTF_CSRF_TIME_LIMIT = 3600
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    SECURITY_CSRF_COOKIE = None
+    SECURITY_CSRF_COOKIE_NAME = None
+    
+    # Désactiver les templates pour API REST
+    SECURITY_TEMPLATE_DIR = None
+    SECURITY_LOGIN_USER_TEMPLATE = None
+    SECURITY_REGISTER_USER_TEMPLATE = None
+    SECURITY_FORGOT_PASSWORD_TEMPLATE = None
+    SECURITY_RESET_PASSWORD_TEMPLATE = None
+    SECURITY_CHANGE_PASSWORD_TEMPLATE = None
 
     # Configuration des messages
     SECURITY_MSG_INVALID_PASSWORD = ("Mot de passe invalide", "error")

@@ -74,6 +74,48 @@ def test_register():
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
+@security_auth_bp.route("/auth/test-login", methods=["POST"])
+def test_login():
+    """Endpoint de test de connexion simplifié"""
+    try:
+        data = request.get_json()
+        
+        if not data or "email" not in data or "password" not in data:
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+            
+        email = data["email"].lower().strip()
+        password = data["password"]
+        
+        # Vérifier l'utilisateur
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(email=email)
+        
+        if not user:
+            return jsonify({"error": "Utilisateur non trouvé"}), 401
+            
+        # Vérifier le mot de passe
+        if not datastore.verify_password(user, password):
+            return jsonify({"error": "Mot de passe incorrect"}), 401
+            
+        # Connexion réussie
+        return jsonify({
+            "success": True,
+            "message": "Connexion réussie",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name
+            }
+        }), 200
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur test connexion: {e}")
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
+
+
 @security_auth_bp.route("/auth/register", methods=["POST"])
 @rate_limit("auth_register")
 def register():
