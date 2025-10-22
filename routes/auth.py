@@ -186,6 +186,8 @@ def login():
 
 
 @auth_bp.route("/auth/me", methods=["GET"])
+@require_auth
+@rate_limit("auth_me")
 def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""
     try:

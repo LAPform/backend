@@ -19,6 +19,7 @@ responses_bp = Blueprint("responses", __name__)
 
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["POST"])
+@require_auth
 @rate_limit("responses_submit")
 def submit_response(form_id):
     """Soumettre une réponse à un formulaire"""
@@ -164,6 +165,7 @@ def get_responses(form_id):
 
 @responses_bp.route("/responses/<response_id>", methods=["GET"])
 @require_auth
+@rate_limit("responses_get")
 def get_response(response_id):
     """Récupérer une réponse par ID"""
     try:

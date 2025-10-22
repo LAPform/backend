@@ -20,35 +20,45 @@ def get_performance_stats():
     try:
         # Obtenir les statistiques du DatabaseManager
         db_stats = current_app.db.get_performance_stats()
-        
+
         # Ajouter des métriques système
         import psutil
         import os
-        
+
         system_stats = {
-            'cpu_percent': psutil.cpu_percent(interval=1),
-            'memory_percent': psutil.virtual_memory().percent,
-            'disk_usage': psutil.disk_usage('/').percent,
-            'process_memory': psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024,  # MB
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "memory_percent": psutil.virtual_memory().percent,
+            "disk_usage": psutil.disk_usage("/").percent,
+            "process_memory": psutil.Process(os.getpid()).memory_info().rss
+            / 1024
+            / 1024,  # MB
         }
-        
-        return jsonify({
-            'success': True,
-            'data': db_stats,
-            'system_stats': system_stats,
-            'timestamp': current_app.db.query_stats.get('last_update', 'N/A')
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "data": db_stats,
+                "system_stats": system_stats,
+                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Erreur récupération statistiques: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Erreur récupération statistiques',
-            'details': str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur récupération statistiques",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @monitoring_bp.route("/monitoring/health", methods=["GET"])
+@require_auth
 @rate_limit("monitoring_health")
 def get_health_status():
     """Obtenir le statut de santé de l'API"""
@@ -56,55 +66,63 @@ def get_health_status():
         # Test de connexion base de données
         db_health = current_app.db.get_connection()
         db_health.close()
-        
+
         # Test des tables principales
         tables_status = {}
-        tables = ['forms', 'questions', 'users', 'responses']
-        
+        tables = ["forms", "questions", "users", "responses"]
+
         for table in tables:
             try:
-                result = current_app.db.execute_query(f"SELECT COUNT(*) as count FROM {table}", fetch=True)
+                result = current_app.db.execute_query(
+                    f"SELECT COUNT(*) as count FROM {table}", fetch=True
+                )
                 tables_status[table] = {
-                    'status': 'healthy',
-                    'count': result[0]['count'] if result else 0
+                    "status": "healthy",
+                    "count": result[0]["count"] if result else 0,
                 }
             except Exception as e:
-                tables_status[table] = {
-                    'status': 'error',
-                    'error': str(e)
-                }
-        
+                tables_status[table] = {"status": "error", "error": str(e)}
+
         # Vérifier les requêtes lentes
         db_stats = current_app.db.get_performance_stats()
-        slow_queries_alert = db_stats['slow_query_rate'] > 0.1  # Plus de 10% de requêtes lentes
-        
+        slow_queries_alert = (
+            db_stats["slow_query_rate"] > 0.1
+        )  # Plus de 10% de requêtes lentes
+
         health_status = {
-            'overall': 'healthy' if not slow_queries_alert else 'degraded',
-            'database': 'connected',
-            'tables': tables_status,
-            'performance': {
-                'slow_queries_alert': slow_queries_alert,
-                'slow_query_rate': db_stats['slow_query_rate'],
-                'average_query_time': db_stats['average_time']
-            }
+            "overall": "healthy" if not slow_queries_alert else "degraded",
+            "database": "connected",
+            "tables": tables_status,
+            "performance": {
+                "slow_queries_alert": slow_queries_alert,
+                "slow_query_rate": db_stats["slow_query_rate"],
+                "average_query_time": db_stats["average_time"],
+            },
         }
-        
-        return jsonify({
-            'success': True,
-            'health': health_status,
-            'timestamp': current_app.db.query_stats.get('last_update', 'N/A')
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "health": health_status,
+                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Erreur health check: {e}")
-        return jsonify({
-            'success': False,
-            'health': {
-                'overall': 'unhealthy',
-                'database': 'disconnected',
-                'error': str(e)
-            }
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "health": {
+                        "overall": "unhealthy",
+                        "database": "disconnected",
+                        "error": str(e),
+                    },
+                }
+            ),
+            500,
+        )
 
 
 @monitoring_bp.route("/monitoring/system", methods=["GET"])
@@ -115,16 +133,16 @@ def get_system_metrics():
     try:
         import psutil
         import os
-        
+
         # Métriques système
         cpu_percent = psutil.cpu_percent(interval=1)
         memory_info = psutil.virtual_memory()
-        disk_usage = psutil.disk_usage('/')
-        
+        disk_usage = psutil.disk_usage("/")
+
         # Métriques du processus
         process = psutil.Process(os.getpid())
         process_memory = process.memory_info().rss / 1024 / 1024  # MB
-        
+
         metrics = {
             "cpu_percent": cpu_percent,
             "memory_total_gb": round(memory_info.total / (1024**3), 2),
@@ -134,21 +152,23 @@ def get_system_metrics():
             "disk_used_gb": round(disk_usage.used / (1024**3), 2),
             "disk_percent": disk_usage.percent,
             "process_memory_mb": round(process_memory, 2),
-            "process_cpu_percent": process.cpu_percent()
+            "process_cpu_percent": process.cpu_percent(),
         }
-        
-        return jsonify({
-            "success": True, 
-            "data": metrics,
-            "timestamp": current_app.db.query_stats.get('last_update', 'N/A')
-        }), 200
-        
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": metrics,
+                    "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         logger.error(f"Erreur récupération métriques système: {e}")
-        return jsonify({
-            "success": False,
-            "error": "Erreur interne du serveur"
-        }), 500
+        return jsonify({"success": False, "error": "Erreur interne du serveur"}), 500
 
 
 @monitoring_bp.route("/monitoring/slow-queries", methods=["GET"])
@@ -158,42 +178,57 @@ def get_slow_queries():
     """Obtenir les requêtes lentes détectées"""
     try:
         db_stats = current_app.db.get_performance_stats()
-        
-        return jsonify({
-            'success': True,
-            'slow_queries': {
-                'count': db_stats['slow_queries'],
-                'rate': db_stats['slow_query_rate'],
-                'threshold': db_stats['slow_query_threshold'],
-                'recommendations': _get_optimization_recommendations(db_stats)
+
+        return jsonify(
+            {
+                "success": True,
+                "slow_queries": {
+                    "count": db_stats["slow_queries"],
+                    "rate": db_stats["slow_query_rate"],
+                    "threshold": db_stats["slow_query_threshold"],
+                    "recommendations": _get_optimization_recommendations(db_stats),
+                },
             }
-        })
-        
+        )
+
     except Exception as e:
         logger.error(f"Erreur récupération requêtes lentes: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Erreur récupération requêtes lentes',
-            'details': str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur récupération requêtes lentes",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
 
 
 def _get_optimization_recommendations(stats):
     """Générer des recommandations d'optimisation basées sur les statistiques"""
     recommendations = []
-    
-    if stats['slow_query_rate'] > 0.2:
-        recommendations.append("Taux de requêtes lentes élevé (>20%) - Vérifier les index")
-    
-    if stats['average_time'] > 0.5:
-        recommendations.append("Temps moyen de requête élevé (>0.5s) - Optimiser les requêtes")
-    
-    if stats['slow_queries'] > 10:
-        recommendations.append("Nombre élevé de requêtes lentes - Analyser les requêtes fréquentes")
-    
+
+    if stats["slow_query_rate"] > 0.2:
+        recommendations.append(
+            "Taux de requêtes lentes élevé (>20%) - Vérifier les index"
+        )
+
+    if stats["average_time"] > 0.5:
+        recommendations.append(
+            "Temps moyen de requête élevé (>0.5s) - Optimiser les requêtes"
+        )
+
+    if stats["slow_queries"] > 10:
+        recommendations.append(
+            "Nombre élevé de requêtes lentes - Analyser les requêtes fréquentes"
+        )
+
     if not recommendations:
-        recommendations.append("Performance acceptable - Aucune optimisation majeure nécessaire")
-    
+        recommendations.append(
+            "Performance acceptable - Aucune optimisation majeure nécessaire"
+        )
+
     return recommendations
 
 
@@ -205,23 +240,27 @@ def reset_performance_stats():
     try:
         # Réinitialiser les statistiques
         current_app.db.query_stats = {
-            'total_queries': 0,
-            'total_time': 0,
-            'slow_queries': 0,
-            'cache_hits': 0
+            "total_queries": 0,
+            "total_time": 0,
+            "slow_queries": 0,
+            "cache_hits": 0,
         }
-        
+
         logger.info("Statistiques de performance réinitialisées")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Statistiques réinitialisées avec succès'
-        })
-        
+
+        return jsonify(
+            {"success": True, "message": "Statistiques réinitialisées avec succès"}
+        )
+
     except Exception as e:
         logger.error(f"Erreur réinitialisation statistiques: {e}")
-        return jsonify({
-            'success': False,
-            'error': 'Erreur réinitialisation statistiques',
-            'details': str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur réinitialisation statistiques",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )

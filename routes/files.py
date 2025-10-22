@@ -57,6 +57,7 @@ def upload_file():
 
 
 @files_bp.route("/files/<filename>", methods=["GET"])
+@require_auth
 @rate_limit("files_download")
 def download_file(filename):
     """Télécharger un fichier"""
@@ -102,6 +103,7 @@ def get_file_info(filename):
 
 @files_bp.route("/files/<filename>", methods=["DELETE"])
 @require_auth
+@rate_limit("files_delete")
 def delete_file(filename):
     """Supprimer un fichier"""
     try:
