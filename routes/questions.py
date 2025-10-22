@@ -6,6 +6,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models.question import Question
 from models.form import Form
 from utils.auth import require_auth
+from utils.validators import DataValidator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,30 @@ def create_question(form_id):
         if not data or "type" not in data or "text" not in data:
             logger.error("Missing required fields: type and text")
             return jsonify({"error": "Type and text are required"}), 400
+
+        # Validation stricte des données
+        validation_errors = []
+        
+        # Validation type de question
+        valid_types = ["text", "email", "phone", "url", "date", "time", "number", "choice", "multiple_choices", "checkbox", "radio", "textarea"]
+        if data["type"] not in valid_types:
+            validation_errors.append(f"Type de question invalide. Types autorisés: {', '.join(valid_types)}")
+        
+        # Validation texte de la question
+        if not DataValidator.validate_text_length(data["text"], 1, 500):
+            validation_errors.append("Le texte de la question doit contenir entre 1 et 500 caractères")
+        
+        # Validation order_index
+        if "order_index" in data:
+            if not isinstance(data["order_index"], int) or data["order_index"] < 0:
+                validation_errors.append("L'index d'ordre doit être un nombre entier positif")
+        
+        # Validation required
+        if "required" in data and not isinstance(data["required"], bool):
+            validation_errors.append("Le champ 'required' doit être un booléen")
+        
+        if validation_errors:
+            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
 
         # Vérifier que le formulaire existe (simplifié)
         try:

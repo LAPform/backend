@@ -5,11 +5,40 @@ Routes API pour l'authentification
 from flask import Blueprint, request, jsonify, current_app
 from models.user import User
 from utils.auth import AuthManager
+from utils.validators import DataValidator
+from utils.security_validators import SecurityValidator
 import logging
 
 logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _validate_password_strength(password: str) -> bool:
+    """Valider la force d'un mot de passe"""
+    import re
+    
+    # Au moins 8 caractères
+    if len(password) < 8:
+        return False
+    
+    # Au moins une majuscule
+    if not re.search(r'[A-Z]', password):
+        return False
+    
+    # Au moins une minuscule
+    if not re.search(r'[a-z]', password):
+        return False
+    
+    # Au moins un chiffre
+    if not re.search(r'\d', password):
+        return False
+    
+    # Au moins un caractère spécial
+    if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+        return False
+    
+    return True
 
 
 @auth_bp.route("/auth/register", methods=["POST"])
@@ -24,6 +53,39 @@ def register():
         email = data["email"].lower().strip()
         password = data["password"]
         name = data.get("name", "")
+
+        # Validation de sécurité des données
+        security_validation = SecurityValidator.validate_form_data_security(data)
+        if not security_validation["valid"]:
+            return jsonify({"error": "Données de sécurité invalides", "details": security_validation["errors"]}), 400
+
+        # Nettoyer les données
+        data = SecurityValidator.sanitize_form_data(data)
+        email = data["email"].lower().strip()
+        password = data["password"]
+        name = data.get("name", "")
+
+        # Validation stricte des données
+        validation_errors = []
+        
+        # Validation email
+        if not DataValidator.validate_email(email):
+            validation_errors.append("Format d'email invalide")
+        
+        # Validation mot de passe
+        if not DataValidator.validate_text_length(password, 8, 128):
+            validation_errors.append("Le mot de passe doit contenir entre 8 et 128 caractères")
+        
+        # Validation nom (optionnel mais si fourni)
+        if name and not DataValidator.validate_text_length(name, 1, 100):
+            validation_errors.append("Le nom doit contenir entre 1 et 100 caractères")
+        
+        # Vérifier la force du mot de passe
+        if not _validate_password_strength(password):
+            validation_errors.append("Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial")
+        
+        if validation_errors:
+            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
 
         # Vérifier si l'utilisateur existe déjà
         user_model = User(current_app.db)
@@ -65,6 +127,13 @@ def login():
 
         email = data["email"].lower().strip()
         password = data["password"]
+
+        # Validation basique des données
+        if not DataValidator.validate_email(email):
+            return jsonify({"error": "Format d'email invalide"}), 400
+        
+        if not DataValidator.validate_text_length(password, 1, 128):
+            return jsonify({"error": "Mot de passe invalide"}), 400
 
         # Vérifier les identifiants
         user_model = User(current_app.db)

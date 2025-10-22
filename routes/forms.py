@@ -7,6 +7,7 @@ from models.form import Form
 from models.question import Question
 from models.response import Response
 from utils.auth import require_auth
+from utils.validators import DataValidator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,11 +38,29 @@ def create_form():
 
         # Validation des données requises
         if not data or "title" not in data:
-            return {"error": "Title is required"}, 400
+            return jsonify({"error": "Title is required"}), 400
 
         title = data["title"]
         description = data.get("description", "")
         settings = data.get("settings", {})
+
+        # Validation stricte des données
+        validation_errors = []
+        
+        # Validation titre
+        if not DataValidator.validate_text_length(title, 1, 200):
+            validation_errors.append("Le titre doit contenir entre 1 et 200 caractères")
+        
+        # Validation description (optionnelle)
+        if description and not DataValidator.validate_text_length(description, 0, 1000):
+            validation_errors.append("La description doit contenir moins de 1000 caractères")
+        
+        # Validation settings
+        if settings and not isinstance(settings, dict):
+            validation_errors.append("Les paramètres doivent être un objet JSON")
+        
+        if validation_errors:
+            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
 
         # Créer le formulaire
         try:

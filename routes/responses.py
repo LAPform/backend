@@ -8,6 +8,7 @@ from models.form import Form
 from models.question import Question
 from utils.exporters import CSVExporter
 from utils.auth import require_auth
+from utils.validators import DataValidator
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,14 @@ def submit_response(form_id):
 
         if not data or "answers" not in data:
             return jsonify({"error": "Réponses requises"}), 400
+
+        # Validation basique des données
+        if not isinstance(data["answers"], dict):
+            return jsonify({"error": "Les réponses doivent être un objet JSON"}), 400
+        
+        # Validation user_id si fourni
+        if "user_id" in data and not DataValidator.validate_text_length(str(data["user_id"]), 1, 100):
+            return jsonify({"error": "L'ID utilisateur doit contenir entre 1 et 100 caractères"}), 400
 
         # Vérifier que le formulaire existe
         form_model = Form(current_app.db)
