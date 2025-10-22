@@ -6,7 +6,6 @@ import time
 import uuid
 import os
 from flask import request, g, current_app
-from utils.structured_logger import api_logger, log_request_start, log_request_end
 
 
 class LoggingMiddleware:
@@ -28,8 +27,15 @@ class LoggingMiddleware:
         g.start_time = time.time()
         g.request_id = str(uuid.uuid4())
         
+        # Importer ici pour éviter les problèmes de contexte
+        from utils.structured_logger import api_logger
+        
         # Logger le début de la requête
-        log_request_start()
+        api_logger.request_started(
+            endpoint=request.endpoint or request.path,
+            method=request.method,
+            user_id=getattr(g, 'user_id', None)
+        )
         
         # Logger les détails de la requête
         api_logger.logger.info(
@@ -48,8 +54,17 @@ class LoggingMiddleware:
         if hasattr(g, 'start_time'):
             duration_ms = (time.time() - g.start_time) * 1000
             
+            # Importer ici pour éviter les problèmes de contexte
+            from utils.structured_logger import api_logger
+            
             # Logger la fin de la requête
-            log_request_end(response.status_code, duration_ms)
+            api_logger.request_completed(
+                endpoint=request.endpoint or request.path,
+                method=request.method,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+                user_id=getattr(g, 'user_id', None)
+            )
             
             # Logger les métriques de performance
             api_logger.performance_metric(
@@ -73,6 +88,9 @@ class LoggingMiddleware:
     def teardown_request(self, exception):
         """Exécuté en cas d'exception"""
         if exception:
+            # Importer ici pour éviter les problèmes de contexte
+            from utils.structured_logger import api_logger
+            
             api_logger.logger.error(
                 "Request Exception",
                 exception=str(exception),
@@ -105,6 +123,7 @@ def setup_logging_config(app):
 
 def log_application_startup(app):
     """Logger le démarrage de l'application"""
+    from utils.structured_logger import api_logger
     api_logger.logger.info(
         "Application Started",
         app_name=app.name,
@@ -116,6 +135,7 @@ def log_application_startup(app):
 
 def log_application_shutdown(app):
     """Logger l'arrêt de l'application"""
+    from utils.structured_logger import api_logger
     api_logger.logger.info(
         "Application Shutdown",
         app_name=app.name,

@@ -340,22 +340,30 @@ structured_logger = StructuredLogger('formforge')
 
 def log_request_start():
     """Logger le début d'une requête (à appeler au début de chaque route)"""
-    if request:
-        g.request_id = str(uuid.uuid4())
-        api_logger.request_started(
-            endpoint=request.endpoint or request.path,
-            method=request.method,
-            user_id=getattr(g, 'user_id', None)
-        )
+    try:
+        if request:
+            g.request_id = str(uuid.uuid4())
+            api_logger.request_started(
+                endpoint=request.endpoint or request.path,
+                method=request.method,
+                user_id=getattr(g, 'user_id', None)
+            )
+    except RuntimeError:
+        # Contexte Flask non disponible
+        pass
 
 
 def log_request_end(status_code: int, duration_ms: float):
     """Logger la fin d'une requête (à appeler à la fin de chaque route)"""
-    if request:
-        api_logger.request_completed(
-            endpoint=request.endpoint or request.path,
-            method=request.method,
-            status_code=status_code,
-            duration_ms=duration_ms,
-            user_id=getattr(g, 'user_id', None)
-        )
+    try:
+        if request:
+            api_logger.request_completed(
+                endpoint=request.endpoint or request.path,
+                method=request.method,
+                status_code=status_code,
+                duration_ms=duration_ms,
+                user_id=getattr(g, 'user_id', None)
+            )
+    except RuntimeError:
+        # Contexte Flask non disponible
+        pass
