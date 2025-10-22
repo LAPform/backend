@@ -9,6 +9,7 @@ from models.question import Question
 from utils.exporters import CSVExporter
 from utils.auth import require_auth
 from utils.validators import DataValidator
+from utils.rate_limiter import rate_limit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ responses_bp = Blueprint("responses", __name__)
 
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["POST"])
+@rate_limit("responses_submit")
 def submit_response(form_id):
     """Soumettre une réponse à un formulaire"""
     try:
@@ -113,6 +115,7 @@ def submit_response(form_id):
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["GET"])
 @require_auth
+@rate_limit("responses_get")
 def get_responses(form_id):
     """Récupérer toutes les réponses d'un formulaire"""
     try:

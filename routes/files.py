@@ -5,6 +5,7 @@ Routes API pour la gestion des fichiers
 from flask import Blueprint, request, jsonify, current_app, send_file
 from utils.file_manager import FileManager
 from utils.auth import require_auth
+from utils.rate_limiter import rate_limit
 import os
 import logging
 
@@ -15,6 +16,7 @@ files_bp = Blueprint("files", __name__)
 
 @files_bp.route("/files/upload", methods=["POST"])
 @require_auth
+@rate_limit("files_upload")
 def upload_file():
     """Uploader un fichier"""
     try:
@@ -54,6 +56,7 @@ def upload_file():
 
 
 @files_bp.route("/files/<filename>", methods=["GET"])
+@rate_limit("files_download")
 def download_file(filename):
     """Télécharger un fichier"""
     try:

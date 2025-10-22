@@ -7,6 +7,7 @@ from models.user import User
 from utils.auth import AuthManager
 from utils.validators import DataValidator
 from utils.security_validators import SecurityValidator
+from utils.rate_limiter import rate_limit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ def _validate_password_strength(password: str) -> bool:
 
 
 @auth_bp.route("/auth/register", methods=["POST"])
+@rate_limit("auth_register")
 def register():
     """Créer un nouveau compte utilisateur"""
     try:
@@ -117,6 +119,7 @@ def register():
 
 
 @auth_bp.route("/auth/login", methods=["POST"])
+@rate_limit("auth_login")
 def login():
     """Connexion utilisateur"""
     try:
@@ -195,6 +198,7 @@ def get_current_user():
 
 
 @auth_bp.route("/auth/verify", methods=["POST"])
+@rate_limit("auth_verify")
 def verify_token():
     """Vérifier la validité d'un token"""
     try:

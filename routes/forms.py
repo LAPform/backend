@@ -8,6 +8,7 @@ from models.question import Question
 from models.response import Response
 from utils.auth import require_auth
 from utils.validators import DataValidator
+from utils.rate_limiter import rate_limit
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ forms_bp = Blueprint("forms", __name__)
 
 @forms_bp.route("/forms", methods=["POST"])
 @require_auth
+@rate_limit("forms_create")
 def create_form():
     """
     Créer un nouveau formulaire
@@ -90,6 +92,7 @@ def create_form():
 
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
 @require_auth
+@rate_limit("forms_get")
 def get_form(form_id):
     """
     Récupérer un formulaire par ID
@@ -116,6 +119,7 @@ def get_form(form_id):
 
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
 @require_auth
+@rate_limit("forms_update")
 def update_form(form_id):
     """Mettre à jour un formulaire"""
     try:
@@ -155,6 +159,7 @@ def update_form(form_id):
 
 @forms_bp.route("/forms/<form_id>", methods=["DELETE"])
 @require_auth
+@rate_limit("forms_delete")
 def delete_form(form_id):
     """Supprimer un formulaire"""
     try:
@@ -182,6 +187,7 @@ def delete_form(form_id):
 
 @forms_bp.route("/forms", methods=["GET"])
 @require_auth
+@rate_limit("forms_get")
 def list_forms():
     """Lister tous les formulaires"""
     try:
