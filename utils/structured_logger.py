@@ -7,7 +7,6 @@ import logging
 import traceback
 from datetime import datetime
 from typing import Dict, Any, Optional
-from flask import request, g, current_app
 import uuid
 
 
@@ -33,30 +32,37 @@ class StructuredLogger:
         """Obtenir le contexte de la requête"""
         context = {
             'timestamp': datetime.utcnow().isoformat(),
-            'request_id': getattr(g, 'request_id', None),
         }
         
-        if request:
-            context.update({
-                'method': request.method,
-                'path': request.path,
-                'remote_addr': request.remote_addr,
-                'user_agent': request.headers.get('User-Agent'),
-                'content_type': request.content_type,
-                'content_length': request.content_length,
-            })
+        # Essayer d'obtenir le contexte Flask de manière sécurisée
+        try:
+            from flask import request, g
+            context['request_id'] = getattr(g, 'request_id', None)
             
-            # Ajouter les paramètres de requête
-            if request.args:
-                context['query_params'] = dict(request.args)
-            
-            # Ajouter les headers importants
-            important_headers = ['Authorization', 'X-Forwarded-For', 'X-Real-IP']
-            context['headers'] = {
-                header: request.headers.get(header) 
-                for header in important_headers 
-                if request.headers.get(header)
-            }
+            if request:
+                context.update({
+                    'method': request.method,
+                    'path': request.path,
+                    'remote_addr': request.remote_addr,
+                    'user_agent': request.headers.get('User-Agent'),
+                    'content_type': request.content_type,
+                    'content_length': request.content_length,
+                })
+                
+                # Ajouter les paramètres de requête
+                if request.args:
+                    context['query_params'] = dict(request.args)
+                
+                # Ajouter les headers importants
+                important_headers = ['Authorization', 'X-Forwarded-For', 'X-Real-IP']
+                context['headers'] = {
+                    header: request.headers.get(header) 
+                    for header in important_headers 
+                    if request.headers.get(header)
+                }
+        except RuntimeError:
+            # Contexte Flask non disponible
+            pass
         
         return context
     

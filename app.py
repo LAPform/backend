@@ -31,8 +31,8 @@ def create_app():
     # Configuration du logging structuré
     setup_logging_config(app)
     
-    # Middleware de logging
-    LoggingMiddleware(app)
+    # Middleware de logging (désactivé temporairement pour éviter les erreurs de contexte)
+    # LoggingMiddleware(app)
 
     # CORS pour les requêtes frontend
     CORS(app)
