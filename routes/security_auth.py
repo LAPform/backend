@@ -24,6 +24,56 @@ def test_auth():
     })
 
 
+@security_auth_bp.route("/auth/test-register", methods=["POST"])
+def test_register():
+    """Endpoint de test d'inscription simplifié"""
+    try:
+        data = request.get_json()
+        
+        if not data or "email" not in data or "password" not in data:
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+            
+        email = data["email"].lower().strip()
+        password = data["password"]
+        name = data.get("name", "")
+        
+        # Test simple de validation
+        if "@" not in email:
+            return jsonify({"error": "Email invalide"}), 400
+            
+        if len(password) < 6:
+            return jsonify({"error": "Mot de passe trop court"}), 400
+            
+        # Test de création d'utilisateur
+        from models.security_models import SecurityUserDatastore
+        
+        datastore = SecurityUserDatastore(current_app.db)
+        
+        # Vérifier si l'utilisateur existe
+        existing_user = datastore.find_user(email=email)
+        if existing_user:
+            return jsonify({"error": "Utilisateur déjà existant"}), 409
+            
+        # Créer l'utilisateur
+        user = datastore.create_user(email=email, password=password, name=name)
+        
+        return jsonify({
+            "success": True,
+            "message": "Utilisateur créé avec succès",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name
+            }
+        }), 201
+        
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erreur test inscription: {e}")
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
+
+
 @security_auth_bp.route("/auth/register", methods=["POST"])
 @rate_limit("auth_register")
 def register():

@@ -95,8 +95,7 @@ class SecurityUserDatastore:
         return None
 
     def create_user(self, **kwargs):
-        """Créer un nouvel utilisateur"""
-        from models.user import User as UserModel
+        """Créer un nouvel utilisateur - Version simplifiée"""
         import uuid
         import hashlib
         import secrets
@@ -119,16 +118,23 @@ class SecurityUserDatastore:
             VALUES (?, ?, ?, ?, ?)
         """
 
-        self.db.execute_query(query, (user_id, email, password_hash, salt, name))
+        try:
+            self.db.execute_query(query, (user_id, email, password_hash, salt, name))
 
-        # Créer l'objet utilisateur
-        user = User(self.db)
-        user.id = user_id
-        user.email = email
-        user.name = name
-        user.password_hash = password_hash
-        user.salt = salt
-        return user
+            # Créer l'objet utilisateur
+            user = User(self.db)
+            user.id = user_id
+            user.email = email
+            user.name = name
+            user.password_hash = password_hash
+            user.salt = salt
+            return user
+        except Exception as e:
+            # Logger l'erreur pour debug
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erreur création utilisateur: {e}")
+            raise e
 
     def verify_password(self, user, password: str) -> bool:
         """Vérifier le mot de passe d'un utilisateur"""
