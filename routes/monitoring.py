@@ -34,7 +34,7 @@ def get_performance_stats():
         
         return jsonify({
             'success': True,
-            'database_stats': db_stats,
+            'data': db_stats,
             'system_stats': system_stats,
             'timestamp': current_app.db.query_stats.get('last_update', 'N/A')
         })
@@ -104,6 +104,50 @@ def get_health_status():
                 'database': 'disconnected',
                 'error': str(e)
             }
+        }), 500
+
+
+@monitoring_bp.route("/monitoring/system", methods=["GET"])
+@require_auth
+@rate_limit("monitoring_system")
+def get_system_metrics():
+    """Obtenir les métriques système (CPU, mémoire, disque)"""
+    try:
+        import psutil
+        import os
+        
+        # Métriques système
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory_info = psutil.virtual_memory()
+        disk_usage = psutil.disk_usage('/')
+        
+        # Métriques du processus
+        process = psutil.Process(os.getpid())
+        process_memory = process.memory_info().rss / 1024 / 1024  # MB
+        
+        metrics = {
+            "cpu_percent": cpu_percent,
+            "memory_total_gb": round(memory_info.total / (1024**3), 2),
+            "memory_used_gb": round(memory_info.used / (1024**3), 2),
+            "memory_percent": memory_info.percent,
+            "disk_total_gb": round(disk_usage.total / (1024**3), 2),
+            "disk_used_gb": round(disk_usage.used / (1024**3), 2),
+            "disk_percent": disk_usage.percent,
+            "process_memory_mb": round(process_memory, 2),
+            "process_cpu_percent": process.cpu_percent()
+        }
+        
+        return jsonify({
+            "success": True, 
+            "data": metrics,
+            "timestamp": current_app.db.query_stats.get('last_update', 'N/A')
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération métriques système: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Erreur interne du serveur"
         }), 500
 
 
