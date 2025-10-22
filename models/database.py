@@ -4,6 +4,7 @@ Gestionnaire de base de données SQLite pour FormForge
 
 import sqlite3
 import os
+import time
 from typing import Optional, List, Dict, Any
 import logging
 
@@ -25,6 +26,15 @@ class DatabaseManager:
             self.database_url = "sqlite:///formforge_poc.db"
 
         self.db_path = self.database_url.replace("sqlite:///", "")
+        
+        # Statistiques de performance
+        self.query_stats = {
+            'total_queries': 0,
+            'total_time': 0,
+            'slow_queries': 0,
+            'cache_hits': 0
+        }
+        self.slow_query_threshold = 1.0  # 1 seconde
 
     def get_connection(self):
         """Obtenir une connexion SQLite"""
@@ -122,6 +132,56 @@ class DatabaseManager:
                 ON responses(submitted_at)
             """
             )
+            
+            # Index supplémentaires pour l'optimisation
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_forms_created_by 
+                ON forms(created_by)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_forms_created_at 
+                ON forms(created_at)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_questions_type 
+                ON questions(type)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_questions_order 
+                ON questions(form_id, order_index)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_users_email 
+                ON users(email)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_users_created_at 
+                ON users(created_at)
+            """
+            )
+            
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_responses_user_id 
+                ON responses(user_id)
+            """
+            )
 
             conn.commit()
             logger.info("Base de données initialisée avec succès")
@@ -135,8 +195,10 @@ class DatabaseManager:
             self.return_connection(conn)
 
     def execute_query(self, query: str, params: tuple = None, fetch: bool = False):
-        """Exécuter une requête SQL avec gestion d'erreur robuste"""
+        """Exécuter une requête SQL avec gestion d'erreur robuste et monitoring"""
+        start_time = time.time()
         conn = self.get_connection()
+        
         try:
             cursor = conn.cursor()
             cursor.execute(query, params)
@@ -147,29 +209,63 @@ class DatabaseManager:
                     if cursor.description:
                         columns = [description[0] for description in cursor.description]
                         rows = cursor.fetchall()
-                        return [dict(zip(columns, row)) for row in rows]
+                        result = [dict(zip(columns, row)) for row in rows]
                     else:
-                        return []
+                        result = []
                 else:
                     # Pour les autres requêtes, retourner le premier résultat
                     result = cursor.fetchone()
                     if result and cursor.description:
                         columns = [description[0] for description in cursor.description]
-                        return dict(zip(columns, result))
-                    return result
+                        result = dict(zip(columns, result))
             else:
                 conn.commit()
-                return cursor.rowcount
+                result = cursor.rowcount
+            
+            # Enregistrer les statistiques
+            execution_time = time.time() - start_time
+            self._record_query_stats(query, execution_time)
+            
+            return result
 
         except Exception as e:
             conn.rollback()
-            logger.error(f"Erreur requête SQL: {e}")
+            execution_time = time.time() - start_time
+            logger.error(f"Erreur requête SQL après {execution_time:.2f}s: {e}")
             logger.error(f"Query: {query}")
             logger.error(f"Params: {params}")
             raise
         finally:
             cursor.close()
             self.return_connection(conn)
+    
+    def _record_query_stats(self, query: str, execution_time: float):
+        """Enregistrer les statistiques de performance"""
+        self.query_stats['total_queries'] += 1
+        self.query_stats['total_time'] += execution_time
+        
+        if execution_time > self.slow_query_threshold:
+            self.query_stats['slow_queries'] += 1
+            logger.warning(f"Requête lente détectée ({execution_time:.2f}s): {query[:100]}...")
+    
+    def get_performance_stats(self):
+        """Obtenir les statistiques de performance"""
+        total_queries = self.query_stats['total_queries']
+        if total_queries > 0:
+            avg_time = self.query_stats['total_time'] / total_queries
+            slow_query_rate = self.query_stats['slow_queries'] / total_queries
+        else:
+            avg_time = 0
+            slow_query_rate = 0
+        
+        return {
+            'total_queries': total_queries,
+            'total_time': self.query_stats['total_time'],
+            'average_time': avg_time,
+            'slow_queries': self.query_stats['slow_queries'],
+            'slow_query_rate': slow_query_rate,
+            'slow_query_threshold': self.slow_query_threshold
+        }
 
     def execute_transaction(self, queries: List[tuple]):
         """Exécuter plusieurs requêtes dans une transaction"""

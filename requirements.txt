@@ -27,6 +27,9 @@ email-validator==2.0.0
 # Logging
 structlog==23.1.0
 
+# Monitoring et métriques système
+psutil==5.9.0
+
 # Tests (développement)
 pytest==7.4.0
 pytest-flask==1.2.0

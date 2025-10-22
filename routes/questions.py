@@ -35,9 +35,29 @@ def create_question(form_id):
             return jsonify({"error": "Données manquantes"}), 400
 
         # Validation type simple
-        valid_types = ["text", "textarea", "email", "phone", "url", "date", "time", "number", "choice", "multiple_choices", "checkbox", "radio"]
+        valid_types = [
+            "text",
+            "textarea",
+            "email",
+            "phone",
+            "url",
+            "date",
+            "time",
+            "number",
+            "choice",
+            "multiple_choices",
+            "checkbox",
+            "radio",
+        ]
         if data["type"] not in valid_types:
-            return jsonify({"error": f"Type invalide. Types autorisés: {', '.join(valid_types)}"}), 400
+            return (
+                jsonify(
+                    {
+                        "error": f"Type invalide. Types autorisés: {', '.join(valid_types)}"
+                    }
+                ),
+                400,
+            )
 
         # Validation texte simple
         if not data["text"] or len(data["text"]) < 1 or len(data["text"]) > 500:
@@ -63,11 +83,16 @@ def create_question(form_id):
 
         logger.info(f"Question créée: {question_id}")
 
-        return jsonify({
-            "success": True,
-            "question_id": question_id,
-            "message": "Question créée avec succès",
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "question_id": question_id,
+                    "message": "Question créée avec succès",
+                }
+            ),
+            201,
+        )
 
     except Exception as e:
         logger.error(f"Erreur création question: {e}")

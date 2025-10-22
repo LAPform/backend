@@ -22,6 +22,7 @@ from routes.responses import responses_bp
 from routes.docs import docs_bp
 from routes.auth import auth_bp
 from routes.files import files_bp
+from routes.monitoring import monitoring_bp
 from config import Config
 
 
@@ -60,12 +61,13 @@ def create_app():
         raise
 
     # Enregistrer les blueprints
-    app.register_blueprint(forms_bp, url_prefix="/api")
-    app.register_blueprint(questions_bp, url_prefix="/api")
-    app.register_blueprint(responses_bp, url_prefix="/api")
-    app.register_blueprint(docs_bp, url_prefix="/api")
-    app.register_blueprint(auth_bp, url_prefix="/api")
-    app.register_blueprint(files_bp, url_prefix="/api")
+        app.register_blueprint(forms_bp, url_prefix="/api")
+        app.register_blueprint(questions_bp, url_prefix="/api")
+        app.register_blueprint(responses_bp, url_prefix="/api")
+        app.register_blueprint(docs_bp, url_prefix="/api")
+        app.register_blueprint(auth_bp, url_prefix="/api")
+        app.register_blueprint(files_bp, url_prefix="/api")
+        app.register_blueprint(monitoring_bp, url_prefix="/api")
 
     # Route de santé simple
     @app.route("/api/health")
