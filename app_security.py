@@ -47,13 +47,15 @@ def create_app():
     try:
         app.db = DatabaseManager()
         app.db.init_database()
-        
+
         # Logger la connexion à la base de données
         from utils.structured_logger import db_logger, structured_logger
+
         db_logger.connection_established(app.db.database_url)
         structured_logger.info("Base de données initialisée avec succès")
     except Exception as e:
         from utils.structured_logger import structured_logger
+
         structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
 
@@ -61,15 +63,17 @@ def create_app():
     try:
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
-        
+
         # Initialiser Flask-Security
         security = Security(app, user_datastore)
-        
+
         # Configuration des templates (désactivé pour API)
-        app.config['SECURITY_EMAIL_SENDER'] = app.config.get('MAIL_DEFAULT_SENDER', 'noreply@formforge.com')
-        
+        app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
+            "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
+        )
+
         structured_logger.info("Flask-Security-Too initialisé avec succès")
-        
+
     except Exception as e:
         structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
         raise
@@ -92,7 +96,7 @@ def create_app():
                 "status": "healthy",
                 "message": "FormForge POC Backend with Flask-Security-Too is running",
                 "version": "2.0.0",
-                "security": "Flask-Security-Too"
+                "security": "Flask-Security-Too",
             }
         )
 
@@ -103,12 +107,14 @@ def create_app():
     @app.errorhandler(404)
     def not_found(error):
         from utils.structured_logger import structured_logger
+
         structured_logger.warning("404 Error", error=str(error))
         return jsonify({"error": "Endpoint not found"}), 404
 
     @app.errorhandler(500)
     def internal_error(error):
         from utils.structured_logger import structured_logger
+
         structured_logger.error("500 Error", error=str(error))
         return jsonify({"error": "Internal server error", "details": str(error)}), 500
 

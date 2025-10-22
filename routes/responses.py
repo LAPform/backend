@@ -100,7 +100,7 @@ def submit_response(form_id):
                 user_id=user_id,
                 ip_address=ip_address,
             )
-            
+
             # Logger la soumission de réponse
             api_logger.response_submitted(response_id, form_id, user_id)
 
