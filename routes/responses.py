@@ -30,10 +30,19 @@ def submit_response(form_id):
         # Validation basique des données
         if not isinstance(data["answers"], dict):
             return jsonify({"error": "Les réponses doivent être un objet JSON"}), 400
-        
+
         # Validation user_id si fourni
-        if "user_id" in data and not DataValidator.validate_text_length(str(data["user_id"]), 1, 100):
-            return jsonify({"error": "L'ID utilisateur doit contenir entre 1 et 100 caractères"}), 400
+        if "user_id" in data and not DataValidator.validate_text_length(
+            str(data["user_id"]), 1, 100
+        ):
+            return (
+                jsonify(
+                    {
+                        "error": "L'ID utilisateur doit contenir entre 1 et 100 caractères"
+                    }
+                ),
+                400,
+            )
 
         # Vérifier que le formulaire existe
         form_model = Form(current_app.db)

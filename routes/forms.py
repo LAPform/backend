@@ -9,6 +9,7 @@ from models.response import Response
 from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
+from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
 import logging
 
 logger = logging.getLogger(__name__)
@@ -39,8 +40,9 @@ def create_form():
         data = request.get_json()
 
         # Validation des données requises
-        if not data or "title" not in data:
-            return jsonify({"error": "Title is required"}), 400
+        validation_error = validate_request_data(["title"], data)
+        if validation_error:
+            return validation_error
 
         title = data["title"]
         description = data.get("description", "")
@@ -48,29 +50,30 @@ def create_form():
 
         # Validation stricte des données
         validation_errors = []
-        
+
         # Validation titre
         if not DataValidator.validate_text_length(title, 1, 200):
             validation_errors.append("Le titre doit contenir entre 1 et 200 caractères")
-        
+
         # Validation description (optionnelle)
         if description and not DataValidator.validate_text_length(description, 0, 1000):
-            validation_errors.append("La description doit contenir moins de 1000 caractères")
-        
+            validation_errors.append(
+                "La description doit contenir moins de 1000 caractères"
+            )
+
         # Validation settings
         if settings and not isinstance(settings, dict):
             validation_errors.append("Les paramètres doivent être un objet JSON")
-        
+
         if validation_errors:
-            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
+            return error_handler.handle_validation_error(validation_errors)
 
         # Créer le formulaire
         try:
             form_model = Form(current_app.db)
             form_id = form_model.create(title, description, settings)
         except Exception as e:
-            logger.error(f"Error creating form: {e}")
-            return jsonify({"error": f"Erreur création formulaire: {str(e)}"}), 500
+            return error_handler.handle_database_error("form_creation", e)
 
         logger.info(f"Formulaire créé: {form_id}")
 
@@ -86,8 +89,7 @@ def create_form():
         )
 
     except Exception as e:
-        logger.error(f"Erreur création formulaire: {e}")
-        return jsonify({"error": str(e)}), 500
+        return error_handler.handle_system_error("form_creation", e)
 
 
 @forms_bp.route("/forms/<form_id>", methods=["GET"])

@@ -8,6 +8,7 @@ from utils.auth import AuthManager
 from utils.validators import DataValidator
 from utils.security_validators import SecurityValidator
 from utils.rate_limiter import rate_limit
+from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,27 +19,27 @@ auth_bp = Blueprint("auth", __name__)
 def _validate_password_strength(password: str) -> bool:
     """Valider la force d'un mot de passe"""
     import re
-    
+
     # Au moins 8 caractères
     if len(password) < 8:
         return False
-    
+
     # Au moins une majuscule
-    if not re.search(r'[A-Z]', password):
+    if not re.search(r"[A-Z]", password):
         return False
-    
+
     # Au moins une minuscule
-    if not re.search(r'[a-z]', password):
+    if not re.search(r"[a-z]", password):
         return False
-    
+
     # Au moins un chiffre
-    if not re.search(r'\d', password):
+    if not re.search(r"\d", password):
         return False
-    
+
     # Au moins un caractère spécial
     if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
         return False
-    
+
     return True
 
 
@@ -49,8 +50,10 @@ def register():
     try:
         data = request.get_json()
 
-        if not data or not data.get("email") or not data.get("password"):
-            return jsonify({"error": "Email et mot de passe requis"}), 400
+        # Validation des champs requis
+        validation_error = validate_request_data(["email", "password"], data)
+        if validation_error:
+            return validation_error
 
         email = data["email"].lower().strip()
         password = data["password"]
@@ -59,7 +62,7 @@ def register():
         # Validation de sécurité des données
         security_validation = SecurityValidator.validate_form_data_security(data)
         if not security_validation["valid"]:
-            return jsonify({"error": "Données de sécurité invalides", "details": security_validation["errors"]}), 400
+            return error_handler.handle_validation_error(security_validation["errors"])
 
         # Nettoyer les données
         data = SecurityValidator.sanitize_form_data(data)
@@ -69,31 +72,35 @@ def register():
 
         # Validation stricte des données
         validation_errors = []
-        
+
         # Validation email
         if not DataValidator.validate_email(email):
             validation_errors.append("Format d'email invalide")
-        
+
         # Validation mot de passe
         if not DataValidator.validate_text_length(password, 8, 128):
-            validation_errors.append("Le mot de passe doit contenir entre 8 et 128 caractères")
-        
+            validation_errors.append(
+                "Le mot de passe doit contenir entre 8 et 128 caractères"
+            )
+
         # Validation nom (optionnel mais si fourni)
         if name and not DataValidator.validate_text_length(name, 1, 100):
             validation_errors.append("Le nom doit contenir entre 1 et 100 caractères")
-        
+
         # Vérifier la force du mot de passe
         if not _validate_password_strength(password):
-            validation_errors.append("Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial")
-        
+            validation_errors.append(
+                "Le mot de passe doit contenir au moins une majuscule, une minuscule, un chiffre et un caractère spécial"
+            )
+
         if validation_errors:
-            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
+            return error_handler.handle_validation_error(validation_errors)
 
         # Vérifier si l'utilisateur existe déjà
         user_model = User(current_app.db)
         existing_user = user_model.get_by_email(email)
         if existing_user:
-            return jsonify({"error": "Un compte avec cet email existe déjà"}), 400
+            return error_handler.handle_auth_error('AUTH_EMAIL_ALREADY_EXISTS')
 
         # Créer l'utilisateur
         user_id = user_model.create(email, password, name)
@@ -114,8 +121,7 @@ def register():
         )
 
     except Exception as e:
-        logger.error(f"Erreur inscription: {e}")
-        return jsonify({"error": str(e)}), 500
+        return error_handler.handle_system_error("user_registration", e)
 
 
 @auth_bp.route("/auth/login", methods=["POST"])
@@ -125,25 +131,27 @@ def login():
     try:
         data = request.get_json()
 
-        if not data or not data.get("email") or not data.get("password"):
-            return jsonify({"error": "Email et mot de passe requis"}), 400
+        # Validation des champs requis
+        validation_error = validate_request_data(["email", "password"], data)
+        if validation_error:
+            return validation_error
 
         email = data["email"].lower().strip()
         password = data["password"]
 
         # Validation basique des données
         if not DataValidator.validate_email(email):
-            return jsonify({"error": "Format d'email invalide"}), 400
-        
+            return error_handler.create_error_response('VALIDATION_INVALID_FORMAT', 400, {'field': 'email'})
+
         if not DataValidator.validate_text_length(password, 1, 128):
-            return jsonify({"error": "Mot de passe invalide"}), 400
+            return error_handler.create_error_response('VALIDATION_INVALID_FORMAT', 400, {'field': 'password'})
 
         # Vérifier les identifiants
         user_model = User(current_app.db)
         user = user_model.verify_password(email, password)
 
         if not user:
-            return jsonify({"error": "Email ou mot de passe incorrect"}), 401
+            return error_handler.handle_auth_error('AUTH_INVALID_CREDENTIALS')
 
         # Mettre à jour la dernière connexion
         user_model.update_last_login(user["id"])
@@ -165,8 +173,7 @@ def login():
         )
 
     except Exception as e:
-        logger.error(f"Erreur connexion: {e}")
-        return jsonify({"error": str(e)}), 500
+        return error_handler.handle_system_error("user_login", e)
 
 
 @auth_bp.route("/auth/me", methods=["GET"])

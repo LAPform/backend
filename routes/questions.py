@@ -8,6 +8,7 @@ from models.form import Form
 from utils.auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
+from utils.error_handler import error_handler, validate_request_data, ensure_resource_exists
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,44 +26,62 @@ def create_question(form_id):
         logger.info(f"Creating question for form {form_id} with data: {data}")
 
         # Validation des données requises
-        if not data or "type" not in data or "text" not in data:
-            logger.error("Missing required fields: type and text")
-            return jsonify({"error": "Type and text are required"}), 400
+        validation_error = validate_request_data(["type", "text"], data)
+        if validation_error:
+            return validation_error
 
         # Validation stricte des données
         validation_errors = []
-        
+
         # Validation type de question
-        valid_types = ["text", "email", "phone", "url", "date", "time", "number", "choice", "multiple_choices", "checkbox", "radio", "textarea"]
+        valid_types = [
+            "text",
+            "email",
+            "phone",
+            "url",
+            "date",
+            "time",
+            "number",
+            "choice",
+            "multiple_choices",
+            "checkbox",
+            "radio",
+            "textarea",
+        ]
         if data["type"] not in valid_types:
-            validation_errors.append(f"Type de question invalide. Types autorisés: {', '.join(valid_types)}")
-        
+            validation_errors.append(
+                f"Type de question invalide. Types autorisés: {', '.join(valid_types)}"
+            )
+
         # Validation texte de la question
         if not DataValidator.validate_text_length(data["text"], 1, 500):
-            validation_errors.append("Le texte de la question doit contenir entre 1 et 500 caractères")
-        
+            validation_errors.append(
+                "Le texte de la question doit contenir entre 1 et 500 caractères"
+            )
+
         # Validation order_index
         if "order_index" in data:
             if not isinstance(data["order_index"], int) or data["order_index"] < 0:
-                validation_errors.append("L'index d'ordre doit être un nombre entier positif")
-        
+                validation_errors.append(
+                    "L'index d'ordre doit être un nombre entier positif"
+                )
+
         # Validation required
         if "required" in data and not isinstance(data["required"], bool):
             validation_errors.append("Le champ 'required' doit être un booléen")
-        
-        if validation_errors:
-            return jsonify({"error": "Données invalides", "details": validation_errors}), 400
 
-        # Vérifier que le formulaire existe (simplifié)
+        if validation_errors:
+            return error_handler.handle_validation_error(validation_errors)
+
+        # Vérifier que le formulaire existe
         try:
             form_model = Form(current_app.db)
             form = form_model.get_by_id(form_id)
-            if not form:
-                logger.error(f"Form {form_id} not found")
-                return jsonify({"error": "Formulaire non trouvé"}), 404
+            not_found_error = ensure_resource_exists(form, "Formulaire")
+            if not_found_error:
+                return not_found_error
         except Exception as e:
-            logger.error(f"Error checking form existence: {e}")
-            return jsonify({"error": f"Erreur vérification formulaire: {str(e)}"}), 500
+            return error_handler.handle_database_error("form_verification", e)
 
         # Créer la question
         try:
@@ -77,8 +96,7 @@ def create_question(form_id):
                 order_index=data.get("order_index", 0),
             )
         except Exception as e:
-            logger.error(f"Error creating question: {e}")
-            return jsonify({"error": f"Erreur création question: {str(e)}"}), 500
+            return error_handler.handle_database_error("question_creation", e)
 
         logger.info(f"Question créée: {question_id}")
 
@@ -94,10 +112,9 @@ def create_question(form_id):
         )
 
     except ValueError as e:
-        return jsonify({"error": str(e)}), 400
+        return error_handler.create_error_response('VALIDATION_INVALID_TYPE', 400, {'field': 'type'})
     except Exception as e:
-        logger.error(f"Erreur création question: {e}")
-        return jsonify({"error": str(e)}), 500
+        return error_handler.handle_system_error("question_creation", e)
 
 
 @questions_bp.route("/questions/<question_id>", methods=["GET"])
