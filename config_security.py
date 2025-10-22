@@ -53,7 +53,7 @@ class SecurityConfig:
 
     # Configuration des mots de passe
     SECURITY_PASSWORD_LENGTH_MIN = 8
-    SECURITY_PASSWORD_COMPLEXITY_CHECKER = "zxcvbn"
+    SECURITY_PASSWORD_COMPLEXITY_CHECKER = "zxcvbn"  # Validation de complexité activée
 
     # Configuration des sessions
     PERMANENT_SESSION_LIFETIME = timedelta(hours=24)
