@@ -53,6 +53,10 @@ class SecurityConfig:
     SECURITY_TRACKABLE = True
     SECURITY_SEND_REGISTER_EMAIL = False  # Pas d'email d'inscription
     SECURITY_SEND_PASSWORD_CHANGE_EMAIL = False  # Pas d'email de changement
+    
+    # Configuration pour éviter les erreurs de session
+    SECURITY_SESSION_REFRESH_EACH_REQUEST = False
+    SECURITY_SESSION_REFRESH_WITHIN = "1 days"
 
     # Configuration des mots de passe
     SECURITY_PASSWORD_LENGTH_MIN = 8
