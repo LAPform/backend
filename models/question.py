@@ -15,14 +15,16 @@ class Question:
     QUESTION_TYPES = [
         "text",  # Texte court
         "textarea",  # Texte long
-        "multiple",  # Choix multiple (radio)
-        "checkbox",  # Cases à cocher
-        "scale",  # Échelle linéaire
+        "email",  # Email
+        "phone",  # Téléphone
+        "url",  # URL
         "date",  # Date
         "time",  # Heure
-        "file",  # Upload de fichier
-        "email",  # Email
         "number",  # Nombre
+        "choice",  # Choix simple (radio)
+        "multiple_choices",  # Choix multiple
+        "checkbox",  # Cases à cocher
+        "radio",  # Boutons radio
     ]
 
     def __init__(self, db_manager: DatabaseManager):
