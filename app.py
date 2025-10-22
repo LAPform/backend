@@ -15,6 +15,9 @@ from utils.logging_middleware import (
     log_application_startup,
 )
 
+# Middleware de métriques
+from utils.metrics_middleware import MetricsMiddleware
+
 from models.database import DatabaseManager
 from routes.forms import forms_bp
 from routes.questions import questions_bp
@@ -43,6 +46,9 @@ def create_app():
 
     # CORS pour les requêtes frontend
     CORS(app)
+    
+    # Middleware de métriques
+    MetricsMiddleware(app)
 
     # Configuration Flask-Security-Too
     try:
