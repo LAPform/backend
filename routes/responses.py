@@ -103,6 +103,7 @@ def submit_response(form_id):
 
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["GET"])
+@require_auth
 def get_responses(form_id):
     """Récupérer toutes les réponses d'un formulaire"""
     try:
@@ -137,6 +138,7 @@ def get_responses(form_id):
 
 
 @responses_bp.route("/responses/<response_id>", methods=["GET"])
+@require_auth
 def get_response(response_id):
     """Récupérer une réponse par ID"""
     try:

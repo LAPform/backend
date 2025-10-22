@@ -96,6 +96,7 @@ def get_form(form_id):
 
 
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
+@require_auth
 def update_form(form_id):
     """Mettre à jour un formulaire"""
     try:
@@ -134,6 +135,7 @@ def update_form(form_id):
 
 
 @forms_bp.route("/forms/<form_id>", methods=["DELETE"])
+@require_auth
 def delete_form(form_id):
     """Supprimer un formulaire"""
     try:
@@ -209,6 +211,7 @@ def get_form_stats(form_id):
 
 
 @forms_bp.route("/forms/<form_id>/duplicate", methods=["POST"])
+@require_auth
 def duplicate_form(form_id):
     """Dupliquer un formulaire"""
     try:

@@ -130,6 +130,7 @@ def get_allowed_types():
 
 
 @files_bp.route("/files/validate", methods=["POST"])
+@require_auth
 def validate_file():
     """Valider un fichier avant upload"""
     try:

@@ -74,6 +74,7 @@ def create_question(form_id):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["GET"])
+@require_auth
 def get_question(question_id):
     """Récupérer une question par ID"""
     try:
@@ -91,6 +92,7 @@ def get_question(question_id):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["PUT"])
+@require_auth
 def update_question(question_id):
     """Mettre à jour une question"""
     try:
@@ -131,6 +133,7 @@ def update_question(question_id):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["DELETE"])
+@require_auth
 def delete_question(question_id):
     """Supprimer une question"""
     try:
@@ -178,6 +181,7 @@ def list_questions(form_id):
 
 
 @questions_bp.route("/forms/<form_id>/questions/reorder", methods=["PUT"])
+@require_auth
 def reorder_questions(form_id):
     """Réorganiser les questions d'un formulaire"""
     try:
@@ -211,6 +215,7 @@ def reorder_questions(form_id):
 
 
 @questions_bp.route("/questions/<question_id>/validate", methods=["POST"])
+@require_auth
 def validate_question_response(question_id):
     """Valider une réponse à une question"""
     try:
