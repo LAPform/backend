@@ -117,7 +117,6 @@ def test_login():
 
 
 @security_auth_bp.route("/auth/register", methods=["POST"])
-@rate_limit("auth_register")
 def register():
     """Créer un nouveau compte utilisateur - Version production robuste"""
     try:
@@ -184,7 +183,6 @@ def register():
 
 
 @security_auth_bp.route("/auth/login", methods=["POST"])
-@rate_limit("auth_login")
 def login():
     """Connexion utilisateur avec Flask-Security"""
     try:
