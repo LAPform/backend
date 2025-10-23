@@ -126,37 +126,37 @@ def test_login():
 
 @security_auth_bp.route("/auth/register", methods=["POST"])
 def register():
-    """Créer un nouveau compte utilisateur - Version simplifiée identique aux endpoints de test"""
+    """Créer un nouveau compte utilisateur - Copie exacte de test-register"""
     try:
         data = request.get_json()
-
+        
         if not data or "email" not in data or "password" not in data:
             return jsonify({"error": "Email et mot de passe requis"}), 400
-
+            
         email = data["email"].lower().strip()
         password = data["password"]
         name = data.get("name", "")
-
+        
         # Test simple de validation
         if "@" not in email:
             return jsonify({"error": "Email invalide"}), 400
-
+            
         if len(password) < 6:
             return jsonify({"error": "Mot de passe trop court"}), 400
-
+            
         # Test de création d'utilisateur
         from models.security_models import SecurityUserDatastore
-
+        
         datastore = SecurityUserDatastore(current_app.db)
-
+        
         # Vérifier si l'utilisateur existe
         existing_user = datastore.find_user(email=email)
         if existing_user:
             return jsonify({"error": "Utilisateur déjà existant"}), 409
-
+            
         # Créer l'utilisateur
         user = datastore.create_user(email=email, password=password, name=name)
-
+        
         return (
             jsonify(
                 {
@@ -167,10 +167,9 @@ def register():
             ),
             201,
         )
-
+        
     except Exception as e:
         import logging
-
         logger = logging.getLogger(__name__)
         logger.error(f"Erreur test inscription: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
@@ -178,29 +177,29 @@ def register():
 
 @security_auth_bp.route("/auth/login", methods=["POST"])
 def login():
-    """Connexion utilisateur - Version simplifiée identique aux endpoints de test"""
+    """Connexion utilisateur - Copie exacte de test-login"""
     try:
         data = request.get_json()
-
+        
         if not data or "email" not in data or "password" not in data:
             return jsonify({"error": "Email et mot de passe requis"}), 400
-
+            
         email = data["email"].lower().strip()
         password = data["password"]
-
+        
         # Vérifier l'utilisateur
         from models.security_models import SecurityUserDatastore
-
+        
         datastore = SecurityUserDatastore(current_app.db)
         user = datastore.find_user(email=email)
-
+        
         if not user:
             return jsonify({"error": "Utilisateur non trouvé"}), 401
-
+            
         # Vérifier le mot de passe
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
-
+            
         # Connexion réussie
         return (
             jsonify(
@@ -212,10 +211,9 @@ def login():
             ),
             200,
         )
-
+        
     except Exception as e:
         import logging
-
         logger = logging.getLogger(__name__)
         logger.error(f"Erreur test connexion: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
