@@ -42,10 +42,34 @@ def create_form(**kwargs):
     ```
     """
     try:
-        data = request.get_json()
+        # Gestion robuste du parsing JSON avec gestion d'erreur d'encodage
+        try:
+            data = request.get_json()
+        except Exception as json_error:
+            logger.error(f"Erreur parsing JSON: {json_error}")
+            return jsonify({
+                "success": False,
+                "error": "Erreur de format JSON",
+                "message": "Le JSON envoyé contient des caractères invalides"
+            }), 400
+        
+        if not data:
+            return jsonify({
+                "success": False,
+                "error": "Données manquantes",
+                "message": "Aucune donnée JSON fournie"
+            }), 400
         
         # Debug: Logger les données reçues
         logger.info(f"Données reçues pour création formulaire: {data}")
+        
+        # Nettoyer les données pour éviter les problèmes d'encodage
+        if isinstance(data, dict):
+            # Nettoyer les chaînes de caractères
+            for key, value in data.items():
+                if isinstance(value, str):
+                    # Nettoyer les caractères problématiques
+                    data[key] = value.encode('utf-8', errors='ignore').decode('utf-8')
         
         # Validation des données requises
         validation_error, status_code = validate_request_data(["title"], data)
