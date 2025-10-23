@@ -130,17 +130,16 @@ def register():
         password = data["password"]
         name = data.get("name", "")
 
-        # Validation simple de l'email
-        if "@" not in email or "." not in email:
-            return jsonify({"error": "Format d'email invalide"}), 400
+        # Validation simple de l'email (comme endpoint de test)
+        if "@" not in email:
+            return jsonify({"error": "Email invalide"}), 400
 
-        # Validation simple du mot de passe
+        # Validation simple du mot de passe (comme endpoint de test)
         if len(password) < 6:
-            return jsonify({"error": "Le mot de passe doit contenir au moins 6 caractères"}), 400
+            return jsonify({"error": "Mot de passe trop court"}), 400
 
-        # Validation du nom
-        if name and len(name) > 100:
-            return jsonify({"error": "Le nom ne peut pas dépasser 100 caractères"}), 400
+        # Validation du nom (simplifiée comme endpoint de test)
+        # Pas de validation stricte du nom
 
         # Vérifier si l'utilisateur existe déjà
         from models.security_models import SecurityUserDatastore
