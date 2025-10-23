@@ -49,14 +49,28 @@ class SecurityUserDatastore:
 
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
+        import logging
+
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("SecurityUserDatastore initialisé")
 
     def find_user(self, **kwargs):
         """Trouver un utilisateur par critères"""
-        if "id" in kwargs:
-            return self._get_user_by_id(kwargs["id"])
-        elif "email" in kwargs:
-            return self._get_user_by_email(kwargs["email"])
-        return None
+        self.logger.info(f"find_user appelé avec: {kwargs}")
+        try:
+            if "id" in kwargs:
+                result = self._get_user_by_id(kwargs["id"])
+                self.logger.info(f"Utilisateur trouvé par ID: {result is not None}")
+                return result
+            elif "email" in kwargs:
+                result = self._get_user_by_email(kwargs["email"])
+                self.logger.info(f"Utilisateur trouvé par email: {result is not None}")
+                return result
+            self.logger.warning("Aucun critère de recherche valide")
+            return None
+        except Exception as e:
+            self.logger.error(f"Erreur dans find_user: {e}")
+            raise
 
     def _get_user_by_id(self, user_id: str):
         """Récupérer un utilisateur par ID"""
@@ -96,44 +110,54 @@ class SecurityUserDatastore:
 
     def create_user(self, **kwargs):
         """Créer un nouvel utilisateur - Version simplifiée"""
-        import uuid
-        import hashlib
-        import secrets
-
-        user_id = str(uuid.uuid4())
-        email = kwargs.get("email", "").lower().strip()
-        password = kwargs.get("password", "")
-        name = kwargs.get("name", "")
-
-        # Générer un salt et hasher le mot de passe
-        salt = secrets.token_hex(16)
-        password_hash = hashlib.pbkdf2_hmac(
-            "sha256", password.encode(), salt.encode(), 100000
-        )
-        password_hash = password_hash.hex()
-
-        # Insérer dans la base de données
-        query = """
-            INSERT INTO users (id, email, password_hash, salt, name)
-            VALUES (?, ?, ?, ?, ?)
-        """
-
+        self.logger.info(f"create_user appelé avec: {kwargs}")
         try:
+            import uuid
+            import hashlib
+            import secrets
+
+            user_id = str(uuid.uuid4())
+            email = kwargs.get("email", "").lower().strip()
+            password = kwargs.get("password", "")
+            name = kwargs.get("name", "")
+
+            self.logger.info(f"Création utilisateur: {email}, {name}")
+
+            # Générer un salt et hasher le mot de passe
+            self.logger.info("Génération du salt et hashage du mot de passe...")
+            salt = secrets.token_hex(16)
+            password_hash = hashlib.pbkdf2_hmac(
+                "sha256", password.encode(), salt.encode(), 100000
+            )
+            password_hash = password_hash.hex()
+            self.logger.info("Salt et hash générés avec succès")
+
+            # Insérer dans la base de données
+            query = """
+                INSERT INTO users (id, email, password_hash, salt, name)
+                VALUES (?, ?, ?, ?, ?)
+            """
+
+            self.logger.info("Exécution de la requête d'insertion...")
             self.db.execute_query(query, (user_id, email, password_hash, salt, name))
+            self.logger.info("Utilisateur inséré en base avec succès")
 
             # Créer l'objet utilisateur
+            self.logger.info("Création de l'objet utilisateur...")
             user = User(self.db)
             user.id = user_id
             user.email = email
             user.name = name
             user.password_hash = password_hash
             user.salt = salt
+            self.logger.info(f"Utilisateur créé avec succès: {user_id}")
             return user
         except Exception as e:
             # Logger l'erreur pour debug
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Erreur création utilisateur: {e}")
+            self.logger.error(f"Erreur création utilisateur: {e}")
+            import traceback
+
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             raise e
 
     def verify_password(self, user, password: str) -> bool:

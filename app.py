@@ -64,6 +64,32 @@ def create_app():
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
 
+        # Configuration spécifique pour API REST
+        app.config.update(
+            {
+                "SECURITY_USER_IDENTITY_ATTRIBUTES": ["email"],
+                "SECURITY_PASSWORD_HASH": "pbkdf2_sha256",
+                "SECURITY_PASSWORD_SALT": app.config.get(
+                    "SECURITY_PASSWORD_SALT", "dev-salt"
+                ),
+                "SECURITY_TOKEN_AUTHENTICATION_HEADER": "Authorization",
+                "SECURITY_TOKEN_AUTHENTICATION_KEY": "token",
+                "SECURITY_TOKEN_MAX_AGE": 3600,
+                "SECURITY_JSON_ENABLED": True,
+                "SECURITY_JSON": True,
+                "SECURITY_RETURN_GENERIC_RESPONSES": True,
+                "SECURITY_REGISTERABLE": True,
+                "SECURITY_RECOVERABLE": False,
+                "SECURITY_CHANGEABLE": True,
+                "SECURITY_CONFIRMABLE": False,
+                "SECURITY_TRACKABLE": True,
+                "SECURITY_SEND_REGISTER_EMAIL": False,
+                "SECURITY_SEND_PASSWORD_CHANGE_EMAIL": False,
+                "WTF_CSRF_ENABLED": False,
+                "SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS": True,
+            }
+        )
+
         # Initialiser Flask-Security
         security = Security(app, user_datastore)
 
@@ -76,6 +102,7 @@ def create_app():
 
     except Exception as e:
         structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
+        structured_logger.error(f"Détails de l'erreur: {str(e)}")
         raise
 
     # Enregistrer les blueprints
