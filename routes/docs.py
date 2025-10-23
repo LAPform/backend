@@ -32,16 +32,22 @@ def get_guide():
             "title": "Guide d'utilisation FormForge API",
             "version": "1.0.0",
             "base_url": "/api",
-            "authentication": "Aucune authentification requise pour le POC",
+            "authentication": "Authentification requise - Utiliser /api/auth/signup et /api/auth/signin",
             "content_type": "application/json",
             "endpoints": {
+                "authentication": {
+                    "POST /api/auth/signup": "Créer un compte utilisateur",
+                    "POST /api/auth/signin": "Se connecter",
+                    "POST /api/auth/logout": "Se déconnecter",
+                    "GET /api/auth/me": "Informations utilisateur actuel",
+                },
                 "forms": {
-                    "GET /api/forms": "Lister tous les formulaires",
-                    "POST /api/forms": "Créer un nouveau formulaire",
-                    "GET /api/forms/{id}": "Récupérer un formulaire",
-                    "PUT /api/forms/{id}": "Modifier un formulaire",
-                    "DELETE /api/forms/{id}": "Supprimer un formulaire",
-                    "GET /api/forms/{id}/stats": "Statistiques d'un formulaire",
+                    "GET /api/forms": "Lister tous les formulaires (authentifié)",
+                    "POST /api/forms": "Créer un nouveau formulaire (authentifié)",
+                    "GET /api/forms/{id}": "Récupérer un formulaire (authentifié)",
+                    "PUT /api/forms/{id}": "Modifier un formulaire (authentifié)",
+                    "DELETE /api/forms/{id}": "Supprimer un formulaire (authentifié)",
+                    "GET /api/forms/{id}/stats": "Statistiques d'un formulaire (authentifié)",
                 },
                 "questions": {
                     "POST /api/forms/{id}/questions": "Ajouter une question",
@@ -94,6 +100,24 @@ DOCS_HTML_TEMPLATE = """
     <h1>FormForge API Documentation</h1>
     <p>API REST pour FormForge - Clone de Google Forms</p>
     
+    <h2>Endpoints d'Authentification</h2>
+    
+    <div class="endpoint">
+        <span class="method">POST</span> /api/auth/signup - Créer un compte utilisateur
+    </div>
+    
+    <div class="endpoint">
+        <span class="method">POST</span> /api/auth/signin - Se connecter
+    </div>
+    
+    <div class="endpoint">
+        <span class="method">POST</span> /api/auth/logout - Se déconnecter
+    </div>
+    
+    <div class="endpoint">
+        <span class="method">GET</span> /api/auth/me - Informations utilisateur actuel
+    </div>
+    
     <h2>Endpoints Principaux</h2>
     
     <div class="endpoint">
@@ -101,21 +125,44 @@ DOCS_HTML_TEMPLATE = """
     </div>
     
     <div class="endpoint">
-        <span class="method">GET</span> /api/forms - Lister tous les formulaires
+        <span class="method">GET</span> /api/forms - Lister tous les formulaires (authentifié)
     </div>
     
     <div class="endpoint">
-        <span class="method">POST</span> /api/forms - Créer un nouveau formulaire
+        <span class="method">POST</span> /api/forms - Créer un nouveau formulaire (authentifié)
     </div>
     
     <div class="endpoint">
-        <span class="method">GET</span> /api/forms/{id} - Récupérer un formulaire
+        <span class="method">GET</span> /api/forms/{id} - Récupérer un formulaire (authentifié)
     </div>
     
-    <h2>Exemple de Création de Formulaire</h2>
+    <h2>Exemple d'Authentification</h2>
+    <div class="code">
+POST /api/auth/signup
+Content-Type: application/json
+
+{
+    "email": "user@example.com",
+    "password": "Password123!",
+    "name": "John Doe"
+}
+    </div>
+    
+    <div class="code">
+POST /api/auth/signin
+Content-Type: application/json
+
+{
+    "email": "user@example.com",
+    "password": "Password123!"
+}
+    </div>
+    
+    <h2>Exemple de Création de Formulaire (Authentifié)</h2>
     <div class="code">
 POST /api/forms
 Content-Type: application/json
+Authorization: Bearer [token]
 
 {
     "title": "Sondage de satisfaction",

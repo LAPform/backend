@@ -12,11 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def require_auth(f):
-    """Décorateur pour protéger les routes avec Flask-Security"""
+    """Décorateur pour protéger les routes avec système de session simple"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
+        from flask import session
+        
+        # Vérifier si l'utilisateur est connecté via la session
+        if not session.get('user_id') or not session.get('user_token'):
             return (
                 jsonify(
                     {

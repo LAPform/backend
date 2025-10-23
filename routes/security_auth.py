@@ -200,6 +200,19 @@ def signin():
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
             
+        # Générer un token simple pour les tests
+        import secrets
+        import hashlib
+        import time
+        
+        token_data = f"{user.id}:{email}:{int(time.time())}"
+        token = hashlib.sha256(token_data.encode()).hexdigest()
+        
+        # Stocker le token dans la session Flask (temporaire pour les tests)
+        from flask import session
+        session['user_id'] = user.id
+        session['user_token'] = token
+
         # Connexion réussie
         return (
             jsonify(
@@ -207,6 +220,7 @@ def signin():
                     "success": True,
                     "message": "Connexion réussie",
                     "user": {"id": user.id, "email": user.email, "name": user.name},
+                    "token": token,
                 }
             ),
             200,
@@ -219,16 +233,9 @@ def signin():
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
-# Endpoints de compatibilité pour maintenir l'API existante
-@security_auth_bp.route("/auth/register", methods=["POST"])
-def register_compat():
-    """Endpoint de compatibilité - Redirige vers signup"""
-    return signup()
-
-@security_auth_bp.route("/auth/login", methods=["POST"])
-def login_compat():
-    """Endpoint de compatibilité - Redirige vers signin"""
-    return signin()
+# Endpoints de compatibilité supprimés car non fonctionnels
+# Flask-Security-Too intercepte automatiquement ces routes
+# Utiliser uniquement /auth/signup et /auth/signin
 
 @security_auth_bp.route("/auth/logout", methods=["POST"])
 def logout():
