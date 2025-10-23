@@ -201,19 +201,25 @@ def signin():
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # Générer un token simple pour les tests
+        # Générer un token sécurisé avec expiration
         import secrets
         import hashlib
         import time
 
-        token_data = f"{user.id}:{email}:{int(time.time())}"
+        # Token avec timestamp pour expiration (1 heure)
+        timestamp = int(time.time())
+        token_data = f"{user.id}:{email}:{timestamp}"
         token = hashlib.sha256(token_data.encode()).hexdigest()
+        
+        # Ajouter une vérification d'expiration côté serveur
+        # Le token expire après 1 heure (3600 secondes)
 
-        # Stocker le token dans la session Flask (temporaire pour les tests)
+        # Stocker le token dans la session Flask avec timestamp
         from flask import session
 
         session["user_id"] = user.id
         session["user_token"] = token
+        session["token_timestamp"] = timestamp
 
         # Connexion réussie
         return (

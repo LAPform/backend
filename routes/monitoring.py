@@ -14,6 +14,7 @@ monitoring_bp = Blueprint("monitoring", __name__)
 
 
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
+@require_auth
 @rate_limit("monitoring_performance")
 def get_performance_stats():
     """Obtenir les statistiques de performance de la base de données"""
@@ -58,6 +59,7 @@ def get_performance_stats():
 
 
 @monitoring_bp.route("/monitoring/health", methods=["GET"])
+@require_auth
 @rate_limit("monitoring_health")
 def get_health_status():
     """Obtenir le statut de santé de l'API"""
@@ -125,6 +127,7 @@ def get_health_status():
 
 
 @monitoring_bp.route("/monitoring/system", methods=["GET"])
+@require_auth
 @rate_limit("monitoring_system")
 def get_system_metrics():
     """Obtenir les métriques système (CPU, mémoire, disque)"""
