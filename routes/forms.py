@@ -25,7 +25,7 @@ forms_bp = Blueprint("forms", __name__)
 @forms_bp.route("/forms", methods=["POST"])
 @require_auth
 @rate_limit("forms_create")
-def create_form():
+def create_form(**kwargs):
     """
     Créer un nouveau formulaire
 
@@ -119,7 +119,7 @@ def create_form():
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
 @require_auth
 @rate_limit("forms_get")
-def get_form(form_id):
+def get_form(form_id, **kwargs):
     """
     Récupérer un formulaire par ID
 
@@ -146,7 +146,7 @@ def get_form(form_id):
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
 @require_auth
 @rate_limit("forms_update")
-def update_form(form_id):
+def update_form(form_id, **kwargs):
     """Mettre à jour un formulaire"""
     try:
         data = request.get_json()
@@ -186,7 +186,7 @@ def update_form(form_id):
 @forms_bp.route("/forms/<form_id>", methods=["DELETE"])
 @require_auth
 @rate_limit("forms_delete")
-def delete_form(form_id):
+def delete_form(form_id, **kwargs):
     """Supprimer un formulaire"""
     try:
         form_model = Form(current_app.db)
@@ -214,7 +214,7 @@ def delete_form(form_id):
 @forms_bp.route("/forms", methods=["GET"])
 @require_auth
 @rate_limit("forms_get")
-def list_forms():
+def list_forms(**kwargs):
     """Lister tous les formulaires"""
     try:
         # Paramètres de pagination
@@ -239,7 +239,7 @@ def list_forms():
 
 @forms_bp.route("/forms/<form_id>/stats", methods=["GET"])
 @require_auth
-def get_form_stats(form_id):
+def get_form_stats(form_id, **kwargs):
     """Récupérer les statistiques d'un formulaire"""
     try:
         form_model = Form(current_app.db)
@@ -263,7 +263,7 @@ def get_form_stats(form_id):
 
 @forms_bp.route("/forms/<form_id>/duplicate", methods=["POST"])
 @require_auth
-def duplicate_form(form_id):
+def duplicate_form(form_id, **kwargs):
     """Dupliquer un formulaire"""
     try:
         form_model = Form(current_app.db)
