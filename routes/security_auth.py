@@ -125,8 +125,8 @@ def test_login():
 
 
 @security_auth_bp.route("/auth/signup", methods=["POST"])
-def register():
-    """Créer un nouveau compte utilisateur - Copie exacte de test-register"""
+def signup():
+    """Créer un nouveau compte utilisateur - Endpoint principal fonctionnel"""
     try:
         data = request.get_json()
         
@@ -176,8 +176,8 @@ def register():
 
 
 @security_auth_bp.route("/auth/signin", methods=["POST"])
-def login():
-    """Connexion utilisateur - Copie exacte de test-login"""
+def signin():
+    """Connexion utilisateur - Endpoint principal fonctionnel"""
     try:
         data = request.get_json()
         
@@ -218,6 +218,17 @@ def login():
         logger.error(f"Erreur test connexion: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
+
+# Endpoints de compatibilité pour maintenir l'API existante
+@security_auth_bp.route("/auth/register", methods=["POST"])
+def register_compat():
+    """Endpoint de compatibilité - Redirige vers signup"""
+    return signup()
+
+@security_auth_bp.route("/auth/login", methods=["POST"])
+def login_compat():
+    """Endpoint de compatibilité - Redirige vers signin"""
+    return signin()
 
 @security_auth_bp.route("/auth/logout", methods=["POST"])
 def logout():
