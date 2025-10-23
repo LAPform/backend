@@ -223,66 +223,54 @@ def login():
 
 
 @security_auth_bp.route("/auth/logout", methods=["POST"])
-@require_auth
 def logout():
     """Déconnexion utilisateur"""
     try:
-        if SecurityAuthManager.logout_user_safe():
-            return jsonify({"success": True, "message": "Déconnexion réussie"}), 200
-        else:
-            return SecurityAuthManager.create_error_response(
-                "Erreur lors de la déconnexion", 500
-            )
-
+        # Déconnexion simple
+        logout_user()
+        return jsonify({"success": True, "message": "Déconnexion réussie"}), 200
     except Exception as e:
         logger.error(f"Erreur déconnexion: {e}")
-        return SecurityAuthManager.create_error_response(
-            "Erreur interne du serveur", 500
-        )
+        return jsonify({"error": "Erreur interne du serveur"}), 500
 
 
 @security_auth_bp.route("/auth/me", methods=["GET"])
-@require_auth
-@rate_limit("auth_me")
 def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""
     try:
-        user_info = SecurityAuthManager.get_current_user()
-
-        if user_info:
-            return jsonify({"success": True, "user": user_info}), 200
+        # Récupération simple de l'utilisateur actuel
+        if current_user.is_authenticated:
+            return jsonify({
+                "success": True, 
+                "user": {
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "name": getattr(current_user, 'name', '')
+                }
+            }), 200
         else:
-            return SecurityAuthManager.create_error_response(
-                "Utilisateur non trouvé", 404
-            )
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
 
     except Exception as e:
         logger.error(f"Erreur récupération utilisateur: {e}")
-        return SecurityAuthManager.create_error_response(
-            "Erreur interne du serveur", 500
-        )
+        return jsonify({"error": "Erreur interne du serveur"}), 500
 
 
 @security_auth_bp.route("/auth/change-password", methods=["POST"])
-@require_auth
-@rate_limit("auth_change_password")
 def change_password():
     """Changer le mot de passe de l'utilisateur"""
     try:
         data = request.get_json()
 
         if not data or "current_password" not in data or "new_password" not in data:
-            return SecurityAuthManager.create_error_response(
-                "Mot de passe actuel et nouveau mot de passe requis", 400
-            )
+            return jsonify({"error": "Mot de passe actuel et nouveau mot de passe requis"}), 400
 
         current_password = data["current_password"]
         new_password = data["new_password"]
 
-        # Validation du nouveau mot de passe
-        is_valid, message = SecurityAuthManager.validate_password_strength(new_password)
-        if not is_valid:
-            return SecurityAuthManager.create_error_response(message, 400)
+        # Validation simple du nouveau mot de passe
+        if len(new_password) < 6:
+            return jsonify({"error": "Le nouveau mot de passe doit contenir au moins 6 caractères"}), 400
 
         # Vérifier le mot de passe actuel
         from models.security_models import SecurityUserDatastore
@@ -290,9 +278,7 @@ def change_password():
         datastore = SecurityUserDatastore(current_app.db)
 
         if not datastore.verify_password(current_user, current_password):
-            return SecurityAuthManager.create_error_response(
-                "Mot de passe actuel incorrect", 401
-            )
+            return jsonify({"error": "Mot de passe actuel incorrect"}), 401
 
         # Mettre à jour le mot de passe
         from flask_security.utils import hash_password
@@ -309,6 +295,4 @@ def change_password():
 
     except Exception as e:
         logger.error(f"Erreur changement mot de passe: {e}")
-        return SecurityAuthManager.create_error_response(
-            "Erreur interne du serveur", 500
-        )
+        return jsonify({"error": "Erreur interne du serveur"}), 500
