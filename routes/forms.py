@@ -43,7 +43,10 @@ def create_form():
     """
     try:
         data = request.get_json()
-
+        
+        # Debug: Logger les données reçues
+        logger.info(f"Données reçues pour création formulaire: {data}")
+        
         # Validation des données requises
         validation_error, status_code = validate_request_data(["title"], data)
         if validation_error:
@@ -73,15 +76,27 @@ def create_form():
         if validation_errors:
             return error_handler.handle_validation_error(validation_errors)
 
+        # Récupérer l'utilisateur authentifié depuis la session
+        from flask import session
+        user_id = session.get('user_id', 'unknown_user')
+        
+        # Debug: Logger l'utilisateur et les données
+        logger.info(f"Utilisateur authentifié: {user_id}")
+        logger.info(f"Titre: {title}, Description: {description}, Settings: {settings}")
+        
         # Créer le formulaire
         try:
             form_model = Form(current_app.db)
-            form_id = form_model.create(title, description, settings)
+            form_id = form_model.create(title, description, settings, user_id)
 
             # Logger la création du formulaire
-            api_logger.form_created(form_id, "unknown_user", title)
+            api_logger.form_created(form_id, user_id, title)
 
         except Exception as e:
+            logger.error(f"Erreur lors de la création du formulaire: {str(e)}")
+            logger.error(f"Type d'erreur: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return error_handler.handle_database_error("form_creation", e)
 
         logger.info(f"Formulaire créé: {form_id}")
