@@ -126,64 +126,43 @@ def test_login():
 
 @security_auth_bp.route("/auth/register", methods=["POST"])
 def register():
-    """Créer un nouveau compte utilisateur - Version production robuste"""
+    """Créer un nouveau compte utilisateur - Version simplifiée identique aux endpoints de test"""
     try:
-        logger.info("=== DÉBUT INSCRIPTION ===")
-
         data = request.get_json()
-        logger.info(f"Données reçues: {data}")
 
-        # Validation des champs requis
         if not data or "email" not in data or "password" not in data:
-            logger.warning("Champs requis manquants")
             return jsonify({"error": "Email et mot de passe requis"}), 400
 
         email = data["email"].lower().strip()
         password = data["password"]
         name = data.get("name", "")
 
-        logger.info(f"Email: {email}, Name: {name}")
-
-        # Validation simple de l'email (comme endpoint de test)
+        # Test simple de validation
         if "@" not in email:
-            logger.warning("Email invalide")
             return jsonify({"error": "Email invalide"}), 400
 
-        # Validation simple du mot de passe (comme endpoint de test)
         if len(password) < 6:
-            logger.warning("Mot de passe trop court")
             return jsonify({"error": "Mot de passe trop court"}), 400
 
-        # Vérifier si l'utilisateur existe déjà
-        logger.info("Création du datastore...")
+        # Test de création d'utilisateur
         from models.security_models import SecurityUserDatastore
 
         datastore = SecurityUserDatastore(current_app.db)
-        logger.info("Datastore créé avec succès")
 
-        logger.info("Recherche utilisateur existant...")
+        # Vérifier si l'utilisateur existe
         existing_user = datastore.find_user(email=email)
-        logger.info(f"Utilisateur existant trouvé: {existing_user is not None}")
-
         if existing_user:
-            logger.warning("Utilisateur déjà existant")
-            return jsonify({"error": "Un compte avec cet email existe déjà"}), 409
+            return jsonify({"error": "Utilisateur déjà existant"}), 409
 
-        # Créer le nouvel utilisateur (version simplifiée comme test)
-        logger.info("Création de l'utilisateur...")
+        # Créer l'utilisateur
         user = datastore.create_user(email=email, password=password, name=name)
-        logger.info(f"Utilisateur créé avec succès: {user.id}")
 
         return (
             jsonify(
                 {
                     "success": True,
-                    "message": "Compte créé avec succès",
-                    "user": {
-                        "id": user.id,
-                        "email": user.email,
-                        "name": user.name,
-                    },
+                    "message": "Utilisateur créé avec succès",
+                    "user": {"id": user.id, "email": user.email, "name": user.name},
                 }
             ),
             201,
@@ -193,71 +172,36 @@ def register():
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.error(f"Erreur inscription: {e}")
-        logger.error(f"Type d'erreur: {type(e)}")
-        import traceback
-
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Erreur test inscription: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/login", methods=["POST"])
 def login():
-    """Connexion utilisateur avec Flask-Security"""
+    """Connexion utilisateur - Version simplifiée identique aux endpoints de test"""
     try:
-        logger.info("=== DÉBUT CONNEXION ===")
-
         data = request.get_json()
-        logger.info(f"Données reçues: {data}")
 
-        # Validation des champs requis
         if not data or "email" not in data or "password" not in data:
-            logger.warning("Champs requis manquants")
             return jsonify({"error": "Email et mot de passe requis"}), 400
 
         email = data["email"].lower().strip()
         password = data["password"]
 
-        logger.info(f"Email: {email}")
-
-        # Validation simple de l'email
-        if "@" not in email or "." not in email:
-            logger.warning("Format d'email invalide")
-            return jsonify({"error": "Format d'email invalide"}), 400
-
-        # Trouver l'utilisateur
-        logger.info("Création du datastore...")
+        # Vérifier l'utilisateur
         from models.security_models import SecurityUserDatastore
 
         datastore = SecurityUserDatastore(current_app.db)
-        logger.info("Datastore créé avec succès")
-
-        logger.info("Recherche de l'utilisateur...")
         user = datastore.find_user(email=email)
-        logger.info(f"Utilisateur trouvé: {user is not None}")
 
         if not user:
-            logger.warning("Utilisateur non trouvé")
-            return jsonify({"error": "Identifiants invalides"}), 401
+            return jsonify({"error": "Utilisateur non trouvé"}), 401
 
         # Vérifier le mot de passe
-        logger.info("Vérification du mot de passe...")
-        password_valid = datastore.verify_password(user, password)
-        logger.info(f"Mot de passe valide: {password_valid}")
+        if not datastore.verify_password(user, password):
+            return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        if not password_valid:
-            logger.warning("Mot de passe incorrect")
-            return jsonify({"error": "Identifiants invalides"}), 401
-
-        # Mettre à jour la dernière connexion (version simplifiée)
-        try:
-            logger.info("Mise à jour de la dernière connexion...")
-            datastore.update_last_login(user)
-            logger.info("Dernière connexion mise à jour")
-        except Exception as e:
-            logger.warning(f"Erreur mise à jour dernière connexion: {e}")
-
-        logger.info("Connexion réussie")
+        # Connexion réussie
         return (
             jsonify(
                 {
@@ -273,11 +217,7 @@ def login():
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.error(f"Erreur connexion: {e}")
-        logger.error(f"Type d'erreur: {type(e)}")
-        import traceback
-
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Erreur test connexion: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
