@@ -253,23 +253,37 @@ def logout():
 def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""
     try:
-        # Récupération simple de l'utilisateur actuel
-        if current_user.is_authenticated:
-            return (
-                jsonify(
-                    {
-                        "success": True,
-                        "user": {
-                            "id": current_user.id,
-                            "email": current_user.email,
-                            "name": getattr(current_user, "name", ""),
-                        },
-                    }
-                ),
-                200,
-            )
-        else:
-            return jsonify({"error": "Utilisateur non authentifié"}), 401
+        from flask import session
+        
+        # Vérifier la session
+        user_id = session.get('user_id')
+        user_token = session.get('user_token')
+        
+        if not user_id or not user_token:
+            return jsonify({"error": "Non authentifié - Session manquante"}), 401
+            
+        # Récupérer les informations utilisateur depuis la base
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(id=user_id)
+        
+        if not user:
+            return jsonify({"error": "Utilisateur non trouvé"}), 404
+
+        return jsonify(
+            {
+                "success": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": user.name,
+                },
+                "session_info": {
+                    "user_id": user_id,
+                    "has_token": bool(user_token)
+                }
+            }
+        )
 
     except Exception as e:
         logger.error(f"Erreur récupération utilisateur: {e}")

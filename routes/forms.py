@@ -76,9 +76,9 @@ def create_form():
         if validation_errors:
             return error_handler.handle_validation_error(validation_errors)
 
-        # Récupérer l'utilisateur authentifié depuis la session
+        # Récupérer l'utilisateur authentifié depuis les kwargs ou la session
         from flask import session
-        user_id = session.get('user_id', 'unknown_user')
+        user_id = kwargs.get('authenticated_user_id') or session.get('user_id', 'unknown_user')
         
         # Debug: Logger l'utilisateur et les données
         logger.info(f"Utilisateur authentifié: {user_id}")
