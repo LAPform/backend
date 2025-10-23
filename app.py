@@ -64,17 +64,13 @@ def create_app():
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
 
-        # Configuration spécifique pour API REST
+        # Configuration minimale pour Flask-Security-Too 5.x
         app.config.update(
             {
-                "SECURITY_USER_IDENTITY_ATTRIBUTES": ["email"],
                 "SECURITY_PASSWORD_HASH": "pbkdf2_sha256",
                 "SECURITY_PASSWORD_SALT": app.config.get(
                     "SECURITY_PASSWORD_SALT", "dev-salt"
                 ),
-                "SECURITY_TOKEN_AUTHENTICATION_HEADER": "Authorization",
-                "SECURITY_TOKEN_AUTHENTICATION_KEY": "token",
-                "SECURITY_TOKEN_MAX_AGE": 3600,
                 "SECURITY_JSON_ENABLED": True,
                 "SECURITY_JSON": True,
                 "SECURITY_RETURN_GENERIC_RESPONSES": True,
