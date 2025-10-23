@@ -164,8 +164,10 @@ def register():
         }), 201
 
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Erreur inscription: {e}")
-        return jsonify({"error": f"Erreur interne du serveur: {str(e)}"}), 500
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/login", methods=["POST"])
@@ -217,8 +219,10 @@ def login():
         }), 200
 
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
         logger.error(f"Erreur connexion: {e}")
-        return jsonify({"error": f"Erreur interne du serveur: {str(e)}"}), 500
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/logout", methods=["POST"])
