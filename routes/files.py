@@ -119,6 +119,7 @@ def delete_file(filename):
 
 
 @files_bp.route("/files/allowed-types", methods=["GET"])
+@require_auth
 def get_allowed_types():
     """Obtenir les types de fichiers autorisés"""
     try:
