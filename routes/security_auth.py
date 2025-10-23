@@ -155,8 +155,8 @@ def register():
         try:
             user = datastore.create_user(email=email, password=password, name=name)
 
-            # Log de l'inscription
-            api_logger.user_registered(user.id, email)
+            # Log de l'inscription (désactivé temporairement)
+            # api_logger.user_registered(user.id, email)
 
             return (
                 jsonify(
@@ -206,16 +206,16 @@ def login():
         user = datastore.find_user(email=email)
 
         if not user:
-            api_logger.authentication_failed(
-                email, "User not found", request.remote_addr
-            )
+            # api_logger.authentication_failed(
+            #     email, "User not found", request.remote_addr
+            # )
             return jsonify({"error": "Identifiants invalides"}), 401
 
         # Vérifier le mot de passe
         if not datastore.verify_password(user, password):
-            api_logger.authentication_failed(
-                email, "Invalid password", request.remote_addr
-            )
+            # api_logger.authentication_failed(
+            #     email, "Invalid password", request.remote_addr
+            # )
             return jsonify({"error": "Identifiants invalides"}), 401
 
         # Mettre à jour la dernière connexion
@@ -224,8 +224,8 @@ def login():
         except Exception as e:
             logger.warning(f"Erreur mise à jour dernière connexion: {e}")
 
-        # Log de la connexion réussie
-        api_logger.authentication_success(user.id, email, "login")
+        # Log de la connexion réussie (désactivé temporairement)
+        # api_logger.authentication_success(user.id, email, "login")
 
         return (
             jsonify(
