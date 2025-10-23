@@ -124,7 +124,7 @@ def test_login():
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
-@security_auth_bp.route("/auth/register", methods=["POST"])
+@security_auth_bp.route("/auth/signup", methods=["POST"])
 def register():
     """Créer un nouveau compte utilisateur - Copie exacte de test-register"""
     try:
@@ -175,7 +175,7 @@ def register():
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
 
 
-@security_auth_bp.route("/auth/login", methods=["POST"])
+@security_auth_bp.route("/auth/signin", methods=["POST"])
 def login():
     """Connexion utilisateur - Copie exacte de test-login"""
     try:
