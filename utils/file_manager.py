@@ -14,15 +14,15 @@ from flask import current_app
 class FileManager:
     """Gestionnaire de fichiers uploadés"""
 
-    # Types de fichiers autorisés
+    # Types de fichiers autorisés (listes pour sérialisation JSON)
     ALLOWED_EXTENSIONS = {
-        "images": {"png", "jpg", "jpeg", "gif", "bmp", "webp"},
-        "documents": {"pdf", "doc", "docx", "txt", "rtf"},
-        "spreadsheets": {"xls", "xlsx", "csv"},
-        "presentations": {"ppt", "pptx"},
-        "archives": {"zip", "rar", "7z", "tar", "gz"},
-        "videos": {"mp4", "avi", "mov", "wmv", "flv"},
-        "audio": {"mp3", "wav", "ogg", "aac"},
+        "images": ["png", "jpg", "jpeg", "gif", "bmp", "webp"],
+        "documents": ["pdf", "doc", "docx", "txt", "rtf"],
+        "spreadsheets": ["xls", "xlsx", "csv"],
+        "presentations": ["ppt", "pptx"],
+        "archives": ["zip", "rar", "7z", "tar", "gz"],
+        "videos": ["mp4", "avi", "mov", "wmv", "flv"],
+        "audio": ["mp3", "wav", "ogg", "aac"],
     }
 
     # Taille maximale par type (en MB)

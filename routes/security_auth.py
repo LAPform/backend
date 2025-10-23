@@ -129,34 +129,34 @@ def signup():
     """Créer un nouveau compte utilisateur - Endpoint principal fonctionnel"""
     try:
         data = request.get_json()
-        
+
         if not data or "email" not in data or "password" not in data:
             return jsonify({"error": "Email et mot de passe requis"}), 400
-            
+
         email = data["email"].lower().strip()
         password = data["password"]
         name = data.get("name", "")
-        
+
         # Test simple de validation
         if "@" not in email:
             return jsonify({"error": "Email invalide"}), 400
-            
+
         if len(password) < 6:
             return jsonify({"error": "Mot de passe trop court"}), 400
-            
+
         # Test de création d'utilisateur
         from models.security_models import SecurityUserDatastore
-        
+
         datastore = SecurityUserDatastore(current_app.db)
-        
+
         # Vérifier si l'utilisateur existe
         existing_user = datastore.find_user(email=email)
         if existing_user:
             return jsonify({"error": "Utilisateur déjà existant"}), 409
-            
+
         # Créer l'utilisateur
         user = datastore.create_user(email=email, password=password, name=name)
-        
+
         return (
             jsonify(
                 {
@@ -167,9 +167,10 @@ def signup():
             ),
             201,
         )
-        
+
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Erreur test inscription: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
@@ -180,38 +181,39 @@ def signin():
     """Connexion utilisateur - Endpoint principal fonctionnel"""
     try:
         data = request.get_json()
-        
+
         if not data or "email" not in data or "password" not in data:
             return jsonify({"error": "Email et mot de passe requis"}), 400
-            
+
         email = data["email"].lower().strip()
         password = data["password"]
-        
+
         # Vérifier l'utilisateur
         from models.security_models import SecurityUserDatastore
-        
+
         datastore = SecurityUserDatastore(current_app.db)
         user = datastore.find_user(email=email)
-        
+
         if not user:
             return jsonify({"error": "Utilisateur non trouvé"}), 401
-            
+
         # Vérifier le mot de passe
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
-            
+
         # Générer un token simple pour les tests
         import secrets
         import hashlib
         import time
-        
+
         token_data = f"{user.id}:{email}:{int(time.time())}"
         token = hashlib.sha256(token_data.encode()).hexdigest()
-        
+
         # Stocker le token dans la session Flask (temporaire pour les tests)
         from flask import session
-        session['user_id'] = user.id
-        session['user_token'] = token
+
+        session["user_id"] = user.id
+        session["user_token"] = token
 
         # Connexion réussie
         return (
@@ -225,9 +227,10 @@ def signin():
             ),
             200,
         )
-        
+
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Erreur test connexion: {e}")
         return jsonify({"error": f"Erreur: {str(e)}"}), 500
@@ -237,9 +240,10 @@ def signin():
 # Flask-Security-Too intercepte automatiquement ces routes
 # Utiliser uniquement /auth/signup et /auth/signin
 
-@security_auth_bp.route("/auth/logout", methods=["POST"])
+
+@security_auth_bp.route("/auth/custom-logout", methods=["POST"])
 def logout():
-    """Déconnexion utilisateur"""
+    """Déconnexion utilisateur - Route personnalisée pour éviter le conflit avec Flask-Security-Too"""
     try:
         # Déconnexion simple
         logout_user()
@@ -254,19 +258,20 @@ def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""
     try:
         from flask import session
-        
+
         # Vérifier la session
-        user_id = session.get('user_id')
-        user_token = session.get('user_token')
-        
+        user_id = session.get("user_id")
+        user_token = session.get("user_token")
+
         if not user_id or not user_token:
             return jsonify({"error": "Non authentifié - Session manquante"}), 401
-            
+
         # Récupérer les informations utilisateur depuis la base
         from models.security_models import SecurityUserDatastore
+
         datastore = SecurityUserDatastore(current_app.db)
         user = datastore.find_user(id=user_id)
-        
+
         if not user:
             return jsonify({"error": "Utilisateur non trouvé"}), 404
 
@@ -278,10 +283,7 @@ def get_current_user():
                     "email": user.email,
                     "name": user.name,
                 },
-                "session_info": {
-                    "user_id": user_id,
-                    "has_token": bool(user_token)
-                }
+                "session_info": {"user_id": user_id, "has_token": bool(user_token)},
             }
         )
 

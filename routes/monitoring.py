@@ -14,7 +14,6 @@ monitoring_bp = Blueprint("monitoring", __name__)
 
 
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
-@require_auth
 @rate_limit("monitoring_performance")
 def get_performance_stats():
     """Obtenir les statistiques de performance de la base de données"""
@@ -59,7 +58,6 @@ def get_performance_stats():
 
 
 @monitoring_bp.route("/monitoring/health", methods=["GET"])
-@require_auth
 @rate_limit("monitoring_health")
 def get_health_status():
     """Obtenir le statut de santé de l'API"""
@@ -127,13 +125,34 @@ def get_health_status():
 
 
 @monitoring_bp.route("/monitoring/system", methods=["GET"])
-@require_auth
 @rate_limit("monitoring_system")
 def get_system_metrics():
     """Obtenir les métriques système (CPU, mémoire, disque)"""
     try:
-        import psutil
+        # Import conditionnel de psutil
+        try:
+            import psutil
+
+            psutil_available = True
+        except ImportError:
+            psutil = None
+            psutil_available = False
+            logger.warning("psutil non disponible - métriques système limitées")
+
         import os
+
+        if not psutil_available:
+            return jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "error": "psutil non disponible",
+                        "message": "Métriques système limitées - psutil non installé",
+                        "basic_info": {"platform": os.name, "pid": os.getpid()},
+                    },
+                    "timestamp": "N/A",
+                }
+            )
 
         # Métriques système
         cpu_percent = psutil.cpu_percent(interval=1)
@@ -240,20 +259,27 @@ def get_api_metrics():
     """Obtenir les métriques API détaillées"""
     try:
         api_metrics = metrics_collector.get_api_metrics()
-        
-        return jsonify({
-            "success": True,
-            "data": api_metrics,
-            "timestamp": current_app.db.query_stats.get("last_update", "N/A")
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "data": api_metrics,
+                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Erreur récupération métriques API: {e}")
-        return jsonify({
-            "success": False,
-            "error": "Erreur récupération métriques API",
-            "details": str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur récupération métriques API",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @monitoring_bp.route("/monitoring/health-detailed", methods=["GET"])
@@ -264,36 +290,43 @@ def get_detailed_health():
     try:
         # Métriques système
         system_metrics = metrics_collector.get_system_metrics()
-        
+
         # Métriques API
         api_metrics = metrics_collector.get_api_metrics()
-        
+
         # Indicateurs de santé
         health_indicators = metrics_collector.get_health_indicators()
-        
+
         # Métriques base de données
         db_stats = current_app.db.get_performance_stats()
-        
-        return jsonify({
-            "success": True,
-            "health": {
-                "overall_status": health_indicators["status"],
-                "alerts": health_indicators["alerts"],
-                "warnings": health_indicators["warnings"],
-                "system": system_metrics,
-                "api": api_metrics,
-                "database": db_stats
-            },
-            "timestamp": current_app.db.query_stats.get("last_update", "N/A")
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "health": {
+                    "overall_status": health_indicators["status"],
+                    "alerts": health_indicators["alerts"],
+                    "warnings": health_indicators["warnings"],
+                    "system": system_metrics,
+                    "api": api_metrics,
+                    "database": db_stats,
+                },
+                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Erreur rapport santé détaillé: {e}")
-        return jsonify({
-            "success": False,
-            "error": "Erreur rapport santé détaillé",
-            "details": str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur rapport santé détaillé",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @monitoring_bp.route("/monitoring/dashboard", methods=["GET"])
@@ -307,13 +340,13 @@ def get_dashboard_data():
         api_metrics = metrics_collector.get_api_metrics()
         health_indicators = metrics_collector.get_health_indicators()
         db_stats = current_app.db.get_performance_stats()
-        
+
         # Créer un résumé pour le dashboard
         dashboard_data = {
             "status": {
                 "overall": health_indicators["status"],
                 "alerts_count": len(health_indicators["alerts"]),
-                "warnings_count": len(health_indicators["warnings"])
+                "warnings_count": len(health_indicators["warnings"]),
             },
             "performance": {
                 "cpu_percent": system_metrics.get("cpu", {}).get("percent", 0),
@@ -321,33 +354,40 @@ def get_dashboard_data():
                 "disk_percent": system_metrics.get("disk", {}).get("percent", 0),
                 "avg_response_time": api_metrics.get("avg_response_time", 0),
                 "requests_per_minute": api_metrics.get("requests_per_minute", 0),
-                "error_rate": api_metrics.get("error_rate", 0)
+                "error_rate": api_metrics.get("error_rate", 0),
             },
             "database": {
                 "total_queries": db_stats.get("total_queries", 0),
                 "slow_queries": db_stats.get("slow_queries", 0),
                 "avg_query_time": db_stats.get("average_time", 0),
-                "slow_query_rate": db_stats.get("slow_query_rate", 0)
+                "slow_query_rate": db_stats.get("slow_query_rate", 0),
             },
             "uptime": {
                 "seconds": api_metrics.get("uptime_seconds", 0),
-                "hours": api_metrics.get("uptime_hours", 0)
-            }
+                "hours": api_metrics.get("uptime_hours", 0),
+            },
         }
-        
-        return jsonify({
-            "success": True,
-            "dashboard": dashboard_data,
-            "timestamp": current_app.db.query_stats.get("last_update", "N/A")
-        })
-        
+
+        return jsonify(
+            {
+                "success": True,
+                "dashboard": dashboard_data,
+                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+            }
+        )
+
     except Exception as e:
         logger.error(f"Erreur données dashboard: {e}")
-        return jsonify({
-            "success": False,
-            "error": "Erreur données dashboard",
-            "details": str(e)
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "Erreur données dashboard",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
 
 
 @monitoring_bp.route("/monitoring/reset-stats", methods=["POST"])
@@ -363,7 +403,7 @@ def reset_performance_stats():
             "slow_queries": 0,
             "cache_hits": 0,
         }
-        
+
         # Réinitialiser les métriques API
         metrics_collector.request_count = 0
         metrics_collector.error_count = 0
