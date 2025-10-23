@@ -151,31 +151,18 @@ def register():
         if existing_user:
             return jsonify({"error": "Un compte avec cet email existe déjà"}), 409
 
-        # Créer le nouvel utilisateur
-        try:
-            user = datastore.create_user(email=email, password=password, name=name)
+        # Créer le nouvel utilisateur (version simplifiée comme test)
+        user = datastore.create_user(email=email, password=password, name=name)
 
-            # Log de l'inscription (désactivé temporairement)
-            # api_logger.user_registered(user.id, email)
-
-            return (
-                jsonify(
-                    {
-                        "success": True,
-                        "message": "Compte créé avec succès",
-                        "user": {
-                            "id": user.id,
-                            "email": user.email,
-                            "name": user.name,
-                        },
-                    }
-                ),
-                201,
-            )
-
-        except Exception as e:
-            logger.error(f"Erreur création utilisateur: {e}")
-            return jsonify({"error": f"Erreur lors de la création du compte: {str(e)}"}), 500
+        return jsonify({
+            "success": True,
+            "message": "Compte créé avec succès",
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "name": user.name,
+            }
+        }), 201
 
     except Exception as e:
         logger.error(f"Erreur inscription: {e}")
@@ -218,25 +205,17 @@ def login():
             # )
             return jsonify({"error": "Identifiants invalides"}), 401
 
-        # Mettre à jour la dernière connexion
+        # Mettre à jour la dernière connexion (version simplifiée)
         try:
             datastore.update_last_login(user)
         except Exception as e:
             logger.warning(f"Erreur mise à jour dernière connexion: {e}")
 
-        # Log de la connexion réussie (désactivé temporairement)
-        # api_logger.authentication_success(user.id, email, "login")
-
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Connexion réussie",
-                    "user": {"id": user.id, "email": user.email, "name": user.name},
-                }
-            ),
-            200,
-        )
+        return jsonify({
+            "success": True,
+            "message": "Connexion réussie",
+            "user": {"id": user.id, "email": user.email, "name": user.name},
+        }), 200
 
     except Exception as e:
         logger.error(f"Erreur connexion: {e}")
