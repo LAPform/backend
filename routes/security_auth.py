@@ -202,10 +202,11 @@ def signin():
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
         # Connexion avec Flask-Security-Too
-        from flask_security import login_user
-
-        # Connecter l'utilisateur avec Flask-Security-Too
-        login_user(user, remember=True)
+        try:
+            login_user(user, remember=True)
+        except Exception as login_error:
+            logger.error(f"Erreur login_user: {login_error}")
+            return jsonify({"error": f"Erreur connexion: {str(login_error)}"}), 500
 
         # Connexion réussie
         return (
@@ -221,10 +222,12 @@ def signin():
 
     except Exception as e:
         import logging
+        import traceback
 
         logger = logging.getLogger(__name__)
-        logger.error(f"Erreur test connexion: {e}")
-        return jsonify({"error": f"Erreur: {str(e)}"}), 500
+        logger.error(f"Erreur connexion: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur connexion: {str(e)}"}), 500
 
 
 # Endpoints de compatibilité supprimés car non fonctionnels
