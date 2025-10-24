@@ -23,6 +23,25 @@ def require_auth(f):
         # Vérifier la session manuelle
         user_id = session.get('user_id')
         user_token = session.get('user_token')
+        token_timestamp = session.get('token_timestamp', 0)
+        current_time = int(time.time())
+        
+        # NOUVELLE FONCTIONNALITÉ : Rotation automatique des tokens
+        if user_id and user_token and token_timestamp:
+            # Renouveler le token s'il a plus de 30 minutes
+            if current_time - token_timestamp > 1800:  # 30 minutes
+                # Créer un nouveau token
+                user_email = session.get('user_email', '')
+                new_timestamp = current_time
+                new_token_data = f"{user_id}:{user_email}:{new_timestamp}"
+                new_token = hashlib.sha256(new_token_data.encode()).hexdigest()
+                
+                # Mettre à jour la session
+                session["user_token"] = new_token
+                session["token_timestamp"] = new_timestamp
+                
+                # Log de la rotation
+                logger.info(f"Token renouvelé automatiquement pour l'utilisateur {user_id}")
         
         if not user_id or not user_token:
             # Vérifier le header Authorization si pas de session
@@ -33,8 +52,6 @@ def require_auth(f):
                     if session.get('user_token') == token:
                         user_id = session.get('user_id')
                         # Vérifier l'expiration (1 heure)
-                        token_timestamp = session.get('token_timestamp', 0)
-                        current_time = int(time.time())
                         if current_time - token_timestamp > 3600:  # Token expiré
                             session.pop('user_id', None)
                             session.pop('user_token', None)

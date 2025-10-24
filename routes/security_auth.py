@@ -214,6 +214,7 @@ def signin():
 
         # Stocker dans la session Flask
         session["user_id"] = user.id
+        session["user_email"] = email  # Stocker l'email pour la rotation
         session["user_token"] = session_token
         session["token_timestamp"] = timestamp
 
