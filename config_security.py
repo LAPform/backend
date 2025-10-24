@@ -24,13 +24,13 @@ class SecurityConfig:
     SECURITY_TOKEN_AUTHENTICATION_KEY = "token"
     SECURITY_TOKEN_MAX_AGE = 3600  # 1 heure
 
-    # Configuration des URLs
-    SECURITY_LOGIN_URL = "/api/auth/login"
-    SECURITY_LOGOUT_URL = "/api/auth/logout"
-    SECURITY_REGISTER_URL = "/api/auth/register"
-    SECURITY_RESET_URL = "/api/auth/reset"
-    SECURITY_CHANGE_URL = "/api/auth/change"
-    SECURITY_CONFIRM_URL = "/api/auth/confirm"
+    # Configuration des URLs - Désactivées pour éviter les conflits avec nos routes personnalisées
+    SECURITY_LOGIN_URL = None
+    SECURITY_LOGOUT_URL = None
+    SECURITY_REGISTER_URL = None
+    SECURITY_RESET_URL = None
+    SECURITY_CHANGE_URL = None
+    SECURITY_CONFIRM_URL = None
 
     # Configuration des réponses pour API REST
     SECURITY_RETURN_GENERIC_RESPONSES = True
@@ -45,10 +45,10 @@ class SecurityConfig:
     MAIL_PASSWORD = None
     MAIL_DEFAULT_SENDER = "noreply@formforge.com"
 
-    # Configuration des fonctionnalités pour API REST
-    SECURITY_REGISTERABLE = True
+    # Configuration des fonctionnalités pour API REST - Désactivées pour éviter les conflits
+    SECURITY_REGISTERABLE = False  # Désactivé - nous gérons l'inscription manuellement
     SECURITY_RECOVERABLE = False  # Désactivé pour API REST
-    SECURITY_CHANGEABLE = True
+    SECURITY_CHANGEABLE = False   # Désactivé - nous gérons le changement manuellement
     SECURITY_CONFIRMABLE = False  # Désactivé pour API REST
     SECURITY_TRACKABLE = True
     SECURITY_SEND_REGISTER_EMAIL = False  # Pas d'email d'inscription

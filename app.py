@@ -64,7 +64,7 @@ def create_app():
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
 
-        # Configuration minimale pour Flask-Security-Too 5.x
+        # Configuration minimale pour Flask-Security-Too 5.x - Désactivée pour éviter les conflits
         app.config.update(
             {
                 "SECURITY_PASSWORD_HASH": "pbkdf2_sha256",
@@ -74,15 +74,19 @@ def create_app():
                 "SECURITY_JSON_ENABLED": True,
                 "SECURITY_JSON": True,
                 "SECURITY_RETURN_GENERIC_RESPONSES": True,
-                "SECURITY_REGISTERABLE": True,
+                "SECURITY_REGISTERABLE": False,  # Désactivé - nous gérons manuellement
                 "SECURITY_RECOVERABLE": False,
-                "SECURITY_CHANGEABLE": True,
+                "SECURITY_CHANGEABLE": False,   # Désactivé - nous gérons manuellement
                 "SECURITY_CONFIRMABLE": False,
                 "SECURITY_TRACKABLE": True,
                 "SECURITY_SEND_REGISTER_EMAIL": False,
                 "SECURITY_SEND_PASSWORD_CHANGE_EMAIL": False,
                 "WTF_CSRF_ENABLED": False,
                 "SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS": True,
+                # Désactiver les URLs automatiques pour éviter les conflits
+                "SECURITY_LOGIN_URL": None,
+                "SECURITY_LOGOUT_URL": None,
+                "SECURITY_REGISTER_URL": None,
             }
         )
 

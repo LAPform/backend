@@ -5,9 +5,9 @@ Routes d'authentification avec Flask-Security-Too
 from flask import Blueprint, request, jsonify, current_app
 from flask_security import current_user, login_user, logout_user
 
-# from utils.security_auth import SecurityAuthManager, require_auth  # Désactivé
-# from utils.rate_limiter import rate_limit  # Désactivé
-# from utils.structured_logger import api_logger  # Désactivé
+from utils.security_auth import SecurityAuthManager, require_auth
+from utils.rate_limiter import rate_limit
+from utils.structured_logger import api_logger
 import logging
 
 logger = logging.getLogger(__name__)
