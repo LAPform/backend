@@ -10,8 +10,9 @@ import json
 class User(UserMixin):
     """Modèle utilisateur pour Flask-Security-Too"""
 
-    def __init__(self, db_manager: DatabaseManager):
-        self.db = db_manager
+    def __init__(self):
+        # Pas de paramètre - Flask-Security-Too gère l'instanciation
+        pass
 
     def get_id(self):
         """Retourner l'ID de l'utilisateur pour Flask-Login"""
@@ -79,7 +80,7 @@ class SecurityUserDatastore:
 
         if results and len(results) > 0:
             user_data = results[0]
-            user = User(self.db)
+            user = User()
             user.id = user_data["id"]
             user.email = user_data["email"]
             user.name = user_data.get("name", "")
@@ -97,7 +98,7 @@ class SecurityUserDatastore:
 
         if results and len(results) > 0:
             user_data = results[0]
-            user = User(self.db)
+            user = User()
             user.id = user_data["id"]
             user.email = user_data["email"]
             user.name = user_data.get("name", "")
@@ -144,7 +145,7 @@ class SecurityUserDatastore:
 
             # Créer l'objet utilisateur
             self.logger.info("Création de l'objet utilisateur...")
-            user = User(self.db)
+            user = User()
             user.id = user_id
             user.email = email
             user.name = name
