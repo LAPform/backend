@@ -8,6 +8,7 @@ from flask_security import current_user, login_user, logout_user
 from utils.security_auth import SecurityAuthManager, require_auth
 from utils.rate_limiter import rate_limit
 from utils.structured_logger import api_logger
+from utils.security_validators import escape_html, create_safe_response
 import logging
 
 logger = logging.getLogger(__name__)
@@ -157,12 +158,19 @@ def signup():
         # Créer l'utilisateur
         user = datastore.create_user(email=email, password=password, name=name)
 
+        # Créer une réponse sécurisée en échappant les données utilisateur
+        user_data = {
+            "id": user.id,
+            "email": escape_html(user.email),
+            "name": escape_html(user.name)
+        }
+
         return (
             jsonify(
                 {
                     "success": True,
                     "message": "Utilisateur créé avec succès",
-                    "user": {"id": user.id, "email": user.email, "name": user.name},
+                    "user": user_data,
                 }
             ),
             201,
@@ -218,13 +226,20 @@ def signin():
         session["user_token"] = session_token
         session["token_timestamp"] = timestamp
 
+        # Créer une réponse sécurisée en échappant les données utilisateur
+        user_data = {
+            "id": user.id,
+            "email": escape_html(user.email),
+            "name": escape_html(user.name)
+        }
+
         # Connexion réussie
         return (
             jsonify(
                 {
                     "success": True,
                     "message": "Connexion réussie",
-                    "user": {"id": user.id, "email": user.email, "name": user.name},
+                    "user": user_data,
                     "token": session_token,
                 }
             ),
@@ -268,14 +283,17 @@ def get_current_user():
         if not current_user.is_authenticated:
             return jsonify({"error": "Non authentifié"}), 401
 
+        # Créer une réponse sécurisée en échappant les données utilisateur
+        user_data = {
+            "id": current_user.id,
+            "email": escape_html(current_user.email),
+            "name": escape_html(getattr(current_user, "name", ""))
+        }
+
         return jsonify(
             {
                 "success": True,
-                "user": {
-                    "id": current_user.id,
-                    "email": current_user.email,
-                    "name": getattr(current_user, "name", ""),
-                },
+                "user": user_data,
             }
         )
 
