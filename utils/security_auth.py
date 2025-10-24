@@ -1,5 +1,5 @@
 """
-Nouveau système d'authentification avec Flask-Security-Too
+Système d'authentification avec Flask-Security-Too uniquement
 """
 
 from flask import request, jsonify, current_app
@@ -12,141 +12,25 @@ logger = logging.getLogger(__name__)
 
 
 def require_auth(f):
-    """Décorateur pour protéger les routes avec validation JWT sécurisée"""
+    """Décorateur pour protéger les routes avec Flask-Security-Too"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        from flask import request, session
-        import hashlib
-        import time
-        import json
-        
-        # Vérifier d'abord la session (pour compatibilité)
-        user_id = session.get('user_id')
-        user_token = session.get('user_token')
-        
-        # Si pas de session, vérifier le header Authorization
-        if not user_id or not user_token:
-            auth_header = request.headers.get('Authorization')
-            if auth_header and auth_header.startswith('Bearer '):
-                token = auth_header.split(' ')[1]
-                
-                # VALIDATION SÉCURISÉE DU TOKEN
-                try:
-                    # Décoder le token (format: user_id:email:timestamp)
-                    # Le token est un hash SHA256 de "user_id:email:timestamp"
-                    # On doit vérifier qu'il correspond à un utilisateur valide
-                    
-                    # Récupérer l'utilisateur depuis la base de données
-                    from models.security_models import SecurityUserDatastore
-                    datastore = SecurityUserDatastore(current_app.db)
-                    
-                    # VALIDATION SÉCURISÉE DU TOKEN
-                    if len(token) == 64:  # SHA256 = 64 caractères hex
-                        # Vérifier que le token correspond à un utilisateur actif
-                        if session.get('user_token') == token:
-                            user_id = session.get('user_id')
-                            
-                            # VÉRIFICATION D'EXPIRATION (1 heure = 3600 secondes)
-                            token_timestamp = session.get('token_timestamp', 0)
-                            current_time = int(time.time())
-                            if current_time - token_timestamp > 3600:  # Token expiré
-                                # Nettoyer la session
-                                session.pop('user_id', None)
-                                session.pop('user_token', None)
-                                session.pop('token_timestamp', None)
-                                
-                                return (
-                                    jsonify(
-                                        {
-                                            "success": False,
-                                            "error": "Token expiré",
-                                            "message": "Votre session a expiré, veuillez vous reconnecter",
-                                        }
-                                    ),
-                                    401,
-                                )
-                        else:
-                            # Token invalide
-                            return (
-                                jsonify(
-                                    {
-                                        "success": False,
-                                        "error": "Token invalide",
-                                        "message": "Token non reconnu",
-                                    }
-                                ),
-                                401,
-                            )
-                    else:
-                        return (
-                            jsonify(
-                                {
-                                    "success": False,
-                                    "error": "Format de token invalide",
-                                    "message": "Token malformé",
-                                }
-                            ),
-                            401,
-                        )
-                        
-                except Exception as e:
-                    logger.error(f"Erreur validation token: {e}")
-                    return (
-                        jsonify(
-                            {
-                                "success": False,
-                                "error": "Erreur de validation",
-                                "message": "Token non valide",
-                            }
-                        ),
-                        401,
-                    )
-            else:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": "Authentification requise",
-                            "message": "Header Authorization manquant ou invalide",
-                        }
-                    ),
-                    401,
-                )
-        
-        # Vérifier que l'utilisateur existe toujours
-        try:
-            from models.security_models import SecurityUserDatastore
-            datastore = SecurityUserDatastore(current_app.db)
-            user = datastore.find_user(id=user_id)
-            
-            if not user:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": "Utilisateur non trouvé",
-                            "message": "L'utilisateur n'existe plus",
-                        }
-                    ),
-                    401,
-                )
-                
-        except Exception as e:
-            logger.error(f"Erreur vérification utilisateur: {e}")
+        # Vérifier que l'utilisateur est authentifié avec Flask-Security-Too
+        if not current_user.is_authenticated:
             return (
                 jsonify(
                     {
                         "success": False,
-                        "error": "Erreur de vérification",
-                        "message": "Impossible de vérifier l'utilisateur",
+                        "error": "Authentification requise",
+                        "message": "Vous devez être connecté pour accéder à cette ressource",
                     }
                 ),
                 401,
             )
-        
+
         # Stocker l'user_id dans les kwargs pour l'utiliser dans la fonction
-        kwargs['authenticated_user_id'] = user_id
+        kwargs["authenticated_user_id"] = current_user.id
         return f(*args, **kwargs)
 
     return decorated_function

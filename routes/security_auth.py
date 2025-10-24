@@ -201,25 +201,11 @@ def signin():
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # Générer un token sécurisé avec expiration
-        import secrets
-        import hashlib
-        import time
+        # Connexion avec Flask-Security-Too
+        from flask_security import login_user
 
-        # Token avec timestamp pour expiration (1 heure)
-        timestamp = int(time.time())
-        token_data = f"{user.id}:{email}:{timestamp}"
-        token = hashlib.sha256(token_data.encode()).hexdigest()
-        
-        # Ajouter une vérification d'expiration côté serveur
-        # Le token expire après 1 heure (3600 secondes)
-
-        # Stocker le token dans la session Flask avec timestamp
-        from flask import session
-
-        session["user_id"] = user.id
-        session["user_token"] = token
-        session["token_timestamp"] = timestamp
+        # Connecter l'utilisateur avec Flask-Security-Too
+        login_user(user, remember=True)
 
         # Connexion réussie
         return (
@@ -228,7 +214,6 @@ def signin():
                     "success": True,
                     "message": "Connexion réussie",
                     "user": {"id": user.id, "email": user.email, "name": user.name},
-                    "token": token,
                 }
             ),
             200,
@@ -263,33 +248,20 @@ def logout():
 def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""
     try:
-        from flask import session
+        from flask_security import current_user
 
-        # Vérifier la session
-        user_id = session.get("user_id")
-        user_token = session.get("user_token")
-
-        if not user_id or not user_token:
-            return jsonify({"error": "Non authentifié - Session manquante"}), 401
-
-        # Récupérer les informations utilisateur depuis la base
-        from models.security_models import SecurityUserDatastore
-
-        datastore = SecurityUserDatastore(current_app.db)
-        user = datastore.find_user(id=user_id)
-
-        if not user:
-            return jsonify({"error": "Utilisateur non trouvé"}), 404
+        # Vérifier que l'utilisateur est authentifié avec Flask-Security-Too
+        if not current_user.is_authenticated:
+            return jsonify({"error": "Non authentifié"}), 401
 
         return jsonify(
             {
                 "success": True,
                 "user": {
-                    "id": user.id,
-                    "email": user.email,
-                    "name": user.name,
+                    "id": current_user.id,
+                    "email": current_user.email,
+                    "name": getattr(current_user, "name", ""),
                 },
-                "session_info": {"user_id": user_id, "has_token": bool(user_token)},
             }
         )
 
