@@ -25,12 +25,7 @@ class SecurityConfig:
     SECURITY_TOKEN_MAX_AGE = 3600  # 1 heure
 
     # Configuration des URLs - Désactivées pour éviter les conflits avec nos routes personnalisées
-    SECURITY_LOGIN_URL = None
-    SECURITY_LOGOUT_URL = None
-    SECURITY_REGISTER_URL = None
-    SECURITY_RESET_URL = None
-    SECURITY_CHANGE_URL = None
-    SECURITY_CONFIRM_URL = None
+    # Ne pas définir ces URLs pour éviter que Flask-Security-Too les enregistre automatiquement
 
     # Configuration des réponses pour API REST
     SECURITY_RETURN_GENERIC_RESPONSES = True

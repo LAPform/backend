@@ -83,15 +83,12 @@ def create_app():
                 "SECURITY_SEND_PASSWORD_CHANGE_EMAIL": False,
                 "WTF_CSRF_ENABLED": False,
                 "SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS": True,
-                # Désactiver les URLs automatiques pour éviter les conflits
-                "SECURITY_LOGIN_URL": None,
-                "SECURITY_LOGOUT_URL": None,
-                "SECURITY_REGISTER_URL": None,
+                # Ne pas définir les URLs automatiques pour éviter les conflits
             }
         )
 
-        # Initialiser Flask-Security
-        security = Security(app, user_datastore)
+        # Initialiser Flask-Security sans enregistrement automatique des blueprints
+        security = Security(app, user_datastore, register_blueprint=False)
 
         # Configuration des templates (désactivé pour API)
         app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
