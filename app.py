@@ -6,18 +6,16 @@ import os
 import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_security import Security, SQLAlchemyUserDatastore
-from flask_security.utils import hash_password
+from flask_security import Security
 
 # Configuration du logging structuré
 from utils.logging_middleware import (
-    LoggingMiddleware,
     setup_logging_config,
     log_application_startup,
 )
 
 from models.database import DatabaseManager
-from models.security_models import User, Role, SecurityUserDatastore
+from models.security_models import SecurityUserDatastore
 from routes.forms import forms_bp
 from routes.questions import questions_bp
 from routes.responses import responses_bp

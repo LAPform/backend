@@ -3,8 +3,7 @@ Système d'authentification avec Flask-Security-Too uniquement
 """
 
 from flask import request, jsonify, current_app
-from flask_security import current_user, login_user, logout_user
-from flask_security.utils import hash_password, verify_password
+# Imports Flask-Security supprimés - utilisation système de session manuel
 from functools import wraps
 import logging
 
@@ -192,25 +191,7 @@ class SecurityAuthManager:
             }
         return None
 
-    @staticmethod
-    def login_user_safe(user, remember=False):
-        """Connexion sécurisée d'un utilisateur"""
-        try:
-            login_user(user, remember=remember)
-            return True
-        except Exception as e:
-            logger.error(f"Erreur connexion utilisateur: {e}")
-            return False
-
-    @staticmethod
-    def logout_user_safe():
-        """Déconnexion sécurisée d'un utilisateur"""
-        try:
-            logout_user()
-            return True
-        except Exception as e:
-            logger.error(f"Erreur déconnexion utilisateur: {e}")
-            return False
+# Fonctions login_user_safe et logout_user_safe supprimées - non utilisées
 
     @staticmethod
     def create_user_response(user):
