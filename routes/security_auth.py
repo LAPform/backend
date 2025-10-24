@@ -178,7 +178,7 @@ def signup():
 
 @security_auth_bp.route("/auth/signin", methods=["POST"])
 def signin():
-    """Connexion utilisateur - Endpoint principal fonctionnel"""
+    """Connexion utilisateur - Version simplifiée sans Flask-Security-Too"""
     try:
         data = request.get_json()
 
@@ -201,12 +201,21 @@ def signin():
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # Connexion avec Flask-Security-Too
-        try:
-            login_user(user, remember=True)
-        except Exception as login_error:
-            logger.error(f"Erreur login_user: {login_error}")
-            return jsonify({"error": f"Erreur connexion: {str(login_error)}"}), 500
+        # Connexion simplifiée - Créer une session manuelle
+        from flask import session
+        import secrets
+        import hashlib
+        import time
+
+        # Créer un token de session simple
+        timestamp = int(time.time())
+        token_data = f"{user.id}:{email}:{timestamp}"
+        session_token = hashlib.sha256(token_data.encode()).hexdigest()
+
+        # Stocker dans la session Flask
+        session["user_id"] = user.id
+        session["user_token"] = session_token
+        session["token_timestamp"] = timestamp
 
         # Connexion réussie
         return (
@@ -215,6 +224,7 @@ def signin():
                     "success": True,
                     "message": "Connexion réussie",
                     "user": {"id": user.id, "email": user.email, "name": user.name},
+                    "token": session_token,
                 }
             ),
             200,
