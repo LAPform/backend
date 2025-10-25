@@ -16,6 +16,55 @@ logger = logging.getLogger(__name__)
 
 questions_bp = Blueprint("questions", __name__)
 
+@questions_bp.route("/forms/<form_id>/questions/debug", methods=["POST"])
+def debug_create_question(form_id):
+    """Route de debug pour tester la création de question"""
+    try:
+        data = request.get_json()
+        logger.info(f"DEBUG: Creating question for form {form_id} with data: {data}")
+
+        # Test direct de la base de données
+        logger.info("DEBUG: Tentative de connexion à la base de données...")
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        logger.info("DEBUG: DatabaseManager créé avec succès")
+        
+        # Test simple d'insertion
+        logger.info("DEBUG: Tentative d'insertion directe...")
+        import uuid
+        import json
+        
+        question_id = str(uuid.uuid4())
+        query = "INSERT INTO questions (id, form_id, type, text, options, required, validation, order_index) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        params = (
+            question_id,
+            form_id,
+            data.get("type", "text"),
+            data.get("text", "Test"),
+            json.dumps(data.get("options", [])),
+            data.get("required", False),
+            json.dumps(data.get("validation", {})),
+            data.get("order_index", 0),
+        )
+        
+        logger.info(f"DEBUG: Exécution de la requête: {query}")
+        logger.info(f"DEBUG: Paramètres: {params}")
+        
+        db.execute_query(query, params)
+        logger.info("DEBUG: Requête exécutée avec succès")
+
+        return jsonify({
+            "success": True,
+            "question_id": question_id,
+            "message": "DEBUG: Question créée avec succès",
+        }), 201
+
+    except Exception as e:
+        logger.error(f"DEBUG: Erreur création question: {e}")
+        import traceback
+        logger.error(f"DEBUG: Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"DEBUG: Erreur interne: {str(e)}"}), 500
+
 
 @questions_bp.route("/forms/<form_id>/questions", methods=["POST"])
 @require_auth
@@ -61,8 +110,9 @@ def create_question(form_id):
 
         # Vérifier que le formulaire existe
         from models.database import DatabaseManager
+
         db = DatabaseManager()
-        
+
         form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
@@ -105,6 +155,7 @@ def get_question(question_id):
     """Récupérer une question par ID"""
     try:
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
         question = question_model.get_by_id(question_id)
@@ -131,6 +182,7 @@ def update_question(question_id):
             return jsonify({"error": "Données requises"}), 400
 
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
 
@@ -170,6 +222,7 @@ def delete_question(question_id):
     """Supprimer une question"""
     try:
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
 
@@ -201,6 +254,7 @@ def list_questions(form_id):
     try:
         # Vérifier que le formulaire existe
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         form_model = Form(db)
         form = form_model.get_by_id(form_id)
@@ -208,6 +262,7 @@ def list_questions(form_id):
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
         questions = question_model.get_by_form_id(form_id)
@@ -231,6 +286,7 @@ def reorder_questions(form_id):
 
         # Vérifier que le formulaire existe
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         form_model = Form(db)
         form = form_model.get_by_id(form_id)
@@ -239,6 +295,7 @@ def reorder_questions(form_id):
 
         # Réorganiser
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
         success = question_model.reorder(form_id, data["questions"])
@@ -268,6 +325,7 @@ def validate_question_response(question_id):
             return jsonify({"error": "Réponse requise"}), 400
 
         from models.database import DatabaseManager
+
         db = DatabaseManager()
         question_model = Question(db)
         validation_result = question_model.validate_response(
