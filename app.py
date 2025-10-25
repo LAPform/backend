@@ -44,6 +44,7 @@ def create_app():
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
     def log_request_info():
+        from flask import request
         import logging
 
         logger = logging.getLogger(__name__)
@@ -61,6 +62,7 @@ def create_app():
 
     @app.after_request
     def log_response_info(response):
+        from flask import request
         import logging
 
         logger = logging.getLogger(__name__)
@@ -155,6 +157,7 @@ def create_app():
     @app.route("/api/debug/request", methods=["GET", "POST", "PUT", "DELETE"])
     def debug_request():
         """Diagnostic des requêtes entrantes"""
+        from flask import request
         import logging
 
         logger = logging.getLogger(__name__)
