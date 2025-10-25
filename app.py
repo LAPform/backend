@@ -74,7 +74,7 @@ def create_app():
                 "SECURITY_RETURN_GENERIC_RESPONSES": True,
                 "SECURITY_REGISTERABLE": False,  # Désactivé - nous gérons manuellement
                 "SECURITY_RECOVERABLE": False,
-                "SECURITY_CHANGEABLE": False,   # Désactivé - nous gérons manuellement
+                "SECURITY_CHANGEABLE": False,  # Désactivé - nous gérons manuellement
                 "SECURITY_CONFIRMABLE": False,
                 "SECURITY_TRACKABLE": True,
                 "SECURITY_SEND_REGISTER_EMAIL": False,
@@ -85,15 +85,17 @@ def create_app():
             }
         )
 
-        # TEMPORAIREMENT DÉSACTIVÉ - Flask-Security peut causer des erreurs 500
-        # security = Security(app, user_datastore, register_blueprint=False)
+        # Réactiver Flask-Security-Too avec configuration optimisée
+        security = Security(app, user_datastore, register_blueprint=False)
 
         # Configuration des templates (désactivé pour API)
         app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
             "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
         )
 
-        structured_logger.info("Flask-Security-Too DÉSACTIVÉ pour debug des erreurs 500")
+        structured_logger.info(
+            "Flask-Security-Too réactivé avec configuration optimisée"
+        )
 
     except Exception as e:
         structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
