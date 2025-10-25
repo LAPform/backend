@@ -24,7 +24,7 @@ questions_bp = Blueprint("questions", __name__)
 @questions_bp.route("/forms/<form_id>/questions", methods=["POST"])
 @require_auth
 @rate_limit("questions_create")
-def create_question(form_id):
+def create_question(form_id, authenticated_user_id=None):
     """Créer une nouvelle question - Version simplifiée pour debug"""
     try:
         logger.info(f"🔍 ROUTE: Début create_question")
@@ -120,7 +120,7 @@ def create_question(form_id):
 @questions_bp.route("/questions/<question_id>", methods=["GET"])
 @require_auth
 @rate_limit("questions_get")
-def get_question(question_id):
+def get_question(question_id, authenticated_user_id=None):
     """Récupérer une question par ID"""
     try:
         from models.database import DatabaseManager
@@ -142,7 +142,7 @@ def get_question(question_id):
 @questions_bp.route("/questions/<question_id>", methods=["PUT"])
 @require_auth
 @rate_limit("questions_update")
-def update_question(question_id):
+def update_question(question_id, authenticated_user_id=None):
     """Mettre à jour une question"""
     try:
         data = request.get_json()
@@ -187,7 +187,7 @@ def update_question(question_id):
 @questions_bp.route("/questions/<question_id>", methods=["DELETE"])
 @require_auth
 @rate_limit("questions_delete")
-def delete_question(question_id):
+def delete_question(question_id, authenticated_user_id=None):
     """Supprimer une question"""
     try:
         from models.database import DatabaseManager
@@ -218,7 +218,7 @@ def delete_question(question_id):
 @questions_bp.route("/forms/<form_id>/questions", methods=["GET"])
 @require_auth
 @rate_limit("questions_get")
-def list_questions(form_id):
+def list_questions(form_id, authenticated_user_id=None):
     """Lister toutes les questions d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
@@ -242,7 +242,7 @@ def list_questions(form_id):
 
 @questions_bp.route("/forms/<form_id>/questions/reorder", methods=["PUT"])
 @require_auth
-def reorder_questions(form_id):
+def reorder_questions(form_id, authenticated_user_id=None):
     """Réorganiser les questions d'un formulaire"""
     try:
         data = request.get_json()
@@ -282,7 +282,7 @@ def reorder_questions(form_id):
 
 @questions_bp.route("/questions/<question_id>/validate", methods=["POST"])
 @require_auth
-def validate_question_response(question_id):
+def validate_question_response(question_id, authenticated_user_id=None):
     """Valider une réponse à une question"""
     try:
         data = request.get_json()

@@ -21,7 +21,7 @@ responses_bp = Blueprint("responses", __name__)
 @responses_bp.route("/forms/<form_id>/responses", methods=["POST"])
 @require_auth
 @rate_limit("responses_submit")
-def submit_response(form_id):
+def submit_response(form_id, authenticated_user_id=None):
     """Soumettre une réponse à un formulaire"""
     try:
         data = request.get_json()
@@ -139,7 +139,7 @@ def submit_response(form_id):
 @responses_bp.route("/forms/<form_id>/responses", methods=["GET"])
 @require_auth
 @rate_limit("responses_get")
-def get_responses(form_id):
+def get_responses(form_id, authenticated_user_id=None):
     """Récupérer toutes les réponses d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
@@ -181,7 +181,7 @@ def get_responses(form_id):
 @responses_bp.route("/responses/<response_id>", methods=["GET"])
 @require_auth
 @rate_limit("responses_get")
-def get_response(response_id):
+def get_response(response_id, authenticated_user_id=None):
     """Récupérer une réponse par ID"""
     try:
         from models.database import DatabaseManager
@@ -202,7 +202,7 @@ def get_response(response_id):
 
 @responses_bp.route("/forms/<form_id>/analytics", methods=["GET"])
 @require_auth
-def get_form_analytics(form_id):
+def get_form_analytics(form_id, authenticated_user_id=None):
     """Récupérer les analytics d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
@@ -230,7 +230,7 @@ def get_form_analytics(form_id):
 @responses_bp.route(
     "/forms/<form_id>/questions/<question_id>/analytics", methods=["GET"]
 )
-def get_question_analytics(form_id, question_id):
+def get_question_analytics(form_id, question_id, authenticated_user_id=None):
     """Récupérer les analytics d'une question"""
     try:
         # Vérifier que le formulaire existe
@@ -257,7 +257,7 @@ def get_question_analytics(form_id, question_id):
 
 @responses_bp.route("/forms/<form_id>/export/csv", methods=["GET"])
 @require_auth
-def export_responses_csv(form_id):
+def export_responses_csv(form_id, authenticated_user_id=None):
     """Exporter les réponses en CSV"""
     try:
         # Vérifier que le formulaire existe
@@ -310,7 +310,7 @@ def export_responses_csv(form_id):
 
 @responses_bp.route("/forms/<form_id>/export/excel", methods=["GET"])
 @require_auth
-def export_responses_excel(form_id):
+def export_responses_excel(form_id, authenticated_user_id=None):
     """Exporter les réponses en Excel"""
     try:
         # Vérifier que le formulaire existe
@@ -363,7 +363,7 @@ def export_responses_excel(form_id):
 
 @responses_bp.route("/forms/<form_id>/export/json", methods=["GET"])
 @require_auth
-def export_responses_json(form_id):
+def export_responses_json(form_id, authenticated_user_id=None):
     """Exporter les réponses en JSON"""
     try:
         # Vérifier que le formulaire existe
