@@ -25,7 +25,7 @@ forms_bp = Blueprint("forms", __name__)
 @forms_bp.route("/forms", methods=["POST"])
 @require_auth
 @rate_limit("forms_create")
-def create_form(**kwargs):
+def create_form(authenticated_user_id=None, **kwargs):
     """
     Créer un nouveau formulaire
 

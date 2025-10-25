@@ -197,26 +197,15 @@ class DatabaseManager:
     def execute_query(self, query: str, params: tuple = None, fetch: bool = False):
         """Exécuter une requête SQL avec gestion d'erreur robuste et monitoring"""
         start_time = time.time()
-        logger.info(f"🔍 DATABASE: Début execute_query - Query: {query[:100]}...")
-        logger.info(f"🔍 DATABASE: Params: {params}")
-        logger.info(f"🔍 DATABASE: Fetch: {fetch}")
-        
         try:
             conn = self.get_connection()
-            logger.info(f"🔍 DATABASE: Connexion obtenue - {self.db_path}")
-            
             cursor = conn.cursor()
-            logger.info(f"🔍 DATABASE: Curseur créé")
-            
+
             # Gérer le cas où params est None
             if params is None:
-                logger.info(f"🔍 DATABASE: Exécution sans params")
                 cursor.execute(query)
             else:
-                logger.info(f"🔍 DATABASE: Exécution avec params")
                 cursor.execute(query, params)
-            
-            logger.info(f"🔍 DATABASE: Requête exécutée avec succès")
 
             if fetch:
                 if "SELECT" in query.upper():
@@ -237,33 +226,17 @@ class DatabaseManager:
                 result = cursor.rowcount
 
             # Commit en cas de succès
-            logger.info(f"🔍 DATABASE: Commit de la transaction")
             conn.commit()
-            logger.info(f"🔍 DATABASE: Transaction commitée avec succès")
-
-            # Enregistrer les statistiques
             execution_time = time.time() - start_time
-            logger.info(f"🔍 DATABASE: Temps d'exécution: {execution_time:.2f}s")
             self._record_query_stats(query, execution_time)
-
-            logger.info(f"🔍 DATABASE: Requête terminée avec succès - Résultat: {type(result)}")
             return result
 
         except Exception as e:
-            logger.error(f"❌ DATABASE: ERREUR dans execute_query!")
-            logger.error(f"❌ DATABASE: Type d'erreur: {type(e).__name__}")
-            logger.error(f"❌ DATABASE: Message d'erreur: {str(e)}")
-            logger.error(f"❌ DATABASE: Query: {query}")
-            logger.error(f"❌ DATABASE: Params: {params}")
-            
+            logger.error(f"Erreur dans execute_query: {e}")
             try:
                 conn.rollback()
-                logger.info(f"🔍 DATABASE: Rollback effectué")
             except Exception as rollback_error:
-                logger.error(f"❌ DATABASE: Erreur lors du rollback: {rollback_error}")
-            
-            execution_time = time.time() - start_time
-            logger.error(f"❌ DATABASE: Temps avant erreur: {execution_time:.2f}s")
+                logger.error(f"Erreur lors du rollback: {rollback_error}")
             raise
         finally:
             if "cursor" in locals():

@@ -29,7 +29,7 @@ def create_question(form_id, authenticated_user_id=None):
     try:
         logger.info(f"🔍 ROUTE: Début create_question")
         logger.info(f"🔍 ROUTE: form_id: {form_id}")
-        
+
         data = request.get_json()
         logger.info(f"🔍 ROUTE: Données reçues: {data}")
         logger.info(f"🔍 ROUTE: Type de données: {type(data)}")
@@ -77,11 +77,8 @@ def create_question(form_id, authenticated_user_id=None):
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         # Créer la question
-        logger.info(f"🔍 ROUTE: Création du modèle Question")
         question_model = Question(db)
-        logger.info(f"🔍 ROUTE: Modèle Question créé")
-        
-        logger.info(f"🔍 ROUTE: Appel question_model.create")
+
         question_id = question_model.create(
             form_id=form_id,
             type=data["type"],
@@ -91,9 +88,6 @@ def create_question(form_id, authenticated_user_id=None):
             validation=data.get("validation", {}),
             order_index=data.get("order_index", 0),
         )
-        logger.info(f"🔍 ROUTE: question_model.create terminé")
-
-        logger.info(f"🔍 ROUTE: Question créée avec succès - ID: {question_id}")
 
         return (
             jsonify(
@@ -113,6 +107,7 @@ def create_question(form_id, authenticated_user_id=None):
         logger.error(f"❌ ROUTE: form_id: {form_id}")
         logger.error(f"❌ ROUTE: data: {data}")
         import traceback
+
         logger.error(f"❌ ROUTE: Traceback: {traceback.format_exc()}")
         return jsonify({"error": f"Erreur interne: {str(e)}"}), 500
 
