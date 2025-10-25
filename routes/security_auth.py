@@ -461,6 +461,252 @@ def debug_tokens():
         return jsonify({"error": f"Erreur debug: {str(e)}"}), 500
 
 
+@security_auth_bp.route("/auth/debug-connection", methods=["POST"])
+def debug_connection():
+    """Debug - Tester la connexion étape par étape"""
+    try:
+        logger.info(f"🔍 DEBUG CONNECTION: Début test connexion")
+
+        # 1. Vérifier les données reçues
+        data = request.get_json()
+        logger.info(f"🔍 DEBUG CONNECTION: Données reçues: {data}")
+
+        if not data:
+            return jsonify({"error": "Aucune donnée JSON"}), 400
+
+        email = data.get("email")
+        password = data.get("password")
+        logger.info(
+            f"🔍 DEBUG CONNECTION: Email: {email}, Password: {'*' * len(password) if password else 'None'}"
+        )
+
+        # 2. Tester la connexion à la base
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        logger.info(f"🔍 DEBUG CONNECTION: DatabaseManager créé")
+
+        # 3. Tester la création de la table
+        try:
+            db.execute_query(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+            """
+            )
+            logger.info(f"🔍 DEBUG CONNECTION: Table active_tokens créée/vérifiée")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG CONNECTION: Erreur création table: {e}")
+            return jsonify({"error": f"Erreur table: {e}"}), 500
+
+        # 4. Tester l'insertion d'un token de test
+        test_token = "test_token_123456789"
+        test_user_id = "test_user_123"
+        test_expires = "2025-12-31T23:59:59"
+
+        try:
+            db.execute_query(
+                """
+                INSERT OR REPLACE INTO active_tokens (token, user_id, expires_at)
+                VALUES (?, ?, ?)
+            """,
+                (test_token, test_user_id, test_expires),
+            )
+            logger.info(f"🔍 DEBUG CONNECTION: Token de test inséré")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG CONNECTION: Erreur insertion: {e}")
+            return jsonify({"error": f"Erreur insertion: {e}"}), 500
+
+        # 5. Tester la récupération du token
+        try:
+            result = db.execute_query(
+                "SELECT * FROM active_tokens WHERE token = ?", (test_token,), fetch=True
+            )
+            logger.info(f"🔍 DEBUG CONNECTION: Token récupéré: {result}")
+        except Exception as e:
+            logger.error(f"🔍 DEBUG CONNECTION: Erreur récupération: {e}")
+            return jsonify({"error": f"Erreur récupération: {e}"}), 500
+
+        # 6. Nettoyer le token de test
+        try:
+            db.execute_query("DELETE FROM active_tokens WHERE token = ?", (test_token,))
+            logger.info(f"🔍 DEBUG CONNECTION: Token de test supprimé")
+        except Exception as e:
+            logger.warning(f"🔍 DEBUG CONNECTION: Erreur suppression: {e}")
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Test de connexion réussi",
+                    "steps_completed": [
+                        "Données reçues",
+                        "DatabaseManager créé",
+                        "Table active_tokens créée",
+                        "Token de test inséré",
+                        "Token de test récupéré",
+                        "Token de test supprimé",
+                    ],
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"🔍 DEBUG CONNECTION: Erreur générale: {e}")
+        import traceback
+
+        logger.error(f"🔍 DEBUG CONNECTION: Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur générale: {str(e)}"}), 500
+
+
+@security_auth_bp.route("/auth/debug-signin", methods=["POST"])
+def debug_signin():
+    """Debug - Tester la connexion avec logs détaillés"""
+    try:
+        logger.info(f"🔍 DEBUG SIGNIN: Début test connexion détaillé")
+
+        # 1. Vérifier les données reçues
+        data = request.get_json()
+        logger.info(f"🔍 DEBUG SIGNIN: Données reçues: {data}")
+
+        if not data or "email" not in data or "password" not in data:
+            logger.warning(f"🔍 DEBUG SIGNIN: Données manquantes")
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+
+        email = data["email"].lower().strip()
+        password = data["password"]
+        logger.info(
+            f"🔍 DEBUG SIGNIN: Email: {email}, Password: {'*' * len(password) if password else 'None'}"
+        )
+
+        # 2. Tester la recherche d'utilisateur
+        from models.security_models import SecurityUserDatastore
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        logger.info(f"🔍 DEBUG SIGNIN: DatabaseManager créé")
+
+        datastore = SecurityUserDatastore(db)
+        logger.info(f"🔍 DEBUG SIGNIN: SecurityUserDatastore créé")
+
+        logger.info(f"🔍 DEBUG SIGNIN: Recherche utilisateur par email: {email}")
+        user = datastore.find_user(email=email)
+        logger.info(f"🔍 DEBUG SIGNIN: Utilisateur trouvé: {user is not None}")
+
+        if not user:
+            logger.warning(f"🔍 DEBUG SIGNIN: Utilisateur non trouvé")
+            return jsonify({"error": "Utilisateur non trouvé"}), 401
+
+        # 3. Tester la vérification du mot de passe
+        logger.info(
+            f"🔍 DEBUG SIGNIN: Vérification mot de passe pour user_id: {user.id}"
+        )
+        password_valid = datastore.verify_password(user, password)
+        logger.info(f"🔍 DEBUG SIGNIN: Mot de passe valide: {password_valid}")
+
+        if not password_valid:
+            logger.warning(f"🔍 DEBUG SIGNIN: Mot de passe incorrect")
+            return jsonify({"error": "Mot de passe incorrect"}), 401
+
+        # 4. Tester la génération du token
+        import hashlib
+        import time
+        from datetime import datetime, timedelta
+
+        logger.info(f"🔍 DEBUG SIGNIN: Début génération token pour user_id: {user.id}")
+
+        timestamp = int(time.time())
+        token_data = f"{user.id}:{email}:{timestamp}"
+        sha256_token = hashlib.sha256(token_data.encode()).hexdigest()
+        logger.info(
+            f"🔍 DEBUG SIGNIN: Token généré: {sha256_token[:10]}...{sha256_token[-10:]}"
+        )
+
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        logger.info(f"🔍 DEBUG SIGNIN: Expiration calculée: {expires_at.isoformat()}")
+
+        # 5. Tester la création de la table
+        try:
+            db.execute_query("SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True)
+            logger.info(f"🔍 DEBUG SIGNIN: Table active_tokens existe")
+        except Exception as table_error:
+            logger.info(
+                f"🔍 DEBUG SIGNIN: Table active_tokens n'existe pas, création en cours"
+            )
+            logger.info(f"🔍 DEBUG SIGNIN: Erreur table: {table_error}")
+            db.execute_query(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+            """
+            )
+            logger.info(f"🔍 DEBUG SIGNIN: Table active_tokens créée avec succès")
+
+        # 6. Tester l'insertion du token
+        logger.info(
+            f"🔍 DEBUG SIGNIN: Suppression anciens tokens pour user_id: {user.id}"
+        )
+        deleted_count = db.execute_query(
+            "DELETE FROM active_tokens WHERE user_id = ?", (user.id,)
+        )
+        logger.info(f"🔍 DEBUG SIGNIN: {deleted_count} anciens tokens supprimés")
+
+        logger.info(f"🔍 DEBUG SIGNIN: Insertion nouveau token en base")
+        db.execute_query(
+            """
+            INSERT INTO active_tokens (token, user_id, expires_at)
+            VALUES (?, ?, ?)
+        """,
+            (sha256_token, user.id, expires_at.isoformat()),
+        )
+        logger.info(f"🔍 DEBUG SIGNIN: Token inséré avec succès en base")
+
+        # 7. Vérifier que le token est bien en base
+        result = db.execute_query(
+            "SELECT * FROM active_tokens WHERE token = ?", (sha256_token,), fetch=True
+        )
+        logger.info(f"🔍 DEBUG SIGNIN: Token vérifié en base: {result}")
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Test de connexion détaillé réussi",
+                    "user_id": user.id,
+                    "token": sha256_token,
+                    "expires_at": expires_at.isoformat(),
+                    "steps_completed": [
+                        "Données reçues et validées",
+                        "Utilisateur trouvé en base",
+                        "Mot de passe vérifié",
+                        "Token SHA256 généré",
+                        "Table active_tokens créée/vérifiée",
+                        "Anciens tokens supprimés",
+                        "Nouveau token inséré",
+                        "Token vérifié en base",
+                    ],
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"🔍 DEBUG SIGNIN: Erreur générale: {e}")
+        import traceback
+
+        logger.error(f"🔍 DEBUG SIGNIN: Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur générale: {str(e)}"}), 500
+
+
 @security_auth_bp.route("/auth/me", methods=["GET"])
 def get_current_user():
     """Récupérer les informations de l'utilisateur actuel"""

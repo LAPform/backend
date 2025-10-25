@@ -41,6 +41,35 @@ def create_app():
     # CORS pour les requêtes frontend
     CORS(app)
 
+    # Middleware de diagnostic pour tracer toutes les requêtes
+    @app.before_request
+    def log_request_info():
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"🔍 REQUEST: {request.method} {request.url}")
+        logger.info(f"🔍 REQUEST: Headers: {dict(request.headers)}")
+        logger.info(f"🔍 REQUEST: Remote: {request.remote_addr}")
+
+        if request.method in ["POST", "PUT"]:
+            try:
+                data = request.get_json()
+                logger.info(f"🔍 REQUEST: JSON: {data}")
+            except Exception as e:
+                logger.info(f"🔍 REQUEST: Raw: {request.get_data()}")
+
+    @app.after_request
+    def log_response_info(response):
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        logger.info(
+            f"🔍 RESPONSE: {response.status_code} - {request.method} {request.url}"
+        )
+        return response
+
     # Initialiser la base de données
     try:
         app.db = DatabaseManager()
@@ -119,6 +148,39 @@ def create_app():
                 "message": "FormForge POC Backend with Flask-Security-Too is running",
                 "version": "2.0.0",
                 "security": "Flask-Security-Too",
+            }
+        )
+
+    # Route de diagnostic pour tracer les requêtes
+    @app.route("/api/debug/request", methods=["GET", "POST", "PUT", "DELETE"])
+    def debug_request():
+        """Diagnostic des requêtes entrantes"""
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        logger.info(f"🔍 DEBUG REQUEST: Méthode: {request.method}")
+        logger.info(f"🔍 DEBUG REQUEST: URL: {request.url}")
+        logger.info(f"🔍 DEBUG REQUEST: Headers: {dict(request.headers)}")
+        logger.info(f"🔍 DEBUG REQUEST: Remote Addr: {request.remote_addr}")
+        logger.info(f"🔍 DEBUG REQUEST: User Agent: {request.user_agent}")
+
+        if request.method in ["POST", "PUT"]:
+            try:
+                data = request.get_json()
+                logger.info(f"🔍 DEBUG REQUEST: JSON Data: {data}")
+            except Exception as e:
+                logger.info(f"🔍 DEBUG REQUEST: Erreur JSON: {e}")
+                logger.info(f"🔍 DEBUG REQUEST: Raw Data: {request.get_data()}")
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Requête reçue et loggée",
+                "method": request.method,
+                "url": request.url,
+                "headers": dict(request.headers),
+                "remote_addr": request.remote_addr,
             }
         )
 
