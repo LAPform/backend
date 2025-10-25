@@ -57,7 +57,7 @@ def create_app():
         structured_logger.error("Erreur initialisation base de données", exception=e)
         raise
 
-    # Configuration Flask-Security-Too - TEMPORAIREMENT DÉSACTIVÉ POUR DEBUG
+    # Configuration Flask-Security-Too
     try:
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
@@ -85,7 +85,7 @@ def create_app():
             }
         )
 
-        # Réactiver Flask-Security-Too avec configuration optimisée
+        # Initialiser Flask-Security sans enregistrement automatique des blueprints
         security = Security(app, user_datastore, register_blueprint=False)
 
         # Configuration des templates (désactivé pour API)
@@ -93,15 +93,12 @@ def create_app():
             "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
         )
 
-        structured_logger.info(
-            "Flask-Security-Too réactivé avec configuration optimisée"
-        )
+        structured_logger.info("Flask-Security-Too initialisé avec succès")
 
     except Exception as e:
         structured_logger.error("Erreur initialisation Flask-Security-Too", exception=e)
         structured_logger.error(f"Détails de l'erreur: {str(e)}")
-        # Ne pas lever l'exception pour permettre le test
-        structured_logger.warning("Flask-Security-Too désactivé - continuer sans")
+        raise
 
     # Enregistrer les blueprints
     app.register_blueprint(forms_bp, url_prefix="/api")

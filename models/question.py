@@ -4,11 +4,8 @@ Modèle Question pour FormForge
 
 import uuid
 import json
-import logging
 from typing import Optional, List, Dict, Any
 from .database import DatabaseManager
-
-logger = logging.getLogger(__name__)
 
 
 class Question:
@@ -56,24 +53,20 @@ class Question:
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-        try:
-            self.db.execute_query(
-                query,
-                (
-                    question_id,
-                    form_id,
-                    type,
-                    text,
-                    json.dumps(options),
-                    required,
-                    json.dumps(validation),
-                    order_index,
-                ),
-            )
-            return question_id
-        except Exception as e:
-            logger.error(f"Erreur création question: {e}")
-            raise
+        self.db.execute_query(
+            query,
+            (
+                question_id,
+                form_id,
+                type,
+                text,
+                json.dumps(options),
+                required,
+                json.dumps(validation),
+                order_index,
+            ),
+        )
+        return question_id
 
     def get_by_id(self, question_id: str) -> Optional[Dict]:
         """Récupérer une question par ID"""
@@ -91,7 +84,7 @@ class Question:
                     question_data["options"] = []
             else:
                 question_data["options"] = []
-            
+
             validation_str = question_data.get("validation", "{}")
             if validation_str and validation_str != "{}":
                 try:
@@ -123,7 +116,7 @@ class Question:
                     question_data["options"] = []
             else:
                 question_data["options"] = []
-            
+
             validation_str = question_data.get("validation", "{}")
             if validation_str and validation_str != "{}":
                 try:
