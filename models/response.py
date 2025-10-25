@@ -186,7 +186,7 @@ class Response:
     ) -> List[Dict]:
         """Exporter les données pour CSV avec pagination"""
         # Récupérer le formulaire avec ses questions
-        from .form import Form
+        from models.form import Form
 
         form_model = Form(self.db)
         form_data = form_model.get_with_questions(form_id)
