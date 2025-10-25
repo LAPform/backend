@@ -188,6 +188,8 @@ def signup():
 def signin():
     """Connexion utilisateur - Version simplifiée sans Flask-Security-Too"""
     try:
+        import logging
+        logger = logging.getLogger(__name__)
         logger.info(f"🔍 LOGIN: Début processus de connexion")
         data = request.get_json()
         logger.info(f"🔍 LOGIN: Données reçues: {data}")
@@ -316,10 +318,8 @@ def signin():
         )
 
     except Exception as e:
-        import logging
         import traceback
 
-        logger = logging.getLogger(__name__)
         logger.error(f"🔍 LOGIN: Erreur connexion: {e}")
         logger.error(f"🔍 LOGIN: Traceback: {traceback.format_exc()}")
         return jsonify({"error": f"Erreur connexion: {str(e)}"}), 500
