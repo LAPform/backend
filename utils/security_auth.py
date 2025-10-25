@@ -18,9 +18,17 @@ def require_auth(f):
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        logger.info(f"🔍 AUTH: Début authentification pour route: {request.endpoint}")
+        logger.info(f"🔍 AUTH: Méthode: {request.method}, URL: {request.url}")
+
         # Vérifier le header Authorization
         auth_header = request.headers.get("Authorization")
+        logger.info(
+            f"🔍 AUTH: Header Authorization: {auth_header[:20] if auth_header else 'None'}..."
+        )
+
         if not auth_header or not auth_header.startswith("Bearer "):
+            logger.warning(f"🔍 AUTH: Header Authorization manquant ou invalide")
             return (
                 jsonify(
                     {
@@ -33,9 +41,13 @@ def require_auth(f):
             )
 
         token = auth_header.split(" ")[1]
+        logger.info(f"🔍 AUTH: Token extrait: {token[:10]}...{token[-10:]}")
 
         # Vérifier le format du token (64 caractères hex pour SHA256)
         if len(token) != 64:
+            logger.warning(
+                f"🔍 AUTH: Token de longueur invalide: {len(token)} caractères"
+            )
             return (
                 jsonify(
                     {
@@ -48,32 +60,20 @@ def require_auth(f):
             )
 
         try:
-            # Décoder le token SHA256 pour extraire les informations
-            # Le token contient: user_id:email:timestamp
-            # On doit le décoder pour vérifier l'expiration et l'utilisateur
-
-            # Pour un système stateless, on stocke les tokens actifs en base
-            # ou on utilise une approche différente
+            logger.info(f"🔍 AUTH: Début validation du token")
 
             # Vérifier que l'utilisateur existe toujours
             from models.security_models import SecurityUserDatastore
 
             datastore = SecurityUserDatastore(current_app.db)
-
-            # Pour l'instant, on va extraire l'user_id du token
-            # Dans un vrai système, on aurait une table de tokens actifs
-            # ou on décoderait le token pour récupérer les infos
-
-            # Méthode temporaire : chercher l'utilisateur par token dans une table
-            # ou décoder le token pour récupérer l'user_id
-
-            # Pour simplifier, on va utiliser une approche hybride
-            # On stocke les tokens actifs en mémoire ou en base
+            logger.info(f"🔍 AUTH: SecurityUserDatastore initialisé")
 
             # Vérifier si le token est valide et non expiré
             user_id = _validate_sha256_token(token)
+            logger.info(f"🔍 AUTH: Résultat validation token: user_id = {user_id}")
 
             if not user_id:
+                logger.warning(f"🔍 AUTH: Token invalide ou expiré")
                 return (
                     jsonify(
                         {
@@ -86,8 +86,12 @@ def require_auth(f):
                 )
 
             # Vérifier que l'utilisateur existe toujours
+            logger.info(f"🔍 AUTH: Vérification existence utilisateur: {user_id}")
             user = datastore.find_user(id=user_id)
+            logger.info(f"🔍 AUTH: Utilisateur trouvé: {user is not None}")
+
             if not user:
+                logger.warning(f"🔍 AUTH: Utilisateur non trouvé en base")
                 return (
                     jsonify(
                         {
@@ -101,10 +105,14 @@ def require_auth(f):
 
             # Stocker l'user_id dans les kwargs pour l'utiliser dans la fonction
             kwargs["authenticated_user_id"] = user_id
+            logger.info(f"🔍 AUTH: Authentification réussie pour user_id: {user_id}")
             return f(*args, **kwargs)
 
         except Exception as e:
-            logger.error(f"Erreur authentification: {e}")
+            logger.error(f"🔍 AUTH: Erreur authentification: {e}")
+            import traceback
+
+            logger.error(f"🔍 AUTH: Traceback: {traceback.format_exc()}")
             return (
                 jsonify(
                     {
@@ -122,9 +130,45 @@ def require_auth(f):
 def _validate_sha256_token(token):
     """Valider un token SHA256 et retourner l'user_id"""
     try:
+        logger.info(f"🔍 AUTH: Début validation token SHA256")
+        logger.info(f"🔍 AUTH: Token reçu: {token[:10]}...{token[-10:]}")
+
         from models.database import DatabaseManager
 
         db = DatabaseManager()
+        logger.info(f"🔍 AUTH: DatabaseManager initialisé")
+
+        # Vérifier si la table active_tokens existe
+        try:
+            # Test de l'existence de la table
+            db.execute_query("SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True)
+            logger.info(f"🔍 AUTH: Table active_tokens existe")
+        except Exception as table_error:
+            # Table n'existe pas, la créer
+            logger.info(f"🔍 AUTH: Table active_tokens n'existe pas, création en cours")
+            logger.info(f"🔍 AUTH: Erreur table: {table_error}")
+            db.execute_query(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+            """
+            )
+            logger.info(f"🔍 AUTH: Table active_tokens créée avec succès")
+
+        # Nettoyer les tokens expirés (maintenance)
+        try:
+            deleted_count = db.execute_query(
+                "DELETE FROM active_tokens WHERE expires_at <= datetime('now')"
+            )
+            logger.info(
+                f"🔍 AUTH: Nettoyage tokens expirés - {deleted_count} tokens supprimés"
+            )
+        except Exception as cleanup_error:
+            logger.warning(f"🔍 AUTH: Erreur nettoyage tokens expirés: {cleanup_error}")
 
         # Vérifier si le token existe et n'est pas expiré
         query = """
@@ -133,15 +177,26 @@ def _validate_sha256_token(token):
             WHERE token = ? AND expires_at > datetime('now')
         """
 
+        logger.info(f"🔍 AUTH: Exécution requête de validation")
         result = db.execute_query(query, (token,), fetch=True)
+        logger.info(f"🔍 AUTH: Résultat requête: {result}")
 
         if result and len(result) > 0:
-            return result[0]["user_id"]
+            user_id = result[0]["user_id"]
+            expires_at = result[0]["expires_at"]
+            logger.info(
+                f"🔍 AUTH: Token valide trouvé - user_id: {user_id}, expires_at: {expires_at}"
+            )
+            return user_id
 
+        logger.warning(f"🔍 AUTH: Token non trouvé ou expiré")
         return None
 
     except Exception as e:
-        logger.error(f"Erreur validation token: {e}")
+        logger.error(f"🔍 AUTH: Erreur validation token: {e}")
+        import traceback
+
+        logger.error(f"🔍 AUTH: Traceback: {traceback.format_exc()}")
         return None
 
 

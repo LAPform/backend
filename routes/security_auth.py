@@ -188,25 +188,41 @@ def signup():
 def signin():
     """Connexion utilisateur - Version simplifiée sans Flask-Security-Too"""
     try:
+        logger.info(f"🔍 LOGIN: Début processus de connexion")
         data = request.get_json()
+        logger.info(f"🔍 LOGIN: Données reçues: {data}")
 
         if not data or "email" not in data or "password" not in data:
+            logger.warning(f"🔍 LOGIN: Données manquantes - email ou password")
             return jsonify({"error": "Email et mot de passe requis"}), 400
 
         email = data["email"].lower().strip()
         password = data["password"]
+        logger.info(
+            f"🔍 LOGIN: Email: {email}, Password: {'*' * len(password) if password else 'None'}"
+        )
 
         # Vérifier l'utilisateur
         from models.security_models import SecurityUserDatastore
 
         datastore = SecurityUserDatastore(current_app.db)
+        logger.info(f"🔍 LOGIN: SecurityUserDatastore initialisé")
+
+        logger.info(f"🔍 LOGIN: Recherche utilisateur par email: {email}")
         user = datastore.find_user(email=email)
+        logger.info(f"🔍 LOGIN: Utilisateur trouvé: {user is not None}")
 
         if not user:
+            logger.warning(f"🔍 LOGIN: Utilisateur non trouvé pour email: {email}")
             return jsonify({"error": "Utilisateur non trouvé"}), 401
 
         # Vérifier le mot de passe
-        if not datastore.verify_password(user, password):
+        logger.info(f"🔍 LOGIN: Vérification mot de passe pour user_id: {user.id}")
+        password_valid = datastore.verify_password(user, password)
+        logger.info(f"🔍 LOGIN: Mot de passe valide: {password_valid}")
+
+        if not password_valid:
+            logger.warning(f"🔍 LOGIN: Mot de passe incorrect pour user_id: {user.id}")
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
         # Créer un token SHA256 avec rotation
@@ -214,23 +230,57 @@ def signin():
         import time
         from datetime import datetime, timedelta
 
+        logger.info(f"🔍 LOGIN: Début génération token pour user_id: {user.id}")
+
         # Générer un token SHA256
         timestamp = int(time.time())
         token_data = f"{user.id}:{email}:{timestamp}"
         sha256_token = hashlib.sha256(token_data.encode()).hexdigest()
+        logger.info(
+            f"🔍 LOGIN: Token généré: {sha256_token[:10]}...{sha256_token[-10:]}"
+        )
 
         # Calculer l'expiration (1 heure)
         expires_at = datetime.utcnow() + timedelta(hours=1)
+        logger.info(f"🔍 LOGIN: Expiration calculée: {expires_at.isoformat()}")
 
         # Stocker le token en base de données
         from models.database import DatabaseManager
 
         db = DatabaseManager()
+        logger.info(f"🔍 LOGIN: DatabaseManager initialisé")
+
+        # S'assurer que la table active_tokens existe
+        try:
+            db.execute_query("SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True)
+            logger.info(f"🔍 LOGIN: Table active_tokens existe")
+        except Exception as table_error:
+            # Table n'existe pas, la créer
+            logger.info(
+                f"🔍 LOGIN: Table active_tokens n'existe pas, création en cours"
+            )
+            logger.info(f"🔍 LOGIN: Erreur table: {table_error}")
+            db.execute_query(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+            """
+            )
+            logger.info(f"🔍 LOGIN: Table active_tokens créée avec succès")
 
         # Supprimer les anciens tokens de l'utilisateur
-        db.execute_query("DELETE FROM active_tokens WHERE user_id = ?", (user.id,))
+        logger.info(f"🔍 LOGIN: Suppression anciens tokens pour user_id: {user.id}")
+        deleted_count = db.execute_query(
+            "DELETE FROM active_tokens WHERE user_id = ?", (user.id,)
+        )
+        logger.info(f"🔍 LOGIN: {deleted_count} anciens tokens supprimés")
 
         # Insérer le nouveau token
+        logger.info(f"🔍 LOGIN: Insertion nouveau token en base")
         db.execute_query(
             """
             INSERT INTO active_tokens (token, user_id, expires_at)
@@ -238,6 +288,7 @@ def signin():
             """,
             (sha256_token, user.id, expires_at.isoformat()),
         )
+        logger.info(f"🔍 LOGIN: Token inséré avec succès en base")
 
         # Créer une réponse sécurisée en échappant les données utilisateur
         user_data = {
@@ -247,6 +298,11 @@ def signin():
         }
 
         # Connexion réussie
+        logger.info(f"🔍 LOGIN: Connexion réussie pour user_id: {user.id}")
+        logger.info(
+            f"🔍 LOGIN: Token retourné: {sha256_token[:10]}...{sha256_token[-10:]}"
+        )
+
         return (
             jsonify(
                 {
@@ -264,8 +320,8 @@ def signin():
         import traceback
 
         logger = logging.getLogger(__name__)
-        logger.error(f"Erreur connexion: {e}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"🔍 LOGIN: Erreur connexion: {e}")
+        logger.error(f"🔍 LOGIN: Traceback: {traceback.format_exc()}")
         return jsonify({"error": f"Erreur connexion: {str(e)}"}), 500
 
 
@@ -278,12 +334,131 @@ def signin():
 def logout():
     """Déconnexion utilisateur - Route personnalisée pour éviter le conflit avec Flask-Security-Too"""
     try:
+        from models.database import DatabaseManager
+
+        # Récupérer le token depuis le header Authorization
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+
+            # Supprimer le token de la base de données
+            db = DatabaseManager()
+            db.execute_query("DELETE FROM active_tokens WHERE token = ?", (token,))
+
         # Déconnexion simple
         logout_user()
         return jsonify({"success": True, "message": "Déconnexion réussie"}), 200
     except Exception as e:
         logger.error(f"Erreur déconnexion: {e}")
         return jsonify({"error": "Erreur interne du serveur"}), 500
+
+
+@security_auth_bp.route("/auth/test-token", methods=["GET"])
+def test_token():
+    """Tester la validité d'un token"""
+    try:
+        logger.info(f"🔍 TEST: Début test token")
+        from utils.security_auth import require_auth
+        from flask import request
+
+        auth_header = request.headers.get("Authorization")
+        logger.info(
+            f"🔍 TEST: Header Authorization: {auth_header[:20] if auth_header else 'None'}..."
+        )
+
+        if not auth_header or not auth_header.startswith("Bearer "):
+            logger.warning(f"🔍 TEST: Header Authorization manquant ou invalide")
+            return jsonify({"error": "Token manquant"}), 401
+
+        token = auth_header.split(" ")[1]
+        logger.info(f"🔍 TEST: Token extrait: {token[:10]}...{token[-10:]}")
+
+        # Valider le token
+        from utils.security_auth import _validate_sha256_token
+
+        logger.info(f"🔍 TEST: Début validation token")
+        user_id = _validate_sha256_token(token)
+        logger.info(f"🔍 TEST: Résultat validation: user_id = {user_id}")
+
+        if user_id:
+            logger.info(f"🔍 TEST: Token valide - user_id: {user_id}")
+            return (
+                jsonify(
+                    {"success": True, "message": "Token valide", "user_id": user_id}
+                ),
+                200,
+            )
+        else:
+            logger.warning(f"🔍 TEST: Token invalide ou expiré")
+            return jsonify({"error": "Token invalide ou expiré"}), 401
+
+    except Exception as e:
+        logger.error(f"🔍 TEST: Erreur test token: {e}")
+        import traceback
+
+        logger.error(f"🔍 TEST: Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur test token: {str(e)}"}), 500
+
+
+@security_auth_bp.route("/auth/debug-tokens", methods=["GET"])
+def debug_tokens():
+    """Debug - Vérifier l'état des tokens en base"""
+    try:
+        logger.info(f"🔍 DEBUG: Début vérification tokens en base")
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+
+        # Vérifier si la table existe
+        try:
+            count_result = db.execute_query(
+                "SELECT COUNT(*) as count FROM active_tokens", fetch=True
+            )
+            total_tokens = count_result[0]["count"] if count_result else 0
+            logger.info(f"🔍 DEBUG: Nombre total de tokens: {total_tokens}")
+
+            # Récupérer tous les tokens avec leurs infos
+            all_tokens = db.execute_query(
+                """
+                SELECT token, user_id, created_at, expires_at 
+                FROM active_tokens 
+                ORDER BY created_at DESC
+            """,
+                fetch=True,
+            )
+
+            logger.info(f"🔍 DEBUG: Tokens en base: {all_tokens}")
+
+            return (
+                jsonify(
+                    {
+                        "success": True,
+                        "total_tokens": total_tokens,
+                        "tokens": all_tokens,
+                    }
+                ),
+                200,
+            )
+
+        except Exception as table_error:
+            logger.warning(f"🔍 DEBUG: Table active_tokens n'existe pas: {table_error}")
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Table active_tokens n'existe pas",
+                        "details": str(table_error),
+                    }
+                ),
+                404,
+            )
+
+    except Exception as e:
+        logger.error(f"🔍 DEBUG: Erreur debug tokens: {e}")
+        import traceback
+
+        logger.error(f"🔍 DEBUG: Traceback: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur debug: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/me", methods=["GET"])
