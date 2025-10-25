@@ -60,13 +60,16 @@ def create_question(form_id):
             return jsonify({"error": "Texte invalide (1-500 caractères)"}), 400
 
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         # Créer la question
-        question_model = Question(current_app.db)
+        question_model = Question(db)
         question_id = question_model.create(
             form_id=form_id,
             type=data["type"],
@@ -101,7 +104,9 @@ def create_question(form_id):
 def get_question(question_id):
     """Récupérer une question par ID"""
     try:
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
         question = question_model.get_by_id(question_id)
 
         if not question:
@@ -125,7 +130,9 @@ def update_question(question_id):
         if not data:
             return jsonify({"error": "Données requises"}), 400
 
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
 
         # Vérifier que la question existe
         existing_question = question_model.get_by_id(question_id)
@@ -162,7 +169,9 @@ def update_question(question_id):
 def delete_question(question_id):
     """Supprimer une question"""
     try:
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
 
         # Vérifier que la question existe
         existing_question = question_model.get_by_id(question_id)
@@ -191,12 +200,16 @@ def list_questions(form_id):
     """Lister toutes les questions d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
         questions = question_model.get_by_form_id(form_id)
 
         return jsonify({"success": True, "questions": questions})
@@ -217,13 +230,17 @@ def reorder_questions(form_id):
             return jsonify({"error": "Liste des questions requise"}), 400
 
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         # Réorganiser
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
         success = question_model.reorder(form_id, data["questions"])
 
         if not success:
@@ -250,7 +267,9 @@ def validate_question_response(question_id):
         if not data or "response" not in data:
             return jsonify({"error": "Réponse requise"}), 400
 
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+        db = DatabaseManager()
+        question_model = Question(db)
         validation_result = question_model.validate_response(
             question_id, data["response"]
         )
