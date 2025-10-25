@@ -162,7 +162,7 @@ def signup():
         user_data = {
             "id": user.id,
             "email": escape_html(user.email),
-            "name": escape_html(user.name)
+            "name": escape_html(user.name),
         }
 
         return (
@@ -209,28 +209,41 @@ def signin():
         if not datastore.verify_password(user, password):
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # Connexion simplifiée - Créer une session manuelle
-        from flask import session
-        import secrets
+        # Créer un token SHA256 avec rotation
         import hashlib
         import time
+        from datetime import datetime, timedelta
 
-        # Créer un token de session simple
+        # Générer un token SHA256
         timestamp = int(time.time())
         token_data = f"{user.id}:{email}:{timestamp}"
-        session_token = hashlib.sha256(token_data.encode()).hexdigest()
+        sha256_token = hashlib.sha256(token_data.encode()).hexdigest()
 
-        # Stocker dans la session Flask
-        session["user_id"] = user.id
-        session["user_email"] = email  # Stocker l'email pour la rotation
-        session["user_token"] = session_token
-        session["token_timestamp"] = timestamp
+        # Calculer l'expiration (1 heure)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+
+        # Stocker le token en base de données
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+
+        # Supprimer les anciens tokens de l'utilisateur
+        db.execute_query("DELETE FROM active_tokens WHERE user_id = ?", (user.id,))
+
+        # Insérer le nouveau token
+        db.execute_query(
+            """
+            INSERT INTO active_tokens (token, user_id, expires_at)
+            VALUES (?, ?, ?)
+            """,
+            (sha256_token, user.id, expires_at.isoformat()),
+        )
 
         # Créer une réponse sécurisée en échappant les données utilisateur
         user_data = {
             "id": user.id,
             "email": escape_html(user.email),
-            "name": escape_html(user.name)
+            "name": escape_html(user.name),
         }
 
         # Connexion réussie
@@ -240,7 +253,7 @@ def signin():
                     "success": True,
                     "message": "Connexion réussie",
                     "user": user_data,
-                    "token": session_token,
+                    "token": sha256_token,
                 }
             ),
             200,
@@ -287,7 +300,7 @@ def get_current_user():
         user_data = {
             "id": current_user.id,
             "email": escape_html(current_user.email),
-            "name": escape_html(getattr(current_user, "name", ""))
+            "name": escape_html(getattr(current_user, "name", "")),
         }
 
         return jsonify(

@@ -111,6 +111,18 @@ class DatabaseManager:
             """
             )
 
+            # Table active_tokens pour les tokens SHA256
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+            """
+            )
+
             # Index pour améliorer les performances
             cursor.execute(
                 """

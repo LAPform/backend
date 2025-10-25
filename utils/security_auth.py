@@ -1,130 +1,92 @@
 """
-Système d'authentification avec Flask-Security-Too uniquement
+Système d'authentification avec Flask-Security-Too et tokens SHA256 stateless
 """
 
 from flask import request, jsonify, current_app
-from flask_security import current_user
+from flask_security import current_user, login_user, logout_user
 from functools import wraps
 import logging
+import hashlib
+import time
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 
 def require_auth(f):
-    """Décorateur pour protéger les routes avec système de session manuel"""
+    """Décorateur pour protéger les routes avec tokens SHA256 stateless"""
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        from flask import request, session
-        import hashlib
-        import time
-
-        # Vérifier la session manuelle
-        user_id = session.get("user_id")
-        user_token = session.get("user_token")
-        token_timestamp = session.get("token_timestamp", 0)
-        current_time = int(time.time())
-
-        # NOUVELLE FONCTIONNALITÉ : Rotation automatique des tokens
-        if user_id and user_token and token_timestamp:
-            # Renouveler le token s'il a plus de 30 minutes
-            if current_time - token_timestamp > 1800:  # 30 minutes
-                # Créer un nouveau token
-                user_email = session.get("user_email", "")
-                new_timestamp = current_time
-                new_token_data = f"{user_id}:{user_email}:{new_timestamp}"
-                new_token = hashlib.sha256(new_token_data.encode()).hexdigest()
-
-                # Mettre à jour la session
-                session["user_token"] = new_token
-                session["token_timestamp"] = new_timestamp
-
-                # Log de la rotation
-                logger.info(
-                    f"Token renouvelé automatiquement pour l'utilisateur {user_id}"
-                )
-
-        # Vérifier l'authentification via session ou token
-        if not user_id or not user_token:
-            # Vérifier le header Authorization si pas de session
-            auth_header = request.headers.get("Authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
-                if len(token) == 64:  # SHA256 = 64 caractères hex
-                    if session.get("user_token") == token:
-                        user_id = session.get("user_id")
-                        # Vérifier l'expiration (1 heure)
-                        if current_time - token_timestamp > 3600:  # Token expiré
-                            session.pop("user_id", None)
-                            session.pop("user_token", None)
-                            session.pop("token_timestamp", None)
-                            return (
-                                jsonify(
-                                    {
-                                        "success": False,
-                                        "error": "Token expiré",
-                                        "message": "Votre session a expiré, veuillez vous reconnecter",
-                                    }
-                                ),
-                                401,
-                            )
-                    else:
-                        return (
-                            jsonify(
-                                {
-                                    "success": False,
-                                    "error": "Token invalide",
-                                    "message": "Token non reconnu",
-                                }
-                            ),
-                            401,
-                        )
-                else:
-                    return (
-                        jsonify(
-                            {
-                                "success": False,
-                                "error": "Format de token invalide",
-                                "message": "Token malformé",
-                            }
-                        ),
-                        401,
-                    )
-            else:
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": "Authentification requise",
-                            "message": "Vous devez être connecté pour accéder à cette ressource",
-                        }
-                    ),
-                    401,
-                )
-
-        # Vérifier l'expiration du token même si la session existe
-        if current_time - token_timestamp > 3600:  # Token expiré
-            session.pop("user_id", None)
-            session.pop("user_token", None)
-            session.pop("token_timestamp", None)
+        # Vérifier le header Authorization
+        auth_header = request.headers.get("Authorization")
+        if not auth_header or not auth_header.startswith("Bearer "):
             return (
                 jsonify(
                     {
                         "success": False,
-                        "error": "Token expiré",
-                        "message": "Votre session a expiré, veuillez vous reconnecter",
+                        "error": "Authentification requise",
+                        "message": "Token Bearer requis dans l'en-tête Authorization",
                     }
                 ),
                 401,
             )
 
-        # Vérifier que l'utilisateur existe toujours
+        token = auth_header.split(" ")[1]
+
+        # Vérifier le format du token (64 caractères hex pour SHA256)
+        if len(token) != 64:
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Format de token invalide",
+                        "message": "Token malformé",
+                    }
+                ),
+                401,
+            )
+
         try:
+            # Décoder le token SHA256 pour extraire les informations
+            # Le token contient: user_id:email:timestamp
+            # On doit le décoder pour vérifier l'expiration et l'utilisateur
+
+            # Pour un système stateless, on stocke les tokens actifs en base
+            # ou on utilise une approche différente
+
+            # Vérifier que l'utilisateur existe toujours
             from models.security_models import SecurityUserDatastore
 
             datastore = SecurityUserDatastore(current_app.db)
-            user = datastore.find_user(id=user_id)
 
+            # Pour l'instant, on va extraire l'user_id du token
+            # Dans un vrai système, on aurait une table de tokens actifs
+            # ou on décoderait le token pour récupérer les infos
+
+            # Méthode temporaire : chercher l'utilisateur par token dans une table
+            # ou décoder le token pour récupérer l'user_id
+
+            # Pour simplifier, on va utiliser une approche hybride
+            # On stocke les tokens actifs en mémoire ou en base
+
+            # Vérifier si le token est valide et non expiré
+            user_id = _validate_sha256_token(token)
+
+            if not user_id:
+                return (
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "Token invalide ou expiré",
+                            "message": "Token non reconnu ou expiré",
+                        }
+                    ),
+                    401,
+                )
+
+            # Vérifier que l'utilisateur existe toujours
+            user = datastore.find_user(id=user_id)
             if not user:
                 return (
                     jsonify(
@@ -137,24 +99,50 @@ def require_auth(f):
                     401,
                 )
 
+            # Stocker l'user_id dans les kwargs pour l'utiliser dans la fonction
+            kwargs["authenticated_user_id"] = user_id
+            return f(*args, **kwargs)
+
         except Exception as e:
-            logger.error(f"Erreur vérification utilisateur: {e}")
+            logger.error(f"Erreur authentification: {e}")
             return (
                 jsonify(
                     {
                         "success": False,
-                        "error": "Erreur de vérification",
-                        "message": "Impossible de vérifier l'utilisateur",
+                        "error": "Erreur d'authentification",
+                        "message": "Erreur interne du serveur",
                     }
                 ),
-                401,
+                500,
             )
 
-        # Stocker l'user_id dans les kwargs pour l'utiliser dans la fonction
-        kwargs["authenticated_user_id"] = user_id
-        return f(*args, **kwargs)
-
     return decorated_function
+
+
+def _validate_sha256_token(token):
+    """Valider un token SHA256 et retourner l'user_id"""
+    try:
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+
+        # Vérifier si le token existe et n'est pas expiré
+        query = """
+            SELECT user_id, expires_at 
+            FROM active_tokens 
+            WHERE token = ? AND expires_at > datetime('now')
+        """
+
+        result = db.execute_query(query, (token,), fetch=True)
+
+        if result and len(result) > 0:
+            return result[0]["user_id"]
+
+        return None
+
+    except Exception as e:
+        logger.error(f"Erreur validation token: {e}")
+        return None
 
 
 def require_ownership(f):
