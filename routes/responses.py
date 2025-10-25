@@ -47,13 +47,19 @@ def submit_response(form_id):
             )
 
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         # Récupérer les questions du formulaire
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        question_model = Question(db)
         questions = question_model.get_by_form_id(form_id)
 
         # Valider toutes les réponses
@@ -88,7 +94,10 @@ def submit_response(form_id):
             logger.info(f"Création réponse pour formulaire: {form_id}")
             logger.info(f"Réponses reçues: {data['answers']}")
 
-            response_model = Response(current_app.db)
+            from models.database import DatabaseManager
+
+            db = DatabaseManager()
+            response_model = Response(db)
             user_id = data.get("user_id")
             ip_address = request.remote_addr
 
@@ -134,7 +143,10 @@ def get_responses(form_id):
     """Récupérer toutes les réponses d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
@@ -143,7 +155,10 @@ def get_responses(form_id):
         limit = request.args.get("limit", 100, type=int)
         offset = request.args.get("offset", 0, type=int)
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         responses = response_model.get_by_form_id(form_id, limit, offset)
 
         return jsonify(
@@ -169,7 +184,10 @@ def get_responses(form_id):
 def get_response(response_id):
     """Récupérer une réponse par ID"""
     try:
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         response = response_model.get_by_id(response_id)
 
         if not response:
@@ -188,12 +206,18 @@ def get_form_analytics(form_id):
     """Récupérer les analytics d'un formulaire"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         analytics = response_model.get_analytics(form_id)
 
         return jsonify({"success": True, "analytics": analytics})
@@ -210,12 +234,18 @@ def get_question_analytics(form_id, question_id):
     """Récupérer les analytics d'une question"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         analytics = response_model.get_question_analytics(form_id, question_id)
 
         return jsonify({"success": True, "analytics": analytics})
@@ -231,7 +261,10 @@ def export_responses_csv(form_id):
     """Exporter les réponses en CSV"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
@@ -244,7 +277,10 @@ def export_responses_csv(form_id):
         if limit > 1000:
             limit = 1000
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:
@@ -278,7 +314,10 @@ def export_responses_excel(form_id):
     """Exporter les réponses en Excel"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
@@ -291,7 +330,10 @@ def export_responses_excel(form_id):
         if limit > 1000:
             limit = 1000
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:
@@ -325,7 +367,10 @@ def export_responses_json(form_id):
     """Exporter les réponses en JSON"""
     try:
         # Vérifier que le formulaire existe
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         form = form_model.get_by_id(form_id)
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
@@ -338,7 +383,10 @@ def export_responses_json(form_id):
         if limit > 1000:
             limit = 1000
 
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
         data_to_export = response_model.export_to_csv_data(form_id, limit, offset)
 
         if not data_to_export:

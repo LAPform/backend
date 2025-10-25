@@ -47,30 +47,40 @@ def create_form(**kwargs):
             data = request.get_json()
         except Exception as json_error:
             logger.error(f"Erreur parsing JSON: {json_error}")
-            return jsonify({
-                "success": False,
-                "error": "Erreur de format JSON",
-                "message": "Le JSON envoyé contient des caractères invalides"
-            }), 400
-        
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Erreur de format JSON",
+                        "message": "Le JSON envoyé contient des caractères invalides",
+                    }
+                ),
+                400,
+            )
+
         if not data:
-            return jsonify({
-                "success": False,
-                "error": "Données manquantes",
-                "message": "Aucune donnée JSON fournie"
-            }), 400
-        
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "error": "Données manquantes",
+                        "message": "Aucune donnée JSON fournie",
+                    }
+                ),
+                400,
+            )
+
         # Debug: Logger les données reçues
         logger.info(f"Données reçues pour création formulaire: {data}")
-        
+
         # Nettoyer les données pour éviter les problèmes d'encodage
         if isinstance(data, dict):
             # Nettoyer les chaînes de caractères
             for key, value in data.items():
                 if isinstance(value, str):
                     # Nettoyer les caractères problématiques
-                    data[key] = value.encode('utf-8', errors='ignore').decode('utf-8')
-        
+                    data[key] = value.encode("utf-8", errors="ignore").decode("utf-8")
+
         # Validation des données requises
         validation_error, status_code = validate_request_data(["title"], data)
         if validation_error:
@@ -102,15 +112,21 @@ def create_form(**kwargs):
 
         # Récupérer l'utilisateur authentifié depuis les kwargs ou la session
         from flask import session
-        user_id = kwargs.get('authenticated_user_id') or session.get('user_id', 'unknown_user')
-        
+
+        user_id = kwargs.get("authenticated_user_id") or session.get(
+            "user_id", "unknown_user"
+        )
+
         # Debug: Logger l'utilisateur et les données
         logger.info(f"Utilisateur authentifié: {user_id}")
         logger.info(f"Titre: {title}, Description: {description}, Settings: {settings}")
-        
+
         # Créer le formulaire
         try:
-            form_model = Form(current_app.db)
+            from models.database import DatabaseManager
+
+            db = DatabaseManager()
+            form_model = Form(db)
             form_id = form_model.create(title, description, settings, user_id)
 
             # Logger la création du formulaire
@@ -120,6 +136,7 @@ def create_form(**kwargs):
             logger.error(f"Erreur lors de la création du formulaire: {str(e)}")
             logger.error(f"Type d'erreur: {type(e).__name__}")
             import traceback
+
             logger.error(f"Traceback: {traceback.format_exc()}")
             return error_handler.handle_database_error("form_creation", e)
 
@@ -151,7 +168,10 @@ def get_form(form_id, **kwargs):
     """
     try:
         try:
-            form_model = Form(current_app.db)
+            from models.database import DatabaseManager
+
+            db = DatabaseManager()
+            form_model = Form(db)
             form = form_model.get_with_questions(form_id)
         except Exception as e:
             logger.error(f"Error retrieving form: {e}")
@@ -178,7 +198,10 @@ def update_form(form_id, **kwargs):
         if not data:
             return jsonify({"error": "Données requises"}), 400
 
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
 
         # Vérifier que le formulaire existe
         existing_form = form_model.get_by_id(form_id)
@@ -213,7 +236,10 @@ def update_form(form_id, **kwargs):
 def delete_form(form_id, **kwargs):
     """Supprimer un formulaire"""
     try:
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
 
         # Vérifier que le formulaire existe
         existing_form = form_model.get_by_id(form_id)
@@ -245,7 +271,10 @@ def list_forms(**kwargs):
         limit = request.args.get("limit", 100, type=int)
         offset = request.args.get("offset", 0, type=int)
 
-        form_model = Form(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
         forms = form_model.get_all(limit, offset)
 
         return jsonify(
@@ -266,8 +295,14 @@ def list_forms(**kwargs):
 def get_form_stats(form_id, **kwargs):
     """Récupérer les statistiques d'un formulaire"""
     try:
-        form_model = Form(current_app.db)
-        response_model = Response(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        response_model = Response(db)
 
         # Vérifier que le formulaire existe
         form = form_model.get_by_id(form_id)
@@ -290,8 +325,14 @@ def get_form_stats(form_id, **kwargs):
 def duplicate_form(form_id, **kwargs):
     """Dupliquer un formulaire"""
     try:
-        form_model = Form(current_app.db)
-        question_model = Question(current_app.db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        question_model = Question(db)
 
         # Récupérer le formulaire original
         original_form = form_model.get_with_questions(form_id)
