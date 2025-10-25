@@ -4,8 +4,11 @@ Modèle Question pour FormForge
 
 import uuid
 import json
+import logging
 from typing import Optional, List, Dict, Any
 from .database import DatabaseManager
+
+logger = logging.getLogger(__name__)
 
 
 class Question:
@@ -62,7 +65,7 @@ class Question:
                     type,
                     text,
                     json.dumps(options),
-                    required,
+                    int(required),
                     json.dumps(validation),
                     order_index,
                 ),

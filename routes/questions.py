@@ -215,9 +215,6 @@ def list_questions(form_id):
         if not form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        from models.database import DatabaseManager
-
-        db = DatabaseManager()
         question_model = Question(db)
         questions = question_model.get_by_form_id(form_id)
 

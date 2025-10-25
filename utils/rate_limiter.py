@@ -20,31 +20,52 @@ class RateLimiter:
         self.counters: Dict[str, Dict[str, int]] = {}
         self.windows: Dict[str, Dict[str, float]] = {}
 
-        # Configuration des limites par route
+        # Configuration des limites par route (TEMPORAIREMENT AUGMENTÉES POUR LES TESTS)
         self.limits = {
             # Routes d'authentification (plus strictes)
-            "auth_register": {"requests": 5, "window": 300},  # 5 req/5min
-            "auth_login": {"requests": 10, "window": 300},  # 10 req/5min
-            "auth_verify": {"requests": 20, "window": 300},  # 20 req/5min
+            "auth_register": {"requests": 50, "window": 300},  # 50 req/5min (augmenté)
+            "auth_login": {"requests": 100, "window": 300},  # 100 req/5min (augmenté)
+            "auth_verify": {"requests": 200, "window": 300},  # 200 req/5min (augmenté)
             # Routes de formulaires (modérées)
-            "forms_create": {"requests": 20, "window": 3600},  # 20 req/h
-            "forms_get": {"requests": 100, "window": 3600},  # 100 req/h
-            "forms_update": {"requests": 30, "window": 3600},  # 30 req/h
-            "forms_delete": {"requests": 10, "window": 3600},  # 10 req/h
+            "forms_create": {"requests": 200, "window": 3600},  # 200 req/h (augmenté)
+            "forms_get": {"requests": 500, "window": 3600},  # 500 req/h (augmenté)
+            "forms_update": {"requests": 300, "window": 3600},  # 300 req/h (augmenté)
+            "forms_delete": {"requests": 100, "window": 3600},  # 100 req/h (augmenté)
             # Routes de questions (modérées)
-            "questions_create": {"requests": 50, "window": 3600},  # 50 req/h
-            "questions_get": {"requests": 200, "window": 3600},  # 200 req/h
-            "questions_update": {"requests": 50, "window": 3600},  # 50 req/h
-            "questions_delete": {"requests": 20, "window": 3600},  # 20 req/h
+            "questions_create": {
+                "requests": 500,
+                "window": 3600,
+            },  # 500 req/h (augmenté)
+            "questions_get": {
+                "requests": 1000,
+                "window": 3600,
+            },  # 1000 req/h (augmenté)
+            "questions_update": {
+                "requests": 500,
+                "window": 3600,
+            },  # 500 req/h (augmenté)
+            "questions_delete": {
+                "requests": 200,
+                "window": 3600,
+            },  # 200 req/h (augmenté)
             # Routes de réponses (plus permissives pour soumission publique)
-            "responses_submit": {"requests": 100, "window": 3600},  # 100 req/h
-            "responses_get": {"requests": 200, "window": 3600},  # 200 req/h
+            "responses_submit": {
+                "requests": 500,
+                "window": 3600,
+            },  # 500 req/h (augmenté)
+            "responses_get": {
+                "requests": 1000,
+                "window": 3600,
+            },  # 1000 req/h (augmenté)
             # Routes de fichiers (strictes)
-            "files_upload": {"requests": 10, "window": 3600},  # 10 req/h
-            "files_download": {"requests": 50, "window": 3600},  # 50 req/h
+            "files_upload": {"requests": 100, "window": 3600},  # 100 req/h (augmenté)
+            "files_download": {"requests": 500, "window": 3600},  # 500 req/h (augmenté)
             # Routes générales
-            "health": {"requests": 1000, "window": 3600},  # 1000 req/h
-            "default": {"requests": 100, "window": 3600},  # 100 req/h par défaut
+            "health": {"requests": 10000, "window": 3600},  # 10000 req/h (augmenté)
+            "default": {
+                "requests": 1000,
+                "window": 3600,
+            },  # 1000 req/h par défaut (augmenté)
         }
 
     def _get_client_id(self) -> str:

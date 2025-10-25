@@ -59,8 +59,8 @@ class DatabaseManager:
                     description TEXT,
                     settings TEXT DEFAULT '{}',
                     created_by TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """
             )
@@ -74,10 +74,10 @@ class DatabaseManager:
                     type TEXT NOT NULL,
                     text TEXT NOT NULL,
                     options TEXT DEFAULT '[]',
-                    required BOOLEAN DEFAULT FALSE,
+                    required INTEGER DEFAULT 0,
                     validation TEXT DEFAULT '{}',
                     order_index INTEGER NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """
             )
@@ -91,8 +91,8 @@ class DatabaseManager:
                     password_hash TEXT NOT NULL,
                     salt TEXT NOT NULL,
                     name TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_login TIMESTAMP
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    last_login TEXT
                 )
             """
             )
@@ -104,7 +104,7 @@ class DatabaseManager:
                     id TEXT PRIMARY KEY,
                     form_id TEXT REFERENCES forms(id) ON DELETE CASCADE,
                     answers TEXT NOT NULL,
-                    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    submitted_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     user_id TEXT,
                     ip_address TEXT
                 )
@@ -201,7 +201,11 @@ class DatabaseManager:
 
         try:
             cursor = conn.cursor()
-            cursor.execute(query, params)
+            # Gérer le cas où params est None
+            if params is None:
+                cursor.execute(query)
+            else:
+                cursor.execute(query, params)
 
             if fetch:
                 if "SELECT" in query.upper():
