@@ -44,12 +44,26 @@ class Question:
         order_index: int = 0,
     ) -> str:
         """Créer une nouvelle question"""
+        logger.info(f"🔍 QUESTION: Début création question")
+        logger.info(f"🔍 QUESTION: form_id: {form_id}")
+        logger.info(f"🔍 QUESTION: type: {type}")
+        logger.info(f"🔍 QUESTION: text: {text}")
+        logger.info(f"🔍 QUESTION: options: {options}")
+        logger.info(f"🔍 QUESTION: required: {required}")
+        logger.info(f"🔍 QUESTION: validation: {validation}")
+        logger.info(f"🔍 QUESTION: order_index: {order_index}")
+        
         if type not in self.QUESTION_TYPES:
+            logger.error(f"❌ QUESTION: Type invalide: {type}")
             raise ValueError(f"Type de question invalide: {type}")
 
         question_id = str(uuid.uuid4())
+        logger.info(f"🔍 QUESTION: ID généré: {question_id}")
+        
         options = options or []
         validation = validation or {}
+        logger.info(f"🔍 QUESTION: Options finales: {options}")
+        logger.info(f"🔍 QUESTION: Validation finale: {validation}")
 
         query = """
             INSERT INTO questions (id, form_id, type, text, options, required, validation, order_index)
@@ -57,22 +71,31 @@ class Question:
         """
 
         try:
-            self.db.execute_query(
-                query,
-                (
-                    question_id,
-                    form_id,
-                    type,
-                    text,
-                    json.dumps(options),
-                    int(required),
-                    json.dumps(validation),
-                    order_index,
-                ),
+            logger.info(f"🔍 QUESTION: Préparation des paramètres pour execute_query")
+            params = (
+                question_id,
+                form_id,
+                type,
+                text,
+                json.dumps(options),
+                int(required),
+                json.dumps(validation),
+                order_index,
             )
+            logger.info(f"🔍 QUESTION: Paramètres: {params}")
+            
+            logger.info(f"🔍 QUESTION: Appel execute_query")
+            self.db.execute_query(query, params)
+            logger.info(f"🔍 QUESTION: execute_query terminé avec succès")
+            
+            logger.info(f"🔍 QUESTION: Question créée avec succès - ID: {question_id}")
             return question_id
         except Exception as e:
-            logger.error(f"Erreur création question: {e}")
+            logger.error(f"❌ QUESTION: ERREUR création question!")
+            logger.error(f"❌ QUESTION: Type d'erreur: {type(e).__name__}")
+            logger.error(f"❌ QUESTION: Message: {str(e)}")
+            logger.error(f"❌ QUESTION: Query: {query}")
+            logger.error(f"❌ QUESTION: Params: {params}")
             raise
 
     def get_by_id(self, question_id: str) -> Optional[Dict]:

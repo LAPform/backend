@@ -27,8 +27,12 @@ questions_bp = Blueprint("questions", __name__)
 def create_question(form_id):
     """Créer une nouvelle question - Version simplifiée pour debug"""
     try:
+        logger.info(f"🔍 ROUTE: Début create_question")
+        logger.info(f"🔍 ROUTE: form_id: {form_id}")
+        
         data = request.get_json()
-        logger.info(f"Creating question for form {form_id} with data: {data}")
+        logger.info(f"🔍 ROUTE: Données reçues: {data}")
+        logger.info(f"🔍 ROUTE: Type de données: {type(data)}")
 
         # Validation basique
         if not data or "type" not in data or "text" not in data:
@@ -73,7 +77,11 @@ def create_question(form_id):
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
         # Créer la question
+        logger.info(f"🔍 ROUTE: Création du modèle Question")
         question_model = Question(db)
+        logger.info(f"🔍 ROUTE: Modèle Question créé")
+        
+        logger.info(f"🔍 ROUTE: Appel question_model.create")
         question_id = question_model.create(
             form_id=form_id,
             type=data["type"],
@@ -83,8 +91,9 @@ def create_question(form_id):
             validation=data.get("validation", {}),
             order_index=data.get("order_index", 0),
         )
+        logger.info(f"🔍 ROUTE: question_model.create terminé")
 
-        logger.info(f"Question créée: {question_id}")
+        logger.info(f"🔍 ROUTE: Question créée avec succès - ID: {question_id}")
 
         return (
             jsonify(
@@ -98,7 +107,13 @@ def create_question(form_id):
         )
 
     except Exception as e:
-        logger.error(f"Erreur création question: {e}")
+        logger.error(f"❌ ROUTE: ERREUR dans create_question!")
+        logger.error(f"❌ ROUTE: Type d'erreur: {type(e).__name__}")
+        logger.error(f"❌ ROUTE: Message d'erreur: {str(e)}")
+        logger.error(f"❌ ROUTE: form_id: {form_id}")
+        logger.error(f"❌ ROUTE: data: {data}")
+        import traceback
+        logger.error(f"❌ ROUTE: Traceback: {traceback.format_exc()}")
         return jsonify({"error": f"Erreur interne: {str(e)}"}), 500
 
 
