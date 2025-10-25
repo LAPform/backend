@@ -221,6 +221,9 @@ class DatabaseManager:
             else:
                 result = cursor.rowcount
 
+            # Commit en cas de succès
+            conn.commit()
+
             # Enregistrer les statistiques
             execution_time = time.time() - start_time
             self._record_query_stats(query, execution_time)
@@ -237,7 +240,7 @@ class DatabaseManager:
         finally:
             if "cursor" in locals():
                 cursor.close()
-            conn.commit()
+            # Pas de commit/rollback dans finally
             self.return_connection(conn)
 
     def _record_query_stats(self, query: str, execution_time: float):
