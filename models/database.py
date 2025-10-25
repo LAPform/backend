@@ -219,8 +219,6 @@ class DatabaseManager:
                         columns = [description[0] for description in cursor.description]
                         result = dict(zip(columns, result))
             else:
-                cursor.close()
-                conn.commit()
                 result = cursor.rowcount
 
             # Enregistrer les statistiques
@@ -239,6 +237,7 @@ class DatabaseManager:
         finally:
             if "cursor" in locals():
                 cursor.close()
+            conn.commit()
             self.return_connection(conn)
 
     def _record_query_stats(self, query: str, execution_time: float):
