@@ -13,37 +13,26 @@ logger = logging.getLogger(__name__)
 monitoring_bp = Blueprint("monitoring", __name__)
 
 
-@monitoring_bp.route("/monitoring/test", methods=["GET"])
+@monitoring_bp.route("/monitoring/simple-test", methods=["GET"])
 @require_auth
-def test_monitoring():
-    """Test simple du monitoring"""
+def simple_test_monitoring():
+    """Test très simple du monitoring"""
     try:
-        logger.info("🔍 MONITORING TEST: Début du test")
-
-        # Test 1: Vérifier current_app.db
-        db_manager = current_app.db
-        logger.info(f"🔍 MONITORING TEST: db_manager = {db_manager is not None}")
-
-        if not db_manager:
-            return (
-                jsonify({"success": False, "error": "Database manager non disponible"}),
-                500,
-            )
-
-        # Test 2: Vérifier get_performance_stats
-        logger.info("🔍 MONITORING TEST: Appel get_performance_stats")
-        db_stats = db_manager.get_performance_stats()
-        logger.info(f"🔍 MONITORING TEST: db_stats = {db_stats}")
+        logger.info("🔍 SIMPLE TEST: Début du test")
 
         return jsonify(
-            {"success": True, "message": "Test monitoring réussi", "db_stats": db_stats}
+            {
+                "success": True,
+                "message": "Test simple réussi",
+                "timestamp": "2025-10-26",
+            }
         )
 
     except Exception as e:
-        logger.error(f"🔍 MONITORING TEST: Erreur = {e}")
+        logger.error(f"🔍 SIMPLE TEST: Erreur = {e}")
         import traceback
 
-        logger.error(f"🔍 MONITORING TEST: Traceback = {traceback.format_exc()}")
+        logger.error(f"🔍 SIMPLE TEST: Traceback = {traceback.format_exc()}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
