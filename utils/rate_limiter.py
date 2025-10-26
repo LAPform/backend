@@ -20,40 +20,103 @@ class RateLimiter:
         self.counters: Dict[str, Dict[str, int]] = {}
         self.windows: Dict[str, Dict[str, float]] = {}
 
-        # Configuration des limites par route (PRODUCTION - LIMITES SÉCURISÉES)
+        # Configuration des limites par route (ÉQUILIBRÉE UX/SÉCURITÉ)
         self.limits = {
-            # Routes d'authentification (strictes)
-            "auth_register": {"requests": 5, "window": 300},  # 5 req/5min
-            "auth_login": {"requests": 10, "window": 300},  # 10 req/5min
-            "auth_verify": {"requests": 20, "window": 300},  # 20 req/5min
-            "auth_signup": {"requests": 5, "window": 300},  # 5 req/5min
-            "auth_signin": {"requests": 10, "window": 300},  # 10 req/5min
-            "auth_me": {"requests": 30, "window": 300},  # 30 req/5min
-            # Routes de formulaires (modérées)
-            "forms_create": {"requests": 20, "window": 3600},  # 20 req/h
-            "forms_get": {"requests": 100, "window": 3600},  # 100 req/h
-            "forms_update": {"requests": 30, "window": 3600},  # 30 req/h
-            "forms_delete": {"requests": 10, "window": 3600},  # 10 req/h
-            "forms_stats": {"requests": 50, "window": 3600},  # 50 req/h
-            # Routes de questions (modérées)
-            "questions_create": {"requests": 50, "window": 3600},  # 50 req/h
-            "questions_get": {"requests": 200, "window": 3600},  # 200 req/h
-            "questions_update": {"requests": 50, "window": 3600},  # 50 req/h
-            "questions_delete": {"requests": 20, "window": 3600},  # 20 req/h
-            # Routes de réponses (plus permissives pour soumission publique)
-            "responses_submit": {"requests": 100, "window": 3600},  # 100 req/h
-            "responses_get": {"requests": 200, "window": 3600},  # 200 req/h
-            # Routes de fichiers (strictes)
-            "files_upload": {"requests": 20, "window": 3600},  # 20 req/h
-            "files_download": {"requests": 100, "window": 3600},  # 100 req/h
-            # Routes de monitoring (strictes)
-            "monitoring_performance": {"requests": 30, "window": 3600},  # 30 req/h
-            "monitoring_health": {"requests": 60, "window": 3600},  # 60 req/h
-            "monitoring_system": {"requests": 10, "window": 3600},  # 10 req/h (admin)
-            "monitoring_dashboard": {"requests": 50, "window": 3600},  # 50 req/h
+            # Routes d'authentification (plus permissives)
+            "auth_register": {
+                "requests": 15,
+                "window": 300,
+            },  # 15 req/5min (au lieu de 5)
+            "auth_login": {
+                "requests": 25,
+                "window": 300,
+            },  # 25 req/5min (au lieu de 10)
+            "auth_verify": {
+                "requests": 30,
+                "window": 300,
+            },  # 30 req/5min (au lieu de 20)
+            "auth_signup": {
+                "requests": 15,
+                "window": 300,
+            },  # 15 req/5min (au lieu de 5)
+            "auth_signin": {
+                "requests": 25,
+                "window": 300,
+            },  # 25 req/5min (au lieu de 10)
+            "auth_me": {"requests": 60, "window": 300},  # 60 req/5min (au lieu de 30)
+            # Routes de formulaires (plus permissives)
+            "forms_create": {
+                "requests": 50,
+                "window": 3600,
+            },  # 50 req/h (au lieu de 20)
+            "forms_get": {
+                "requests": 200,
+                "window": 3600,
+            },  # 200 req/h (au lieu de 100)
+            "forms_update": {
+                "requests": 60,
+                "window": 3600,
+            },  # 60 req/h (au lieu de 30)
+            "forms_delete": {
+                "requests": 20,
+                "window": 3600,
+            },  # 20 req/h (au lieu de 10)
+            "forms_stats": {"requests": 80, "window": 3600},  # 80 req/h (au lieu de 50)
+            # Routes de questions (plus permissives)
+            "questions_create": {
+                "requests": 100,
+                "window": 3600,
+            },  # 100 req/h (au lieu de 50)
+            "questions_get": {
+                "requests": 300,
+                "window": 3600,
+            },  # 300 req/h (au lieu de 200)
+            "questions_update": {
+                "requests": 100,
+                "window": 3600,
+            },  # 100 req/h (au lieu de 50)
+            "questions_delete": {
+                "requests": 40,
+                "window": 3600,
+            },  # 40 req/h (au lieu de 20)
+            # Routes de réponses (ajustées légèrement)
+            "responses_submit": {
+                "requests": 120,
+                "window": 3600,
+            },  # 120 req/h (au lieu de 100)
+            "responses_get": {
+                "requests": 250,
+                "window": 3600,
+            },  # 250 req/h (au lieu de 200)
+            # Routes de fichiers (ajustées)
+            "files_upload": {
+                "requests": 30,
+                "window": 3600,
+            },  # 30 req/h (au lieu de 20)
+            "files_download": {
+                "requests": 150,
+                "window": 3600,
+            },  # 150 req/h (au lieu de 100)
+            # Routes de monitoring (ajustées)
+            "monitoring_performance": {
+                "requests": 50,
+                "window": 3600,
+            },  # 50 req/h (au lieu de 30)
+            "monitoring_health": {
+                "requests": 100,
+                "window": 3600,
+            },  # 100 req/h (au lieu de 60)
+            "monitoring_system": {
+                "requests": 15,
+                "window": 3600,
+            },  # 15 req/h (au lieu de 10)
+            "monitoring_dashboard": {
+                "requests": 80,
+                "window": 3600,
+            },  # 80 req/h (au lieu de 50)
             # Routes générales
-            "health": {"requests": 1000, "window": 3600},  # 1000 req/h
-            "default": {"requests": 100, "window": 3600},  # 100 req/h par défaut
+            "health": {"requests": 1000, "window": 3600},  # 1000 req/h (inchangé)
+            "default": {"requests": 150, "window": 3600},  # 150 req/h (au lieu de 100)
         }
 
     def _get_client_id(self) -> str:
