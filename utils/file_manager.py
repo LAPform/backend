@@ -8,7 +8,6 @@ import hashlib
 from datetime import datetime
 from typing import Dict, Optional
 import re
-from flask import current_app
 
 
 class FileManager:
@@ -75,7 +74,8 @@ class FileManager:
     def get_upload_path(filename: str) -> str:
         """Obtenir le chemin de stockage pour un fichier"""
         category = FileManager.get_file_category(filename)
-        upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
+        # Utiliser un dossier par défaut au lieu de current_app
+        upload_folder = "uploads"
 
         # Créer le dossier principal et le dossier de catégorie
         os.makedirs(upload_folder, exist_ok=True)

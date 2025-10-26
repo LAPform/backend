@@ -20,7 +20,16 @@ def get_performance_stats():
     """Obtenir les statistiques de performance de la base de données"""
     try:
         # Obtenir les statistiques du DatabaseManager
-        db_stats = current_app.db.get_performance_stats()
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        logger.info(f"🔍 MONITORING: db_manager = {db_manager is not None}")
+        if not db_manager:
+            logger.error("🔍 MONITORING: Database manager non disponible")
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_stats = db_manager.get_performance_stats()
 
         # Ajouter des métriques système
         try:
@@ -41,7 +50,7 @@ def get_performance_stats():
                 "memory_percent": 0,
                 "disk_usage": 0,
                 "process_memory": 0,
-                "note": "psutil non disponible"
+                "note": "psutil non disponible",
             }
 
         return jsonify(
@@ -49,7 +58,7 @@ def get_performance_stats():
                 "success": True,
                 "data": db_stats,
                 "system_stats": system_stats,
-                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                "timestamp": db_manager.query_stats.get("last_update", "N/A"),
             }
         )
 
@@ -74,7 +83,14 @@ def get_health_status():
     """Obtenir le statut de santé de l'API"""
     try:
         # Test de connexion base de données
-        db_health = current_app.db.get_connection()
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_health = db_manager.get_connection()
         db_health.close()
 
         # Test des tables principales
@@ -83,7 +99,7 @@ def get_health_status():
 
         for table in tables:
             try:
-                result = current_app.db.execute_query(
+                result = db_manager.execute_query(
                     f"SELECT COUNT(*) as count FROM {table}", fetch=True
                 )
                 tables_status[table] = {
@@ -94,7 +110,7 @@ def get_health_status():
                 tables_status[table] = {"status": "error", "error": str(e)}
 
         # Vérifier les requêtes lentes
-        db_stats = current_app.db.get_performance_stats()
+        db_stats = db_manager.get_performance_stats()
         slow_queries_alert = (
             db_stats["slow_query_rate"] > 0.1
         )  # Plus de 10% de requêtes lentes
@@ -114,7 +130,7 @@ def get_health_status():
             {
                 "success": True,
                 "health": health_status,
-                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                "timestamp": db_manager.query_stats.get("last_update", "N/A"),
             }
         )
 
@@ -187,12 +203,18 @@ def get_system_metrics():
             "process_cpu_percent": process.cpu_percent(),
         }
 
+        # Obtenir le database manager pour le timestamp
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        timestamp = (
+            db_manager.query_stats.get("last_update", "N/A") if db_manager else "N/A"
+        )
+
         return (
             jsonify(
                 {
                     "success": True,
                     "data": metrics,
-                    "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                    "timestamp": timestamp,
                 }
             ),
             200,
@@ -209,7 +231,14 @@ def get_system_metrics():
 def get_slow_queries():
     """Obtenir les requêtes lentes détectées"""
     try:
-        db_stats = current_app.db.get_performance_stats()
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_stats = db_manager.get_performance_stats()
 
         return jsonify(
             {
@@ -272,11 +301,17 @@ def get_api_metrics():
     try:
         api_metrics = metrics_collector.get_api_metrics()
 
+        # Obtenir le database manager pour le timestamp
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        timestamp = (
+            db_manager.query_stats.get("last_update", "N/A") if db_manager else "N/A"
+        )
+
         return jsonify(
             {
                 "success": True,
                 "data": api_metrics,
-                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                "timestamp": timestamp,
             }
         )
 
@@ -310,7 +345,14 @@ def get_detailed_health():
         health_indicators = metrics_collector.get_health_indicators()
 
         # Métriques base de données
-        db_stats = current_app.db.get_performance_stats()
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_stats = db_manager.get_performance_stats()
 
         return jsonify(
             {
@@ -323,7 +365,7 @@ def get_detailed_health():
                     "api": api_metrics,
                     "database": db_stats,
                 },
-                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                "timestamp": db_manager.query_stats.get("last_update", "N/A"),
             }
         )
 
@@ -351,7 +393,15 @@ def get_dashboard_data():
         system_metrics = metrics_collector.get_system_metrics()
         api_metrics = metrics_collector.get_api_metrics()
         health_indicators = metrics_collector.get_health_indicators()
-        db_stats = current_app.db.get_performance_stats()
+
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_stats = db_manager.get_performance_stats()
 
         # Créer un résumé pour le dashboard
         dashboard_data = {
@@ -384,7 +434,7 @@ def get_dashboard_data():
             {
                 "success": True,
                 "dashboard": dashboard_data,
-                "timestamp": current_app.db.query_stats.get("last_update", "N/A"),
+                "timestamp": db_manager.query_stats.get("last_update", "N/A"),
             }
         )
 
@@ -409,7 +459,14 @@ def reset_performance_stats():
     """Réinitialiser les statistiques de performance"""
     try:
         # Réinitialiser les statistiques de base de données
-        current_app.db.query_stats = {
+        db_manager = current_app.config.get("DATABASE_MANAGER")
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        db_manager.query_stats = {
             "total_queries": 0,
             "total_time": 0,
             "slow_queries": 0,

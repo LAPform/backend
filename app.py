@@ -77,6 +77,9 @@ def create_app():
         app.db = DatabaseManager()
         app.db.init_database()
 
+        # Rendre la base de données accessible via current_app
+        app.config["DATABASE_MANAGER"] = app.db
+
         # Logger la connexion à la base de données
         from utils.structured_logger import db_logger, structured_logger
 
