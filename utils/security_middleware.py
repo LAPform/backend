@@ -161,14 +161,58 @@ def setup_security_middleware(app):
     """Configurer tous les middlewares de sécurité"""
     try:
         # Ajouter les headers de sécurité à toutes les réponses
-        app.after_request(SecurityHeadersMiddleware.add_security_headers)
-        
-        # Logger les événements de sécurité
-        app.before_request(SecurityHeadersMiddleware.log_security_events)
-        app.before_request(security_monitoring)
+        @app.after_request
+        def add_security_headers(response):
+            """Ajouter les headers de sécurité à toutes les réponses"""
+            from flask import request
+            try:
+                # Headers de sécurité essentiels
+                response.headers['X-Frame-Options'] = 'DENY'
+                response.headers['X-Content-Type-Options'] = 'nosniff'
+                response.headers['X-XSS-Protection'] = '1; mode=block'
+                response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+                response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Expires'] = '0'
+                response.headers['Server'] = 'FormForge-API'
+                
+                # HSTS seulement en HTTPS
+                if request.is_secure:
+                    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+                
+                logger.info("🔒 Headers de sécurité ajoutés")
+                
+            except Exception as e:
+                logger.error(f"Erreur ajout headers sécurité: {e}")
+                
+            return response
         
         # Configurer CORS de manière sécurisée
-        CORSSecurityMiddleware.configure_cors(app)
+        from flask_cors import CORS
+        
+        cors_config = {
+            'origins': [
+                'http://localhost:3000',
+                'http://localhost:5173',
+                'http://127.0.0.1:3000',
+                'http://127.0.0.1:5173',
+            ],
+            'methods': ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+            'allow_headers': [
+                'Content-Type',
+                'Authorization',
+                'X-Requested-With',
+                'Accept',
+                'Origin',
+                'Access-Control-Request-Method',
+                'Access-Control-Request-Headers'
+            ],
+            'supports_credentials': True,
+            'max_age': 3600,
+        }
+        
+        CORS(app, **cors_config)
         
         logger.info("🔒 Middlewares de sécurité configurés avec succès")
         

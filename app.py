@@ -37,10 +37,20 @@ def create_app():
 
     # Configuration du logging structuré
     setup_logging_config(app)
+    
+    # Logger pour debug
+    logger = logging.getLogger(__name__)
 
     # Configuration CORS sécurisée et headers de sécurité
-    from utils.security_middleware import setup_security_middleware
-    setup_security_middleware(app)
+    try:
+        from utils.security_middleware import setup_security_middleware
+        setup_security_middleware(app)
+        logger.info("🔒 Middlewares de sécurité configurés avec succès")
+    except Exception as e:
+        logger.error(f"Erreur configuration middlewares de sécurité: {e}")
+        # Continuer sans les middlewares de sécurité en cas d'erreur
+        from flask_cors import CORS
+        CORS(app)
 
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
