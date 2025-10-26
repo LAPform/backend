@@ -14,9 +14,6 @@ from utils.logging_middleware import (
     log_application_startup,
 )
 
-# Import du rate limiter
-from utils.rate_limiter import rate_limit
-
 from models.database import DatabaseManager
 from models.security_models import SecurityUserDatastore
 from routes.forms import forms_bp
@@ -56,15 +53,6 @@ def create_app():
         from flask_cors import CORS
 
         CORS(app)
-
-    # Configuration du middleware de rate limiting global
-    try:
-        from utils.rate_limit_middleware import setup_rate_limit_middleware
-
-        setup_rate_limit_middleware(app)
-        logger.info("🚦 Middleware de rate limiting configuré avec succès")
-    except Exception as e:
-        logger.error(f"Erreur configuration middleware rate limiting: {e}")
 
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
@@ -232,19 +220,6 @@ def create_app():
                     "origin": request.headers.get("Origin", "None"),
                     "referer": request.headers.get("Referer", "None"),
                 },
-            }
-        )
-
-    # Route de test pour le rate limiting
-    @app.route("/api/test/rate-limit", methods=["GET"])
-    @rate_limit("test_rate_limit")
-    def test_rate_limit():
-        """Test du rate limiting"""
-        return jsonify(
-            {
-                "success": True,
-                "message": "Rate limiting test",
-                "timestamp": datetime.utcnow().isoformat(),
             }
         )
 

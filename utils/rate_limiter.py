@@ -53,7 +53,6 @@ class RateLimiter:
             "monitoring_dashboard": {"requests": 50, "window": 3600},  # 50 req/h
             # Routes générales
             "health": {"requests": 1000, "window": 3600},  # 1000 req/h
-            "test_rate_limit": {"requests": 5, "window": 60},  # 5 req/min pour test
             "default": {"requests": 100, "window": 3600},  # 100 req/h par défaut
         }
 
