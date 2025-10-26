@@ -222,9 +222,9 @@ class Response:
                 else:
                     answer = str(answer)
 
-                order_index = question.get('order_index', 0)
+                order_index = question.get("order_index", 0)
                 # Nettoyer le texte de la question pour éviter les caractères problématiques
-                clean_text = question_text.replace('\n', ' ').replace('\r', ' ')[:50]
+                clean_text = question_text.replace("\n", " ").replace("\r", " ")[:50]
                 row[f"Q{order_index}_{clean_text}"] = answer
 
             csv_data.append(row)
