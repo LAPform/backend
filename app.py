@@ -37,20 +37,31 @@ def create_app():
 
     # Configuration du logging structuré
     setup_logging_config(app)
-    
+
     # Logger pour debug
     logger = logging.getLogger(__name__)
 
     # Configuration CORS sécurisée et headers de sécurité
     try:
         from utils.security_middleware import setup_security_middleware
+
         setup_security_middleware(app)
         logger.info("🔒 Middlewares de sécurité configurés avec succès")
     except Exception as e:
         logger.error(f"Erreur configuration middlewares de sécurité: {e}")
         # Continuer sans les middlewares de sécurité en cas d'erreur
         from flask_cors import CORS
+
         CORS(app)
+
+    # Configuration du middleware de rate limiting global
+    try:
+        from utils.rate_limit_middleware import setup_rate_limit_middleware
+
+        setup_rate_limit_middleware(app)
+        logger.info("🚦 Middleware de rate limiting configuré avec succès")
+    except Exception as e:
+        logger.error(f"Erreur configuration middleware rate limiting: {e}")
 
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
@@ -206,34 +217,33 @@ def create_app():
     def test_security_headers():
         """Tester les headers de sécurité"""
         from flask import request
-        
-        return jsonify({
-            "success": True,
-            "message": "Headers de sécurité actifs",
-            "headers": dict(request.headers),
-            "security_info": {
-                "https": request.is_secure,
-                "user_agent": request.headers.get('User-Agent', 'Unknown'),
-                "origin": request.headers.get('Origin', 'None'),
-                "referer": request.headers.get('Referer', 'None')
-            }
-        })
 
-    # Route de test CORS
-    @app.route("/api/security/cors", methods=["GET", "OPTIONS"])
-    def test_cors():
-        """Tester la configuration CORS"""
-        from flask import request
-        
-        if request.method == "OPTIONS":
-            return jsonify({"message": "CORS preflight successful"})
-            
-        return jsonify({
-            "success": True,
-            "message": "CORS configuré correctement",
-            "origin": request.headers.get('Origin', 'None'),
-            "method": request.method
-        })
+        return jsonify(
+            {
+                "success": True,
+                "message": "Headers de sécurité actifs",
+                "headers": dict(request.headers),
+                "security_info": {
+                    "https": request.is_secure,
+                    "user_agent": request.headers.get("User-Agent", "Unknown"),
+                    "origin": request.headers.get("Origin", "None"),
+                    "referer": request.headers.get("Referer", "None"),
+                },
+            }
+        )
+
+    # Route de test pour le rate limiting
+    @app.route("/api/test/rate-limit", methods=["GET"])
+    @rate_limit("test_rate_limit")
+    def test_rate_limit():
+        """Test du rate limiting"""
+        return jsonify(
+            {
+                "success": True,
+                "message": "Rate limiting test",
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+        )
 
     # Logger le démarrage de l'application
     log_application_startup(app)

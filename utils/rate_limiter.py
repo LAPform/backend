@@ -29,36 +29,31 @@ class RateLimiter:
             "auth_signup": {"requests": 5, "window": 300},  # 5 req/5min
             "auth_signin": {"requests": 10, "window": 300},  # 10 req/5min
             "auth_me": {"requests": 30, "window": 300},  # 30 req/5min
-            
             # Routes de formulaires (modérées)
             "forms_create": {"requests": 20, "window": 3600},  # 20 req/h
             "forms_get": {"requests": 100, "window": 3600},  # 100 req/h
             "forms_update": {"requests": 30, "window": 3600},  # 30 req/h
             "forms_delete": {"requests": 10, "window": 3600},  # 10 req/h
             "forms_stats": {"requests": 50, "window": 3600},  # 50 req/h
-            
             # Routes de questions (modérées)
             "questions_create": {"requests": 50, "window": 3600},  # 50 req/h
             "questions_get": {"requests": 200, "window": 3600},  # 200 req/h
             "questions_update": {"requests": 50, "window": 3600},  # 50 req/h
             "questions_delete": {"requests": 20, "window": 3600},  # 20 req/h
-            
             # Routes de réponses (plus permissives pour soumission publique)
             "responses_submit": {"requests": 100, "window": 3600},  # 100 req/h
             "responses_get": {"requests": 200, "window": 3600},  # 200 req/h
-            
             # Routes de fichiers (strictes)
             "files_upload": {"requests": 20, "window": 3600},  # 20 req/h
             "files_download": {"requests": 100, "window": 3600},  # 100 req/h
-            
             # Routes de monitoring (strictes)
             "monitoring_performance": {"requests": 30, "window": 3600},  # 30 req/h
             "monitoring_health": {"requests": 60, "window": 3600},  # 60 req/h
             "monitoring_system": {"requests": 10, "window": 3600},  # 10 req/h (admin)
             "monitoring_dashboard": {"requests": 50, "window": 3600},  # 50 req/h
-            
             # Routes générales
             "health": {"requests": 1000, "window": 3600},  # 1000 req/h
+            "test_rate_limit": {"requests": 5, "window": 60},  # 5 req/min pour test
             "default": {"requests": 100, "window": 3600},  # 100 req/h par défaut
         }
 
@@ -215,19 +210,39 @@ def rate_limit(route_name: str):
 
             # Ajouter les headers de rate limiting à la réponse
             response = f(*args, **kwargs)
-            if isinstance(response, tuple) and len(response) >= 2:
-                # Si c'est une réponse avec status code
-                headers = rate_limiter.get_rate_limit_headers(route_name)
+            headers = rate_limiter.get_rate_limit_headers(route_name)
+
+            # Gérer tous les types de réponses Flask
+            if isinstance(response, tuple):
+                # Tuple (content, status_code) ou (content, status_code, headers)
                 if len(response) == 2:
                     return response[0], response[1], headers
-                else:
+                elif len(response) == 3:
                     # Fusionner avec les headers existants
-                    existing_headers = response[2] if len(response) > 2 else {}
+                    existing_headers = (
+                        response[2] if isinstance(response[2], dict) else {}
+                    )
                     existing_headers.update(headers)
                     return response[0], response[1], existing_headers
+                else:
+                    return response
             else:
-                # Si c'est juste la réponse
-                return response
+                # Objet Response Flask ou autre
+                from flask import Response as FlaskResponse
+
+                if isinstance(response, FlaskResponse):
+                    # Ajouter les headers à l'objet Response
+                    for key, value in headers.items():
+                        response.headers[key] = value
+                    return response
+                else:
+                    # Pour jsonify() et autres, créer une nouvelle Response avec headers
+                    from flask import make_response
+
+                    resp = make_response(response)
+                    for key, value in headers.items():
+                        resp.headers[key] = value
+                    return resp
 
         return decorated_function
 
