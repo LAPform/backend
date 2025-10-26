@@ -113,7 +113,7 @@ def create_form(authenticated_user_id=None, **kwargs):
         # Récupérer l'utilisateur authentifié depuis les kwargs ou la session
         from flask import session
 
-        user_id = kwargs.get("authenticated_user_id") or session.get(
+        user_id = authenticated_user_id or kwargs.get("authenticated_user_id") or session.get(
             "user_id", "unknown_user"
         )
 
@@ -160,27 +160,41 @@ def create_form(authenticated_user_id=None, **kwargs):
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
 @require_auth
 @rate_limit("forms_get")
-def get_form(form_id, **kwargs):
+def get_form(form_id, authenticated_user_id=None, **kwargs):
     """
-    Récupérer un formulaire par ID
+    Récupérer un formulaire par ID (seulement si l'utilisateur en est propriétaire)
 
     Retourne le formulaire complet avec toutes ses questions.
     """
     try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         try:
             from models.database import DatabaseManager
 
             db = DatabaseManager()
             form_model = Form(db)
-            form = form_model.get_with_questions(form_id)
+            # Vérifier la propriété du formulaire
+            form = form_model.get_by_id_and_user(form_id, authenticated_user_id)
         except Exception as e:
             logger.error(f"Error retrieving form: {e}")
             return jsonify({"error": f"Erreur récupération formulaire: {str(e)}"}), 500
 
         if not form:
-            return jsonify({"error": "Formulaire non trouvé"}), 404
+            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
 
-        return jsonify({"success": True, "form": form})
+        # Récupérer les questions du formulaire
+        try:
+            form_with_questions = form_model.get_with_questions(form_id)
+            if form_with_questions:
+                return jsonify({"success": True, "form": form_with_questions})
+            else:
+                return jsonify({"success": True, "form": form})
+        except Exception as e:
+            logger.error(f"Error retrieving questions: {e}")
+            return jsonify({"success": True, "form": form})
 
     except Exception as e:
         logger.error(f"Erreur récupération formulaire: {e}")
@@ -190,9 +204,13 @@ def get_form(form_id, **kwargs):
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
 @require_auth
 @rate_limit("forms_update")
-def update_form(form_id, **kwargs):
-    """Mettre à jour un formulaire"""
+def update_form(form_id, authenticated_user_id=None, **kwargs):
+    """Mettre à jour un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         data = request.get_json()
 
         if not data:
@@ -203,10 +221,9 @@ def update_form(form_id, **kwargs):
         db = DatabaseManager()
         form_model = Form(db)
 
-        # Vérifier que le formulaire existe
-        existing_form = form_model.get_by_id(form_id)
-        if not existing_form:
-            return jsonify({"error": "Formulaire non trouvé"}), 404
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
 
         # Mettre à jour
         success = form_model.update(
@@ -219,7 +236,7 @@ def update_form(form_id, **kwargs):
         if not success:
             return jsonify({"error": "Erreur lors de la mise à jour"}), 500
 
-        logger.info(f"Formulaire mis à jour: {form_id}")
+        logger.info(f"Formulaire mis à jour: {form_id} par utilisateur: {authenticated_user_id}")
 
         return jsonify(
             {"success": True, "message": "Formulaire mis à jour avec succès"}
@@ -233,18 +250,21 @@ def update_form(form_id, **kwargs):
 @forms_bp.route("/forms/<form_id>", methods=["DELETE"])
 @require_auth
 @rate_limit("forms_delete")
-def delete_form(form_id, **kwargs):
-    """Supprimer un formulaire"""
+def delete_form(form_id, authenticated_user_id=None, **kwargs):
+    """Supprimer un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         from models.database import DatabaseManager
 
         db = DatabaseManager()
         form_model = Form(db)
 
-        # Vérifier que le formulaire existe
-        existing_form = form_model.get_by_id(form_id)
-        if not existing_form:
-            return jsonify({"error": "Formulaire non trouvé"}), 404
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
 
         # Supprimer
         success = form_model.delete(form_id)
@@ -252,7 +272,7 @@ def delete_form(form_id, **kwargs):
         if not success:
             return jsonify({"error": "Erreur lors de la suppression"}), 500
 
-        logger.info(f"Formulaire supprimé: {form_id}")
+        logger.info(f"Formulaire supprimé: {form_id} par utilisateur: {authenticated_user_id}")
 
         return jsonify({"success": True, "message": "Formulaire supprimé avec succès"})
 
@@ -264,18 +284,23 @@ def delete_form(form_id, **kwargs):
 @forms_bp.route("/forms", methods=["GET"])
 @require_auth
 @rate_limit("forms_get")
-def list_forms(**kwargs):
-    """Lister tous les formulaires"""
+def list_forms(authenticated_user_id=None, **kwargs):
+    """Lister tous les formulaires de l'utilisateur authentifié"""
     try:
         # Paramètres de pagination
         limit = request.args.get("limit", 100, type=int)
         offset = request.args.get("offset", 0, type=int)
 
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         from models.database import DatabaseManager
 
         db = DatabaseManager()
         form_model = Form(db)
-        forms = form_model.get_all(limit, offset)
+        # Filtrer les formulaires par utilisateur
+        forms = form_model.get_all(limit, offset, user_id=authenticated_user_id)
 
         return jsonify(
             {
@@ -292,22 +317,22 @@ def list_forms(**kwargs):
 
 @forms_bp.route("/forms/<form_id>/stats", methods=["GET"])
 @require_auth
-def get_form_stats(form_id, **kwargs):
-    """Récupérer les statistiques d'un formulaire"""
+def get_form_stats(form_id, authenticated_user_id=None, **kwargs):
+    """Récupérer les statistiques d'un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         from models.database import DatabaseManager
 
         db = DatabaseManager()
         form_model = Form(db)
-        from models.database import DatabaseManager
-
-        db = DatabaseManager()
         response_model = Response(db)
 
-        # Vérifier que le formulaire existe
-        form = form_model.get_by_id(form_id)
-        if not form:
-            return jsonify({"error": "Formulaire non trouvé"}), 404
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
 
         # Récupérer les statistiques
         stats = form_model.get_stats(form_id)
@@ -322,29 +347,34 @@ def get_form_stats(form_id, **kwargs):
 
 @forms_bp.route("/forms/<form_id>/duplicate", methods=["POST"])
 @require_auth
-def duplicate_form(form_id, **kwargs):
-    """Dupliquer un formulaire"""
+def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
+    """Dupliquer un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
         from models.database import DatabaseManager
 
         db = DatabaseManager()
         form_model = Form(db)
-        from models.database import DatabaseManager
-
-        db = DatabaseManager()
         question_model = Question(db)
+
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
 
         # Récupérer le formulaire original
         original_form = form_model.get_with_questions(form_id)
         if not original_form:
             return jsonify({"error": "Formulaire non trouvé"}), 404
 
-        # Créer le nouveau formulaire
+        # Créer le nouveau formulaire avec le même utilisateur
         new_title = f"{original_form['title']} (Copie)"
         new_description = original_form.get("description", "")
         new_settings = original_form.get("settings", {})
 
-        new_form_id = form_model.create(new_title, new_description, new_settings)
+        new_form_id = form_model.create(new_title, new_description, new_settings, authenticated_user_id)
 
         # Dupliquer les questions
         for question in original_form.get("questions", []):
@@ -358,7 +388,7 @@ def duplicate_form(form_id, **kwargs):
                 order_index=question.get("order_index", 0),
             )
 
-        logger.info(f"Formulaire dupliqué: {form_id} -> {new_form_id}")
+        logger.info(f"Formulaire dupliqué: {form_id} -> {new_form_id} par utilisateur: {authenticated_user_id}")
 
         return jsonify(
             {

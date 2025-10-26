@@ -55,14 +55,50 @@ class Form:
             return form_data
         return None
 
-    def get_all(self, limit: int = 100, offset: int = 0) -> List[Dict]:
-        """Récupérer tous les formulaires"""
-        query = """
-            SELECT * FROM forms 
-            ORDER BY created_at DESC 
-            LIMIT ? OFFSET ?
-        """
-        results = self.db.execute_query(query, (limit, offset), fetch=True)
+    def get_by_id_and_user(self, form_id: str, user_id: str) -> Optional[Dict]:
+        """Récupérer un formulaire par ID et utilisateur (vérification de propriété)"""
+        query = "SELECT * FROM forms WHERE id = ? AND created_by = ?"
+        results = self.db.execute_query(query, (form_id, user_id), fetch=True)
+
+        if results and len(results) > 0:
+            form_data = results[0]  # Premier résultat
+            # Désérialiser les settings JSON de manière sécurisée
+            settings_str = form_data.get("settings", "{}")
+            if settings_str and settings_str != "{}":
+                try:
+                    form_data["settings"] = json.loads(settings_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    form_data["settings"] = {}
+            else:
+                form_data["settings"] = {}
+            return form_data
+        return None
+
+    def is_owner(self, form_id: str, user_id: str) -> bool:
+        """Vérifier si un utilisateur est propriétaire d'un formulaire"""
+        query = "SELECT COUNT(*) as count FROM forms WHERE id = ? AND created_by = ?"
+        results = self.db.execute_query(query, (form_id, user_id), fetch=True)
+        return results and len(results) > 0 and results[0]["count"] > 0
+
+    def get_all(self, limit: int = 100, offset: int = 0, user_id: str = None) -> List[Dict]:
+        """Récupérer tous les formulaires d'un utilisateur"""
+        if user_id:
+            query = """
+                SELECT * FROM forms 
+                WHERE created_by = ?
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?
+            """
+            params = (user_id, limit, offset)
+        else:
+            query = """
+                SELECT * FROM forms 
+                ORDER BY created_at DESC 
+                LIMIT ? OFFSET ?
+            """
+            params = (limit, offset)
+        
+        results = self.db.execute_query(query, params, fetch=True)
         forms = []
         for row in results:
             form_data = dict(row)
