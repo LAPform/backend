@@ -77,7 +77,8 @@ class FileManager:
         category = FileManager.get_file_category(filename)
         upload_folder = current_app.config.get("UPLOAD_FOLDER", "uploads")
 
-        # Créer le dossier de catégorie
+        # Créer le dossier principal et le dossier de catégorie
+        os.makedirs(upload_folder, exist_ok=True)
         category_folder = os.path.join(upload_folder, category)
         os.makedirs(category_folder, exist_ok=True)
 

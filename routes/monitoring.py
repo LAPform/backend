@@ -23,17 +23,26 @@ def get_performance_stats():
         db_stats = current_app.db.get_performance_stats()
 
         # Ajouter des métriques système
-        import psutil
-        import os
+        try:
+            import psutil
+            import os
 
-        system_stats = {
-            "cpu_percent": psutil.cpu_percent(interval=1),
-            "memory_percent": psutil.virtual_memory().percent,
-            "disk_usage": psutil.disk_usage("/").percent,
-            "process_memory": psutil.Process(os.getpid()).memory_info().rss
-            / 1024
-            / 1024,  # MB
-        }
+            system_stats = {
+                "cpu_percent": psutil.cpu_percent(interval=1),
+                "memory_percent": psutil.virtual_memory().percent,
+                "disk_usage": psutil.disk_usage("/").percent,
+                "process_memory": psutil.Process(os.getpid()).memory_info().rss
+                / 1024
+                / 1024,  # MB
+            }
+        except ImportError:
+            system_stats = {
+                "cpu_percent": 0,
+                "memory_percent": 0,
+                "disk_usage": 0,
+                "process_memory": 0,
+                "note": "psutil non disponible"
+            }
 
         return jsonify(
             {
