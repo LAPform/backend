@@ -63,14 +63,14 @@ class ExcelExporter:
     """Exportateur Excel pour les réponses (version simplifiée)"""
 
     @staticmethod
-    def generate_excel(data: List[Dict]) -> bytes:
+    def generate_excel(data: List[Dict]) -> str:
         """Générer un fichier Excel à partir des données (version CSV)"""
         if not data:
-            return b""
+            return ""
 
         # Générer un CSV au lieu d'Excel pour éviter pandas
         csv_content = CSVExporter.generate_csv(data)
-        return csv_content.encode("utf-8")
+        return csv_content
 
     @staticmethod
     def save_excel_file(data: List[Dict], filename: str) -> str:

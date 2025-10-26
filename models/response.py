@@ -203,7 +203,7 @@ class Response:
 
         for response in responses:
             row = {
-                "response_id": response["id"],
+                "response_id": response.get("id", ""),
                 "submitted_at": response.get("submitted_at", ""),
                 "user_id": response.get("user_id", ""),
                 "ip_address": response.get("ip_address", ""),
@@ -212,8 +212,8 @@ class Response:
             # Ajouter les réponses aux questions
             answers = response.get("answers", {})
             for question in questions:
-                question_id = question["id"]
-                question_text = question["text"]
+                question_id = question.get("id", "")
+                question_text = question.get("text", "Question sans titre")
                 answer = answers.get(question_id, "")
 
                 # Nettoyer le texte pour CSV
@@ -222,7 +222,10 @@ class Response:
                 else:
                     answer = str(answer)
 
-                row[f"Q{question['order_index']}_{question_text[:50]}"] = answer
+                order_index = question.get('order_index', 0)
+                # Nettoyer le texte de la question pour éviter les caractères problématiques
+                clean_text = question_text.replace('\n', ' ').replace('\r', ' ')[:50]
+                row[f"Q{order_index}_{clean_text}"] = answer
 
             csv_data.append(row)
 

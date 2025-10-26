@@ -352,7 +352,8 @@ def export_responses_excel(form_id, authenticated_user_id=None):
             {
                 "success": True,
                 "excel_content": export_result["content"],
-                "filename": f"form_{form_id}_responses.xlsx",
+                "filename": f"form_{form_id}_responses.csv",
+                "note": "Export Excel généré au format CSV pour compatibilité",
             }
         )
 
