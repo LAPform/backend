@@ -13,27 +13,12 @@ logger = logging.getLogger(__name__)
 monitoring_bp = Blueprint("monitoring", __name__)
 
 
-@monitoring_bp.route("/monitoring/simple-test", methods=["GET"])
-@require_auth
-def simple_test_monitoring():
-    """Test très simple du monitoring"""
-    try:
-        logger.info("🔍 SIMPLE TEST: Début du test")
-
-        return jsonify(
-            {
-                "success": True,
-                "message": "Test simple réussi",
-                "timestamp": "2025-10-26",
-            }
-        )
-
-    except Exception as e:
-        logger.error(f"🔍 SIMPLE TEST: Erreur = {e}")
-        import traceback
-
-        logger.error(f"🔍 SIMPLE TEST: Traceback = {traceback.format_exc()}")
-        return jsonify({"success": False, "error": str(e)}), 500
+@monitoring_bp.route("/monitoring/basic-test", methods=["GET"])
+def basic_test_monitoring():
+    """Test basique sans décorateurs"""
+    return jsonify(
+        {"success": True, "message": "Test basique réussi", "timestamp": "2025-10-26"}
+    )
 
 
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
