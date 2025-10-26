@@ -38,8 +38,9 @@ def create_app():
     # Configuration du logging structuré
     setup_logging_config(app)
 
-    # CORS pour les requêtes frontend
-    CORS(app)
+    # Configuration CORS sécurisée et headers de sécurité
+    from utils.security_middleware import setup_security_middleware
+    setup_security_middleware(app)
 
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
@@ -190,17 +191,39 @@ def create_app():
             }
         )
 
-    # Route de test sans authentification
-    @app.route("/api/test")
-    def test():
-        """Route de test sans authentification"""
-        return jsonify(
-            {
-                "success": True,
-                "message": "API accessible sans authentification",
-                "timestamp": "2024-01-15T10:30:00Z",
+    # Route de test des headers de sécurité
+    @app.route("/api/security/headers", methods=["GET"])
+    def test_security_headers():
+        """Tester les headers de sécurité"""
+        from flask import request
+        
+        return jsonify({
+            "success": True,
+            "message": "Headers de sécurité actifs",
+            "headers": dict(request.headers),
+            "security_info": {
+                "https": request.is_secure,
+                "user_agent": request.headers.get('User-Agent', 'Unknown'),
+                "origin": request.headers.get('Origin', 'None'),
+                "referer": request.headers.get('Referer', 'None')
             }
-        )
+        })
+
+    # Route de test CORS
+    @app.route("/api/security/cors", methods=["GET", "OPTIONS"])
+    def test_cors():
+        """Tester la configuration CORS"""
+        from flask import request
+        
+        if request.method == "OPTIONS":
+            return jsonify({"message": "CORS preflight successful"})
+            
+        return jsonify({
+            "success": True,
+            "message": "CORS configuré correctement",
+            "origin": request.headers.get('Origin', 'None'),
+            "method": request.method
+        })
 
     # Logger le démarrage de l'application
     log_application_startup(app)

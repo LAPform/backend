@@ -19,8 +19,22 @@ class Config:
     UPLOAD_FOLDER = "static/uploads"
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
 
-    # Configuration CORS
-    CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
+    # Configuration CORS sécurisée
+    CORS_ORIGINS = [
+        "http://localhost:3000", 
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173"
+    ]
+    
+    # Configuration de sécurité
+    SECURITY_HEADERS_ENABLED = True
+    FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "false").lower() == "true"
+    
+    # Configuration des cookies sécurisés
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
 
     # Mode debug
     DEBUG = os.environ.get("FLASK_ENV") == "development"
