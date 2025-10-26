@@ -24,7 +24,7 @@ def basic_test_monitoring():
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_performance")
-def get_performance_stats():
+def get_performance_stats(authenticated_user_id=None):
     """Obtenir les statistiques de performance de la base de données"""
     try:
         # Obtenir les statistiques du DatabaseManager
@@ -87,7 +87,7 @@ def get_performance_stats():
 @monitoring_bp.route("/monitoring/health", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_health")
-def get_health_status():
+def get_health_status(authenticated_user_id=None):
     """Obtenir le statut de santé de l'API"""
     try:
         # Test de connexion base de données
@@ -162,7 +162,7 @@ def get_health_status():
 @monitoring_bp.route("/monitoring/system", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_system")
-def get_system_metrics():
+def get_system_metrics(authenticated_user_id=None):
     """Obtenir les métriques système (CPU, mémoire, disque)"""
     try:
         # Import conditionnel de psutil
@@ -236,7 +236,7 @@ def get_system_metrics():
 @monitoring_bp.route("/monitoring/slow-queries", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_slow_queries")
-def get_slow_queries():
+def get_slow_queries(authenticated_user_id=None):
     """Obtenir les requêtes lentes détectées"""
     try:
         db_manager = current_app.db
@@ -304,7 +304,7 @@ def _get_optimization_recommendations(stats):
 @monitoring_bp.route("/monitoring/api-metrics", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_api_metrics")
-def get_api_metrics():
+def get_api_metrics(authenticated_user_id=None):
     """Obtenir les métriques API détaillées"""
     try:
         api_metrics = metrics_collector.get_api_metrics()
@@ -340,7 +340,7 @@ def get_api_metrics():
 @monitoring_bp.route("/monitoring/health-detailed", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_health_detailed")
-def get_detailed_health():
+def get_detailed_health(authenticated_user_id=None):
     """Obtenir un rapport de santé détaillé"""
     try:
         # Métriques système
@@ -394,7 +394,7 @@ def get_detailed_health():
 @monitoring_bp.route("/monitoring/dashboard", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_dashboard")
-def get_dashboard_data():
+def get_dashboard_data(authenticated_user_id=None):
     """Obtenir les données pour le dashboard de monitoring"""
     try:
         # Collecter toutes les métriques
@@ -463,7 +463,7 @@ def get_dashboard_data():
 @monitoring_bp.route("/monitoring/reset-stats", methods=["POST"])
 @require_auth
 @rate_limit("monitoring_reset")
-def reset_performance_stats():
+def reset_performance_stats(authenticated_user_id=None):
     """Réinitialiser les statistiques de performance"""
     try:
         # Réinitialiser les statistiques de base de données

@@ -18,7 +18,7 @@ files_bp = Blueprint("files", __name__)
 @files_bp.route("/files/upload", methods=["POST"])
 @require_auth
 @rate_limit("files_upload")
-def upload_file():
+def upload_file(authenticated_user_id=None):
     """Uploader un fichier"""
     try:
         if "file" not in request.files:
@@ -59,7 +59,7 @@ def upload_file():
 @files_bp.route("/files/<filename>", methods=["GET"])
 @require_auth
 @rate_limit("files_download")
-def download_file(filename):
+def download_file(filename, authenticated_user_id=None):
     """Télécharger un fichier"""
     try:
         file_info = FileManager.get_file_info(filename)
@@ -76,7 +76,7 @@ def download_file(filename):
 
 
 @files_bp.route("/files/<filename>/info", methods=["GET"])
-def get_file_info(filename):
+def get_file_info(filename, authenticated_user_id=None):
     """Obtenir les informations d'un fichier"""
     try:
         file_info = FileManager.get_file_info(filename)
@@ -104,7 +104,7 @@ def get_file_info(filename):
 @files_bp.route("/files/<filename>", methods=["DELETE"])
 @require_auth
 @rate_limit("files_delete")
-def delete_file(filename):
+def delete_file(filename, authenticated_user_id=None):
     """Supprimer un fichier"""
     try:
         success = FileManager.delete_file(filename)
@@ -120,7 +120,7 @@ def delete_file(filename):
 
 @files_bp.route("/files/allowed-types", methods=["GET"])
 @require_auth
-def get_allowed_types():
+def get_allowed_types(authenticated_user_id=None):
     """Obtenir les types de fichiers autorisés"""
     try:
         return jsonify(
@@ -138,7 +138,7 @@ def get_allowed_types():
 
 @files_bp.route("/files/validate", methods=["POST"])
 @require_auth
-def validate_file():
+def validate_file(authenticated_user_id=None):
     """Valider un fichier avant upload"""
     try:
         data = request.get_json()
