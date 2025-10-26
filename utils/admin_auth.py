@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 ADMIN_EMAILS = [
     "admin@formforge.com",
     "test.fonctionnel@example.com",  # Pour les tests
+    "admin.test@example.com",  # Nouvel admin pour les tests
     # Ajouter d'autres emails admin selon les besoins
 ]
 
