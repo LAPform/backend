@@ -49,9 +49,12 @@ def create_question(form_id, authenticated_user_id=None):
             "time",
             "number",
             "choice",
+            "multiple_choice",
             "multiple_choices",
             "checkbox",
             "radio",
+            "boolean",
+            "scale",
         ]
         if data["type"] not in valid_types:
             return (

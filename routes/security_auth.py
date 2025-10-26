@@ -189,6 +189,7 @@ def signin():
     """Connexion utilisateur - Version simplifiée sans Flask-Security-Too"""
     try:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.info(f"🔍 LOGIN: Début processus de connexion")
         data = request.get_json()
@@ -708,21 +709,40 @@ def debug_signin():
 
 
 @security_auth_bp.route("/auth/me", methods=["GET"])
-def get_current_user():
+@require_auth
+def get_current_user(authenticated_user_id=None):
     """Récupérer les informations de l'utilisateur actuel"""
     try:
-        from flask_security import current_user
+        logger.info(f"🔍 AUTH ME: Début récupération utilisateur")
+        logger.info(f"🔍 AUTH ME: authenticated_user_id: {authenticated_user_id}")
 
-        # Vérifier que l'utilisateur est authentifié avec Flask-Security-Too
-        if not current_user.is_authenticated:
+        if not authenticated_user_id:
+            logger.warning(f"🔍 AUTH ME: Aucun utilisateur authentifié")
             return jsonify({"error": "Non authentifié"}), 401
+
+        # Récupérer les informations utilisateur depuis la base
+        from models.security_models import SecurityUserDatastore
+
+        datastore = SecurityUserDatastore(current_app.db)
+        logger.info(f"🔍 AUTH ME: SecurityUserDatastore initialisé")
+
+        user = datastore.find_user(id=authenticated_user_id)
+        logger.info(f"🔍 AUTH ME: Utilisateur trouvé: {user is not None}")
+
+        if not user:
+            logger.warning(
+                f"🔍 AUTH ME: Utilisateur non trouvé pour ID: {authenticated_user_id}"
+            )
+            return jsonify({"error": "Utilisateur non trouvé"}), 404
 
         # Créer une réponse sécurisée en échappant les données utilisateur
         user_data = {
-            "id": current_user.id,
-            "email": escape_html(current_user.email),
-            "name": escape_html(getattr(current_user, "name", "")),
+            "id": user.id,
+            "email": escape_html(user.email),
+            "name": escape_html(getattr(user, "name", "")),
         }
+
+        logger.info(f"🔍 AUTH ME: Données utilisateur récupérées avec succès")
 
         return jsonify(
             {
@@ -732,7 +752,10 @@ def get_current_user():
         )
 
     except Exception as e:
-        logger.error(f"Erreur récupération utilisateur: {e}")
+        logger.error(f"🔍 AUTH ME: Erreur récupération utilisateur: {e}")
+        import traceback
+
+        logger.error(f"🔍 AUTH ME: Traceback: {traceback.format_exc()}")
         return jsonify({"error": "Erreur interne du serveur"}), 500
 
 

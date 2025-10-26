@@ -25,9 +25,12 @@ class Question:
         "time",  # Heure
         "number",  # Nombre
         "choice",  # Choix simple (radio)
-        "multiple_choices",  # Choix multiple
+        "multiple_choice",  # Choix multiple
+        "multiple_choices",  # Choix multiple (alias)
         "checkbox",  # Cases à cocher
         "radio",  # Boutons radio
+        "boolean",  # Booléen (oui/non)
+        "scale",  # Échelle (1-10, etc.)
     ]
 
     def __init__(self, db_manager: DatabaseManager):
