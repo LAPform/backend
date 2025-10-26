@@ -13,6 +13,40 @@ logger = logging.getLogger(__name__)
 monitoring_bp = Blueprint("monitoring", __name__)
 
 
+@monitoring_bp.route("/monitoring/test", methods=["GET"])
+@require_auth
+def test_monitoring():
+    """Test simple du monitoring"""
+    try:
+        logger.info("🔍 MONITORING TEST: Début du test")
+
+        # Test 1: Vérifier current_app.db
+        db_manager = current_app.db
+        logger.info(f"🔍 MONITORING TEST: db_manager = {db_manager is not None}")
+
+        if not db_manager:
+            return (
+                jsonify({"success": False, "error": "Database manager non disponible"}),
+                500,
+            )
+
+        # Test 2: Vérifier get_performance_stats
+        logger.info("🔍 MONITORING TEST: Appel get_performance_stats")
+        db_stats = db_manager.get_performance_stats()
+        logger.info(f"🔍 MONITORING TEST: db_stats = {db_stats}")
+
+        return jsonify(
+            {"success": True, "message": "Test monitoring réussi", "db_stats": db_stats}
+        )
+
+    except Exception as e:
+        logger.error(f"🔍 MONITORING TEST: Erreur = {e}")
+        import traceback
+
+        logger.error(f"🔍 MONITORING TEST: Traceback = {traceback.format_exc()}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
 @require_auth
 @rate_limit("monitoring_performance")
@@ -20,7 +54,7 @@ def get_performance_stats():
     """Obtenir les statistiques de performance de la base de données"""
     try:
         # Obtenir les statistiques du DatabaseManager
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         logger.info(f"🔍 MONITORING: db_manager = {db_manager is not None}")
         if not db_manager:
             logger.error("🔍 MONITORING: Database manager non disponible")
@@ -83,7 +117,7 @@ def get_health_status():
     """Obtenir le statut de santé de l'API"""
     try:
         # Test de connexion base de données
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         if not db_manager:
             return (
                 jsonify({"success": False, "error": "Database manager non disponible"}),
@@ -204,7 +238,7 @@ def get_system_metrics():
         }
 
         # Obtenir le database manager pour le timestamp
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         timestamp = (
             db_manager.query_stats.get("last_update", "N/A") if db_manager else "N/A"
         )
@@ -231,7 +265,7 @@ def get_system_metrics():
 def get_slow_queries():
     """Obtenir les requêtes lentes détectées"""
     try:
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         if not db_manager:
             return (
                 jsonify({"success": False, "error": "Database manager non disponible"}),
@@ -302,7 +336,7 @@ def get_api_metrics():
         api_metrics = metrics_collector.get_api_metrics()
 
         # Obtenir le database manager pour le timestamp
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         timestamp = (
             db_manager.query_stats.get("last_update", "N/A") if db_manager else "N/A"
         )
@@ -345,7 +379,7 @@ def get_detailed_health():
         health_indicators = metrics_collector.get_health_indicators()
 
         # Métriques base de données
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         if not db_manager:
             return (
                 jsonify({"success": False, "error": "Database manager non disponible"}),
@@ -394,7 +428,7 @@ def get_dashboard_data():
         api_metrics = metrics_collector.get_api_metrics()
         health_indicators = metrics_collector.get_health_indicators()
 
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         if not db_manager:
             return (
                 jsonify({"success": False, "error": "Database manager non disponible"}),
@@ -459,7 +493,7 @@ def reset_performance_stats():
     """Réinitialiser les statistiques de performance"""
     try:
         # Réinitialiser les statistiques de base de données
-        db_manager = current_app.config.get("DATABASE_MANAGER")
+        db_manager = current_app.db
         if not db_manager:
             return (
                 jsonify({"success": False, "error": "Database manager non disponible"}),
