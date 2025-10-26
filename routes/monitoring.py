@@ -4,6 +4,7 @@ Routes de monitoring et métriques pour FormForge
 
 from flask import Blueprint, jsonify, current_app
 from utils.security_auth import require_auth
+from utils.admin_auth import require_admin_role, require_monitoring_access, sanitize_system_metrics, get_user_role
 from utils.rate_limiter import rate_limit
 from utils.metrics_collector import metrics_collector
 import logging
@@ -22,10 +23,10 @@ def basic_test_monitoring():
 
 
 @monitoring_bp.route("/monitoring/performance", methods=["GET"])
-@require_auth
+@require_monitoring_access
 @rate_limit("monitoring_performance")
-def get_performance_stats(authenticated_user_id=None):
-    """Obtenir les statistiques de performance de la base de données"""
+def get_performance_stats(authenticated_user_id=None, monitoring_user=None):
+    """Obtenir les statistiques de performance de la base de données (accès monitoring)"""
     try:
         # Obtenir les statistiques du DatabaseManager
         db_manager = current_app.db
@@ -39,7 +40,7 @@ def get_performance_stats(authenticated_user_id=None):
 
         db_stats = db_manager.get_performance_stats()
 
-        # Ajouter des métriques système
+        # Ajouter des métriques système (sanitisées pour les non-admin)
         try:
             import psutil
             import os
@@ -52,6 +53,13 @@ def get_performance_stats(authenticated_user_id=None):
                 / 1024
                 / 1024,  # MB
             }
+            
+            # Sanitiser les métriques selon le rôle de l'utilisateur
+            user_role = get_user_role(monitoring_user.email)
+            if user_role != "admin":
+                system_stats = sanitize_system_metrics(system_stats)
+                logger.info(f"🔒 MONITORING: Métriques sanitisées pour {monitoring_user.email} (rôle: {user_role})")
+            
         except ImportError:
             system_stats = {
                 "cpu_percent": 0,
@@ -66,6 +74,7 @@ def get_performance_stats(authenticated_user_id=None):
                 "success": True,
                 "data": db_stats,
                 "system_stats": system_stats,
+                "user_role": get_user_role(monitoring_user.email),
                 "timestamp": db_manager.query_stats.get("last_update", "N/A"),
             }
         )
@@ -160,10 +169,10 @@ def get_health_status(authenticated_user_id=None):
 
 
 @monitoring_bp.route("/monitoring/system", methods=["GET"])
-@require_auth
+@require_admin_role
 @rate_limit("monitoring_system")
-def get_system_metrics(authenticated_user_id=None):
-    """Obtenir les métriques système (CPU, mémoire, disque)"""
+def get_system_metrics(authenticated_user_id=None, admin_user=None):
+    """Obtenir les métriques système (CPU, mémoire, disque) - ADMIN UNIQUEMENT"""
     try:
         # Import conditionnel de psutil
         try:
@@ -187,10 +196,11 @@ def get_system_metrics(authenticated_user_id=None):
                         "basic_info": {"platform": os.name, "pid": os.getpid()},
                     },
                     "timestamp": "N/A",
+                    "admin_access": True,
                 }
             )
 
-        # Métriques système
+        # Métriques système (ADMIN UNIQUEMENT)
         cpu_percent = psutil.cpu_percent(interval=1)
         memory_info = psutil.virtual_memory()
         disk_usage = psutil.disk_usage("/")
@@ -209,6 +219,8 @@ def get_system_metrics(authenticated_user_id=None):
             "disk_percent": disk_usage.percent,
             "process_memory_mb": round(process_memory, 2),
             "process_cpu_percent": process.cpu_percent(),
+            "pid": os.getpid(),
+            "platform": os.name,
         }
 
         # Obtenir le database manager pour le timestamp
@@ -217,12 +229,16 @@ def get_system_metrics(authenticated_user_id=None):
             db_manager.query_stats.get("last_update", "N/A") if db_manager else "N/A"
         )
 
+        logger.info(f"🔒 ADMIN: Métriques système accédées par {admin_user.email}")
+
         return (
             jsonify(
                 {
                     "success": True,
                     "data": metrics,
                     "timestamp": timestamp,
+                    "admin_access": True,
+                    "accessed_by": admin_user.email,
                 }
             ),
             200,
@@ -392,10 +408,10 @@ def get_detailed_health(authenticated_user_id=None):
 
 
 @monitoring_bp.route("/monitoring/dashboard", methods=["GET"])
-@require_auth
+@require_monitoring_access
 @rate_limit("monitoring_dashboard")
-def get_dashboard_data(authenticated_user_id=None):
-    """Obtenir les données pour le dashboard de monitoring"""
+def get_dashboard_data(authenticated_user_id=None, monitoring_user=None):
+    """Obtenir les données pour le dashboard de monitoring (accès monitoring)"""
     try:
         # Collecter toutes les métriques
         system_metrics = metrics_collector.get_system_metrics()
@@ -410,6 +426,12 @@ def get_dashboard_data(authenticated_user_id=None):
             )
 
         db_stats = db_manager.get_performance_stats()
+
+        # Sanitiser les métriques système selon le rôle
+        user_role = get_user_role(monitoring_user.email)
+        if user_role != "admin":
+            system_metrics = sanitize_system_metrics(system_metrics)
+            logger.info(f"🔒 MONITORING: Dashboard sanitisé pour {monitoring_user.email} (rôle: {user_role})")
 
         # Créer un résumé pour le dashboard
         dashboard_data = {
@@ -436,6 +458,7 @@ def get_dashboard_data(authenticated_user_id=None):
                 "seconds": api_metrics.get("uptime_seconds", 0),
                 "hours": api_metrics.get("uptime_hours", 0),
             },
+            "user_role": user_role,
         }
 
         return jsonify(
@@ -461,10 +484,10 @@ def get_dashboard_data(authenticated_user_id=None):
 
 
 @monitoring_bp.route("/monitoring/reset-stats", methods=["POST"])
-@require_auth
+@require_admin_role
 @rate_limit("monitoring_reset")
-def reset_performance_stats(authenticated_user_id=None):
-    """Réinitialiser les statistiques de performance"""
+def reset_performance_stats(authenticated_user_id=None, admin_user=None):
+    """Réinitialiser les statistiques de performance - ADMIN UNIQUEMENT"""
     try:
         # Réinitialiser les statistiques de base de données
         db_manager = current_app.db
@@ -487,10 +510,15 @@ def reset_performance_stats(authenticated_user_id=None):
         metrics_collector.response_times = []
         metrics_collector.endpoint_stats = {}
 
-        logger.info("Statistiques de performance réinitialisées")
+        logger.info(f"🔒 ADMIN: Statistiques réinitialisées par {admin_user.email}")
 
         return jsonify(
-            {"success": True, "message": "Statistiques réinitialisées avec succès"}
+            {
+                "success": True, 
+                "message": "Statistiques réinitialisées avec succès",
+                "reset_by": admin_user.email,
+                "admin_action": True
+            }
         )
 
     except Exception as e:
@@ -505,3 +533,68 @@ def reset_performance_stats(authenticated_user_id=None):
             ),
             500,
         )
+
+
+@monitoring_bp.route("/monitoring/admin/users", methods=["GET"])
+@require_admin_role
+@rate_limit("admin_users")
+def get_admin_users(authenticated_user_id=None, admin_user=None):
+    """Obtenir la liste des utilisateurs administrateurs - ADMIN UNIQUEMENT"""
+    try:
+        from utils.admin_auth import ADMIN_EMAILS
+        
+        logger.info(f"🔒 ADMIN: Liste des admins consultée par {admin_user.email}")
+        
+        return jsonify({
+            "success": True,
+            "admin_emails": ADMIN_EMAILS,
+            "total_admins": len(ADMIN_EMAILS),
+            "accessed_by": admin_user.email,
+            "admin_action": True
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur récupération liste admins: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Erreur récupération liste administrateurs"
+        }), 500
+
+
+@monitoring_bp.route("/monitoring/admin/check-role", methods=["GET"])
+@require_auth
+@rate_limit("check_role")
+def check_user_role(authenticated_user_id=None):
+    """Vérifier le rôle de l'utilisateur actuel"""
+    try:
+        from models.security_models import SecurityUserDatastore
+        from utils.admin_auth import get_user_role
+        
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(id=authenticated_user_id)
+        
+        if not user:
+            return jsonify({
+                "success": False,
+                "error": "Utilisateur non trouvé"
+            }), 404
+        
+        user_role = get_user_role(user.email)
+        
+        return jsonify({
+            "success": True,
+            "user": {
+                "email": user.email,
+                "id": user.id,
+                "name": getattr(user, "name", "")
+            },
+            "role": user_role,
+            "is_admin": user_role == "admin"
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur vérification rôle: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Erreur vérification rôle"
+        }), 500
