@@ -7,6 +7,7 @@ from utils.security_auth import require_auth
 from utils.admin_auth import require_admin_role, require_monitoring_access, sanitize_system_metrics, get_user_role
 from utils.rate_limiter import rate_limit
 from utils.metrics_collector import metrics_collector
+from utils.audit_logger import audit_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -230,6 +231,16 @@ def get_system_metrics(authenticated_user_id=None, admin_user=None):
         )
 
         logger.info(f"🔒 ADMIN: Métriques système accédées par {admin_user.email}")
+        
+        # Log d'audit pour l'accès aux métriques système
+        audit_logger.log_admin_action(
+            action="access_system_metrics",
+            resource="system_metrics",
+            details={
+                "admin_email": admin_user.email,
+                "metrics_accessed": list(metrics.keys())
+            }
+        )
 
         return (
             jsonify(
@@ -511,6 +522,16 @@ def reset_performance_stats(authenticated_user_id=None, admin_user=None):
         metrics_collector.endpoint_stats = {}
 
         logger.info(f"🔒 ADMIN: Statistiques réinitialisées par {admin_user.email}")
+        
+        # Log d'audit pour la réinitialisation des statistiques
+        audit_logger.log_admin_action(
+            action="reset_statistics",
+            resource="performance_stats",
+            details={
+                "admin_email": admin_user.email,
+                "reset_components": ["database_stats", "api_metrics"]
+            }
+        )
 
         return jsonify(
             {

@@ -9,6 +9,7 @@ import logging
 import hashlib
 import time
 from datetime import datetime, timedelta
+from utils.audit_logger import audit_logger
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,19 @@ def require_auth(f):
 
         if not auth_header or not auth_header.startswith("Bearer "):
             logger.warning(f"🔍 AUTH: Header Authorization manquant ou invalide")
+            
+            # Log d'audit pour tentative d'accès sans token
+            audit_logger.log_security_event(
+                event_type="unauthorized_access_attempt",
+                details={
+                    "reason": "missing_or_invalid_auth_header",
+                    "endpoint": request.endpoint,
+                    "method": request.method,
+                    "ip": request.remote_addr
+                },
+                severity="medium"
+            )
+            
             return (
                 jsonify(
                     {

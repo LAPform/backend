@@ -9,6 +9,7 @@ from models.response import Response
 from utils.security_auth import require_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
+from utils.audit_logger import audit_log, audit_logger
 from utils.error_handler import (
     error_handler,
     validate_request_data,
@@ -25,6 +26,7 @@ forms_bp = Blueprint("forms", __name__)
 @forms_bp.route("/forms", methods=["POST"])
 @require_auth
 @rate_limit("forms_create")
+@audit_log("create", "form")
 def create_form(authenticated_user_id=None, **kwargs):
     """
     Créer un nouveau formulaire
@@ -160,6 +162,7 @@ def create_form(authenticated_user_id=None, **kwargs):
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
 @require_auth
 @rate_limit("forms_get")
+@audit_log("read", "form")
 def get_form(form_id, authenticated_user_id=None, **kwargs):
     """
     Récupérer un formulaire par ID (seulement si l'utilisateur en est propriétaire)

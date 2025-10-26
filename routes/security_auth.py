@@ -9,6 +9,7 @@ from utils.security_auth import SecurityAuthManager, require_auth
 from utils.rate_limiter import rate_limit
 from utils.structured_logger import api_logger
 from utils.security_validators import escape_html, create_safe_response
+from utils.audit_logger import audit_auth, audit_logger
 import logging
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,8 @@ def test_login():
 
 
 @security_auth_bp.route("/auth/signup", methods=["POST"])
+@rate_limit("auth_signup")
+@audit_auth("signup")
 def signup():
     """Créer un nouveau compte utilisateur - Endpoint principal fonctionnel"""
     try:
@@ -185,6 +188,8 @@ def signup():
 
 
 @security_auth_bp.route("/auth/signin", methods=["POST"])
+@rate_limit("auth_signin")
+@audit_auth("signin")
 def signin():
     """Connexion utilisateur - Version simplifiée sans Flask-Security-Too"""
     try:
