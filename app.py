@@ -14,6 +14,9 @@ from utils.logging_middleware import (
     log_application_startup,
 )
 
+# Import du rate limiter
+from utils.rate_limiter import rate_limit
+
 from models.database import DatabaseManager
 from models.security_models import SecurityUserDatastore
 from routes.forms import forms_bp
