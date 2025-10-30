@@ -10,6 +10,9 @@ import json
 class User(UserMixin):
     """Modèle utilisateur pour Flask-Security-Too"""
 
+    # Attribut de classe attendu par Flask-Security-Too >= 4.0
+    fs_uniquifier = None
+
     def __init__(self):
         # Pas de paramètre - Flask-Security-Too gère l'instanciation
         # Attribut requis par Flask-Security-Too >= 4.0
