@@ -15,6 +15,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 security_auth_bp = Blueprint("security_auth", __name__)
+
+
 @security_auth_bp.route("/auth/register-json", methods=["POST"])
 def register_json():
     """Inscription JSON tolérante (bypass FST endpoints)"""
@@ -23,6 +25,7 @@ def register_json():
         if not data and request.data:
             try:
                 import json as _json
+
                 data = _json.loads(request.data.decode("utf-8"))
             except Exception:
                 data = None
@@ -35,6 +38,7 @@ def register_json():
         name = data.get("name", "")
 
         from models.security_models import SecurityUserDatastore
+
         datastore = SecurityUserDatastore(current_app.db)
 
         existing_user = datastore.find_user(email=email)
@@ -48,10 +52,15 @@ def register_json():
         except Exception:
             pass
 
-        return jsonify({
-            "success": True,
-            "user": {"id": user.id, "email": user.email, "name": user.name}
-        }), 201
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "user": {"id": user.id, "email": user.email, "name": user.name},
+                }
+            ),
+            201,
+        )
     except Exception as e:
         logger.error(f"Erreur register-json: {e}")
         return jsonify({"error": "Erreur interne"}), 500
@@ -65,6 +74,7 @@ def login_json():
         if not data and request.data:
             try:
                 import json as _json
+
                 data = _json.loads(request.data.decode("utf-8"))
             except Exception:
                 data = None
@@ -76,6 +86,7 @@ def login_json():
         password = data["password"]
 
         from models.security_models import SecurityUserDatastore
+
         datastore = SecurityUserDatastore(current_app.db)
         user = datastore.find_user(email=email)
         if not user:
@@ -93,19 +104,17 @@ def login_json():
         # Générer un token aléatoire sécurisé stocké en base
         import secrets
         from datetime import datetime, timedelta
-        from flask import current_app
-        
+
         token = secrets.token_hex(32)
         expires_at = datetime.utcnow() + timedelta(hours=1)
         # Utiliser la même instance DB que l'application
-        db = current_app.db if hasattr(current_app, 'db') else None
+        db = current_app.db if hasattr(current_app, "db") else None
         if db is None:
             from models.database import DatabaseManager
+
             db = DatabaseManager()
         try:
-            db.execute_query(
-                "SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True
-            )
+            db.execute_query("SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True)
         except Exception:
             db.execute_query(
                 """
@@ -123,12 +132,18 @@ def login_json():
             (token, user.id, expires_at.isoformat()),
         )
 
-        return jsonify({
-            "success": True,
-            "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", "")},
-            "token": token,
-            "expires_at": expires_at.isoformat()
-        })
+        return jsonify(
+            {
+                "success": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "name": getattr(user, "name", ""),
+                },
+                "token": token,
+                "expires_at": expires_at.isoformat(),
+            }
+        )
     except Exception as e:
         logger.error(f"Erreur login-json: {e}")
         return jsonify({"error": "Erreur interne"}), 500
