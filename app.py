@@ -109,7 +109,7 @@ def create_app():
         # Créer le datastore personnalisé
         user_datastore = SecurityUserDatastore(app.db)
 
-        # Configuration minimale pour Flask-Security-Too 5.x - Désactivée pour éviter les conflits
+        # Configuration pour Flask-Security-Too (activation blueprints JSON sous /api/auth)
         app.config.update(
             {
                 "SECURITY_PASSWORD_HASH": "pbkdf2_sha256",
@@ -118,10 +118,11 @@ def create_app():
                 ),
                 "SECURITY_JSON_ENABLED": True,
                 "SECURITY_JSON": True,
-                "SECURITY_RETURN_GENERIC_RESPONSES": True,
-                "SECURITY_REGISTERABLE": False,  # Désactivé - nous gérons manuellement
+                "SECURITY_URL_PREFIX": "/api/auth",
+                "SECURITY_REGISTERABLE": True,
                 "SECURITY_RECOVERABLE": False,
-                "SECURITY_CHANGEABLE": False,  # Désactivé - nous gérons manuellement
+                "SECURITY_CHANGEABLE": True,
+                "SECURITY_RETURN_GENERIC_RESPONSES": True,
                 "SECURITY_CONFIRMABLE": False,
                 "SECURITY_TRACKABLE": True,
                 "SECURITY_SEND_REGISTER_EMAIL": False,
@@ -132,13 +133,25 @@ def create_app():
             }
         )
 
-        # Initialiser Flask-Security sans enregistrement automatique des blueprints
-        security = Security(app, user_datastore, register_blueprint=False)
+        # Initialiser Flask-Security et enregistrer ses blueprints
+        security = Security(app, user_datastore, register_blueprint=True)
 
         # Configuration des templates (désactivé pour API)
         app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
             "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
         )
+
+        # Seed des rôles par défaut si absents
+        try:
+            for role_name, description in [
+                ("admin", "Administrateur - tous les droits"),
+                ("creator", "Créateur de questionnaire"),
+                ("respondent", "Répondant de questionnaire"),
+            ]:
+                if not user_datastore.find_role(role_name):
+                    user_datastore.create_role(name=role_name, description=description)
+        except Exception as se:
+            structured_logger.warning("Seed des rôles échoué", error=str(se))
 
         structured_logger.info("Flask-Security-Too initialisé avec succès")
 

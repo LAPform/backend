@@ -123,6 +123,28 @@ class DatabaseManager:
             """
             )
 
+            # Table roles (gestion des rôles)
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS roles (
+                    id TEXT PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT
+                )
+            """
+            )
+
+            # Table d'association user_roles
+            cursor.execute(
+                """
+                CREATE TABLE IF NOT EXISTS user_roles (
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    role_id TEXT REFERENCES roles(id) ON DELETE CASCADE,
+                    PRIMARY KEY (user_id, role_id)
+                )
+            """
+            )
+
             # Index pour améliorer les performances
             cursor.execute(
                 """

@@ -44,6 +44,11 @@ class Role(RoleMixin):
     def __init__(self, db_manager: DatabaseManager):
         self.db = db_manager
 
+    def get_by_name(self, name: str):
+        query = "SELECT * FROM roles WHERE name = ?"
+        results = self.db.execute_query(query, (name,), fetch=True)
+        return results[0] if results else None
+
 
 class SecurityUserDatastore:
     """Datastore personnalisé pour Flask-Security-Too avec SQLite"""
@@ -114,8 +119,8 @@ class SecurityUserDatastore:
         self.logger.info(f"create_user appelé avec: {kwargs}")
         try:
             import uuid
-            import hashlib
             import secrets
+            from passlib.hash import pbkdf2_sha256
 
             user_id = str(uuid.uuid4())
             email = kwargs.get("email", "").lower().strip()
@@ -124,14 +129,11 @@ class SecurityUserDatastore:
 
             self.logger.info(f"Création utilisateur: {email}, {name}")
 
-            # Générer un salt et hasher le mot de passe
-            self.logger.info("Génération du salt et hashage du mot de passe...")
+            # Générer un salt (stocké pour compat DB) et hasher le mot de passe via passlib
+            self.logger.info("Génération du hash du mot de passe via passlib...")
             salt = secrets.token_hex(16)
-            password_hash = hashlib.pbkdf2_hmac(
-                "sha256", password.encode(), salt.encode(), 100000
-            )
-            password_hash = password_hash.hex()
-            self.logger.info("Salt et hash générés avec succès")
+            password_hash = pbkdf2_sha256.hash(password)
+            self.logger.info("Hash généré avec succès")
 
             # Insérer dans la base de données
             query = """
@@ -163,18 +165,16 @@ class SecurityUserDatastore:
 
     def verify_password(self, user, password: str) -> bool:
         """Vérifier le mot de passe d'un utilisateur"""
-        import hashlib
+        from passlib.hash import pbkdf2_sha256
 
-        if not user or not hasattr(user, "password_hash") or not hasattr(user, "salt"):
+        if not user or not hasattr(user, "password_hash"):
             return False
 
-        # Hasher le mot de passe fourni avec le salt de l'utilisateur
-        password_hash = hashlib.pbkdf2_hmac(
-            "sha256", password.encode(), user.salt.encode(), 100000
-        )
-        password_hash = password_hash.hex()
-
-        return password_hash == user.password_hash
+        # Vérifier via passlib (salt inclus dans le hash stocké)
+        try:
+            return pbkdf2_sha256.verify(password, user.password_hash)
+        except Exception:
+            return False
 
     def update_last_login(self, user):
         """Mettre à jour la dernière connexion"""
@@ -184,21 +184,78 @@ class SecurityUserDatastore:
         self.db.execute_query(query, (datetime.utcnow().isoformat(), user.id))
 
     def find_role(self, role):
-        """Trouver un rôle (non implémenté pour le POC)"""
-        return None
+        """Trouver un rôle par nom"""
+        try:
+            query = "SELECT * FROM roles WHERE name = ?"
+            results = self.db.execute_query(query, (role,), fetch=True)
+            return results[0] if results else None
+        except Exception:
+            return None
 
     def create_role(self, **kwargs):
-        """Créer un rôle (non implémenté pour le POC)"""
-        return None
+        """Créer un rôle si absent"""
+        try:
+            import uuid
+
+            role_id = str(uuid.uuid4())
+            name = kwargs.get("name")
+            description = kwargs.get("description", "")
+            if not name:
+                return None
+
+            existing = self.find_role(name)
+            if existing:
+                return existing
+
+            query = """
+                INSERT INTO roles (id, name, description)
+                VALUES (?, ?, ?)
+            """
+            self.db.execute_query(query, (role_id, name, description))
+            return {"id": role_id, "name": name, "description": description}
+        except Exception:
+            return None
 
     def add_role_to_user(self, user, role):
-        """Ajouter un rôle à un utilisateur (non implémenté pour le POC)"""
-        pass
+        """Associer un rôle à un utilisateur"""
+        try:
+            # role peut être un nom ou un dict
+            role_row = self.find_role(role) if isinstance(role, str) else role
+            if not role_row:
+                role_row = self.create_role(name=str(role))
+            if not role_row:
+                return False
+
+            query = """
+                INSERT OR IGNORE INTO user_roles (user_id, role_id)
+                VALUES (?, ?)
+            """
+            self.db.execute_query(query, (user.id, role_row["id"]))
+            return True
+        except Exception:
+            return False
 
     def remove_role_from_user(self, user, role):
-        """Retirer un rôle d'un utilisateur (non implémenté pour le POC)"""
-        pass
+        """Dissocier un rôle d'un utilisateur"""
+        try:
+            role_row = self.find_role(role) if isinstance(role, str) else role
+            if not role_row:
+                return False
+            query = "DELETE FROM user_roles WHERE user_id = ? AND role_id = ?"
+            self.db.execute_query(query, (user.id, role_row["id"]))
+            return True
+        except Exception:
+            return False
 
     def get_user_roles(self, user):
-        """Récupérer les rôles d'un utilisateur (non implémenté pour le POC)"""
-        return []
+        """Récupérer les rôles d'un utilisateur"""
+        try:
+            query = """
+                SELECT r.name FROM roles r
+                JOIN user_roles ur ON ur.role_id = r.id
+                WHERE ur.user_id = ?
+            """
+            results = self.db.execute_query(query, (user.id,), fetch=True)
+            return [row["name"] for row in results] if results else []
+        except Exception:
+            return []

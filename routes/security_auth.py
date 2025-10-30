@@ -233,17 +233,15 @@ def signin():
             logger.warning(f"🔍 LOGIN: Mot de passe incorrect pour user_id: {user.id}")
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # Créer un token SHA256 avec rotation
-        import hashlib
+        # Créer un token aléatoire sécurisé (64 hex) avec rotation
+        import secrets
         import time
         from datetime import datetime, timedelta
 
         logger.info(f"🔍 LOGIN: Début génération token pour user_id: {user.id}")
 
-        # Générer un token SHA256
-        timestamp = int(time.time())
-        token_data = f"{user.id}:{email}:{timestamp}"
-        sha256_token = hashlib.sha256(token_data.encode()).hexdigest()
+        # Générer un token aléatoire de 32 octets (64 caractères hex)
+        sha256_token = secrets.token_hex(32)
         logger.info(
             f"🔍 LOGIN: Token généré: {sha256_token[:10]}...{sha256_token[-10:]}"
         )
@@ -619,16 +617,14 @@ def debug_signin():
             logger.warning(f"🔍 DEBUG SIGNIN: Mot de passe incorrect")
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
-        # 4. Tester la génération du token
-        import hashlib
+        # 4. Tester la génération du token aléatoire sécurisé
+        import secrets
         import time
         from datetime import datetime, timedelta
 
         logger.info(f"🔍 DEBUG SIGNIN: Début génération token pour user_id: {user.id}")
 
-        timestamp = int(time.time())
-        token_data = f"{user.id}:{email}:{timestamp}"
-        sha256_token = hashlib.sha256(token_data.encode()).hexdigest()
+        sha256_token = secrets.token_hex(32)
         logger.info(
             f"🔍 DEBUG SIGNIN: Token généré: {sha256_token[:10]}...{sha256_token[-10:]}"
         )

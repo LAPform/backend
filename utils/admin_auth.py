@@ -9,13 +9,10 @@ from flask import request, jsonify, current_app
 
 logger = logging.getLogger(__name__)
 
-# Liste des emails administrateurs (en production, utiliser une base de données)
-ADMIN_EMAILS = [
-    "admin@formforge.com",
-    "test.fonctionnel@example.com",  # Pour les tests
-    "admin.test@example.com",  # Nouvel admin pour les tests
-    # Ajouter d'autres emails admin selon les besoins
-]
+# Rôles applicatifs
+ROLE_ADMIN = "admin"
+ROLE_CREATOR = "creator"
+ROLE_RESPONDENT = "respondent"
 
 def require_admin_role(f):
     """
@@ -61,8 +58,9 @@ def require_admin_role(f):
                     "code": "USER_NOT_FOUND"
                 }), 404
 
-            # Vérifier si l'utilisateur est administrateur
-            if user.email not in ADMIN_EMAILS:
+            # Vérifier si l'utilisateur possède le rôle admin
+            roles = SecurityUserDatastore(current_app.db).get_user_roles(user)
+            if ROLE_ADMIN not in roles:
                 logger.warning(f"🔒 ADMIN: Accès refusé pour {user.email} - Pas administrateur")
                 return jsonify({
                     "success": False,
@@ -122,9 +120,9 @@ def require_monitoring_access(f):
                 }), 401
 
             # Récupérer les informations utilisateur
-            from models.security_models import SecurityUserDatastore
-            datastore = SecurityUserDatastore(current_app.db)
-            user = datastore.find_user(id=user_id)
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(id=user_id)
             
             if not user:
                 logger.warning(f"🔒 MONITORING: Utilisateur non trouvé pour ID: {user_id}")
@@ -191,10 +189,22 @@ def sanitize_system_metrics(metrics):
 
 
 def get_user_role(user_email):
-    """
-    Déterminer le rôle d'un utilisateur basé sur son email
-    """
-    if user_email in ADMIN_EMAILS:
-        return "admin"
-    else:
+    """Retourner un rôle principal pour un utilisateur (admin/creator/respondent/user)"""
+    try:
+        from models.security_models import SecurityUserDatastore
+        from flask import current_app
+
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(email=user_email)
+        if not user:
+            return "user"
+        roles = set(datastore.get_user_roles(user))
+        if ROLE_ADMIN in roles:
+            return "admin"
+        if ROLE_CREATOR in roles:
+            return "creator"
+        if ROLE_RESPONDENT in roles:
+            return "respondent"
+        return "user"
+    except Exception:
         return "user"
