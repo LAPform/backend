@@ -97,6 +97,19 @@ class DatabaseManager:
             """
             )
 
+            # Assurer la présence de la colonne fs_uniquifier requise par Flask-Security-Too
+            try:
+                cursor.execute("PRAGMA table_info(users)")
+                columns = [row[1] for row in cursor.fetchall()]
+                if "fs_uniquifier" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN fs_uniquifier TEXT UNIQUE"
+                    )
+            except Exception as e_info:
+                logger.warning(
+                    f"Impossible de vérifier/ajouter fs_uniquifier: {e_info}"
+                )
+
             # Table responses
             cursor.execute(
                 """

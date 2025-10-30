@@ -118,6 +118,7 @@ class SecurityUserDatastore:
             user.salt = user_data["salt"]
             user.created_at = user_data["created_at"]
             user.last_login = user_data.get("last_login")
+            user.fs_uniquifier = user_data.get("fs_uniquifier")
             return user
         return None
 
@@ -136,6 +137,7 @@ class SecurityUserDatastore:
             user.salt = user_data["salt"]
             user.created_at = user_data["created_at"]
             user.last_login = user_data.get("last_login")
+            user.fs_uniquifier = user_data.get("fs_uniquifier")
             return user
         return None
 
@@ -162,12 +164,17 @@ class SecurityUserDatastore:
 
             # Insérer dans la base de données
             query = """
-                INSERT INTO users (id, email, password_hash, salt, name)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO users (id, email, password_hash, salt, name, fs_uniquifier)
+                VALUES (?, ?, ?, ?, ?, ?)
             """
 
             self.logger.info("Exécution de la requête d'insertion...")
-            self.db.execute_query(query, (user_id, email, password_hash, salt, name))
+            # Générer fs_uniquifier requis par FST (valeur stable unique)
+            fs_uniquifier = secrets.token_urlsafe(32)
+
+            self.db.execute_query(
+                query, (user_id, email, password_hash, salt, name, fs_uniquifier)
+            )
             self.logger.info("Utilisateur inséré en base avec succès")
 
             # Créer l'objet utilisateur
@@ -178,6 +185,7 @@ class SecurityUserDatastore:
             user.name = name
             user.password_hash = password_hash
             user.salt = salt
+            user.fs_uniquifier = fs_uniquifier
             self.logger.info(f"Utilisateur créé avec succès: {user_id}")
 
             # Attribuer par défaut le rôle 'creator' sauf indication contraire
