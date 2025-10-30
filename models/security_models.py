@@ -12,7 +12,8 @@ class User(UserMixin):
 
     def __init__(self):
         # Pas de paramètre - Flask-Security-Too gère l'instanciation
-        pass
+        # Attribut requis par Flask-Security-Too >= 4.0
+        self.fs_uniquifier = None
 
     def get_id(self):
         """Retourner l'ID de l'utilisateur pour Flask-Login"""
@@ -36,6 +37,10 @@ class User(UserMixin):
     def get_security_payload(self):
         """Payload pour Flask-Security"""
         return {"id": self.id, "email": self.email, "name": self.name}
+
+    # Compat FST: méthode d'accès au fs_uniquifier
+    def get_fs_uniquifier(self):
+        return getattr(self, "fs_uniquifier", None)
 
 
 class Role(RoleMixin):
