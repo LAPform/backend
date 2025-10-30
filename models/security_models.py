@@ -154,6 +154,22 @@ class SecurityUserDatastore:
             user.password_hash = password_hash
             user.salt = salt
             self.logger.info(f"Utilisateur créé avec succès: {user_id}")
+
+            # Attribuer par défaut le rôle 'creator' sauf indication contraire
+            try:
+                default_roles = kwargs.get("roles")
+                if not default_roles:
+                    self.create_role(
+                        name="creator", description="Créateur de questionnaire"
+                    )
+                    self.add_role_to_user(user, "creator")
+                else:
+                    # Associer les rôles passés
+                    for role_name in default_roles:
+                        self.create_role(name=role_name)
+                        self.add_role_to_user(user, role_name)
+            except Exception as role_e:
+                self.logger.warning(f"Attribution rôle par défaut échouée: {role_e}")
             return user
         except Exception as e:
             # Logger l'erreur pour debug

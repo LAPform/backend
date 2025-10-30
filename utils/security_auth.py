@@ -22,6 +22,17 @@ def require_auth(f):
         logger.info(f"🔍 AUTH: Début authentification pour route: {request.endpoint}")
         logger.info(f"🔍 AUTH: Méthode: {request.method}, URL: {request.url}")
 
+        # 0) Accepter la session Flask-Security-Too (cookie) si déjà authentifié
+        try:
+            if current_user.is_authenticated and hasattr(current_user, "id"):
+                logger.info(
+                    f"🔍 AUTH: Session FST détectée - user_id={current_user.id}"
+                )
+                kwargs["authenticated_user_id"] = current_user.id
+                return f(*args, **kwargs)
+        except Exception as e:
+            logger.warning(f"🔍 AUTH: Impossible d'utiliser current_user: {e}")
+
         # Vérifier le header Authorization
         auth_header = request.headers.get("Authorization")
         logger.info(
@@ -30,7 +41,7 @@ def require_auth(f):
 
         if not auth_header or not auth_header.startswith("Bearer "):
             logger.warning(f"🔍 AUTH: Header Authorization manquant ou invalide")
-            
+
             # Log d'audit pour tentative d'accès sans token
             audit_logger.log_security_event(
                 event_type="unauthorized_access_attempt",
@@ -38,11 +49,11 @@ def require_auth(f):
                     "reason": "missing_or_invalid_auth_header",
                     "endpoint": request.endpoint,
                     "method": request.method,
-                    "ip": request.remote_addr
+                    "ip": request.remote_addr,
                 },
-                severity="medium"
+                severity="medium",
             )
-            
+
             return (
                 jsonify(
                     {
