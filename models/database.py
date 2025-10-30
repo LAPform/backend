@@ -97,17 +97,20 @@ class DatabaseManager:
             """
             )
 
-            # Assurer la présence de la colonne fs_uniquifier requise par Flask-Security-Too
+            # Assurer la présence de la colonne fs_uniquifier et un index unique (compatible SQLite)
             try:
                 cursor.execute("PRAGMA table_info(users)")
                 columns = [row[1] for row in cursor.fetchall()]
                 if "fs_uniquifier" not in columns:
-                    cursor.execute(
-                        "ALTER TABLE users ADD COLUMN fs_uniquifier TEXT UNIQUE"
-                    )
+                    # Ajouter la colonne sans contrainte UNIQUE (ALTER ne supporte pas UNIQUE en SQLite)
+                    cursor.execute("ALTER TABLE users ADD COLUMN fs_uniquifier TEXT")
+                # Créer un index unique pour garantir l'unicité
+                cursor.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_fs_uniquifier ON users(fs_uniquifier)"
+                )
             except Exception as e_info:
                 logger.warning(
-                    f"Impossible de vérifier/ajouter fs_uniquifier: {e_info}"
+                    f"Impossible d'ajouter/valider fs_uniquifier ou index unique: {e_info}"
                 )
 
             # Table responses
