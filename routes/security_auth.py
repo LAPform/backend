@@ -93,11 +93,15 @@ def login_json():
         # Générer un token aléatoire sécurisé stocké en base
         import secrets
         from datetime import datetime, timedelta
-        from models.database import DatabaseManager
-
+        from flask import current_app
+        
         token = secrets.token_hex(32)
         expires_at = datetime.utcnow() + timedelta(hours=1)
-        db = DatabaseManager()
+        # Utiliser la même instance DB que l'application
+        db = current_app.db if hasattr(current_app, 'db') else None
+        if db is None:
+            from models.database import DatabaseManager
+            db = DatabaseManager()
         try:
             db.execute_query(
                 "SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True

@@ -33,39 +33,49 @@ def require_auth(f):
         except Exception as e:
             logger.warning(f"🔍 AUTH: Impossible d'utiliser current_user: {e}")
 
-        # Vérifier le header Authorization
+        # Vérifier le header Authorization ou récupérer token via fallback (query/body)
         auth_header = request.headers.get("Authorization")
         logger.info(
             f"🔍 AUTH: Header Authorization: {auth_header[:20] if auth_header else 'None'}..."
         )
 
-        if not auth_header or not auth_header.startswith("Bearer "):
-            logger.warning(f"🔍 AUTH: Header Authorization manquant ou invalide")
+        token = None
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+        else:
+            # Fallback: query param ?token=... ou corps JSON {"token": "..."}
+            token = request.args.get("token")
+            if not token and request.method in ["POST", "PUT", "PATCH"]:
+                body = None
+                try:
+                    body = request.get_json(silent=True)
+                except Exception:
+                    body = None
+                if isinstance(body, dict):
+                    token = body.get("token")
 
-            # Log d'audit pour tentative d'accès sans token
+        if not token:
+            logger.warning(f"🔍 AUTH: Aucun token fourni (header/query/body)")
             audit_logger.log_security_event(
                 event_type="unauthorized_access_attempt",
                 details={
-                    "reason": "missing_or_invalid_auth_header",
+                    "reason": "missing_token",
                     "endpoint": request.endpoint,
                     "method": request.method,
                     "ip": request.remote_addr,
                 },
                 severity="medium",
             )
-
             return (
                 jsonify(
                     {
                         "success": False,
                         "error": "Authentification requise",
-                        "message": "Token Bearer requis dans l'en-tête Authorization",
+                        "message": "Token manquant (Authorization/paramètre token/corps)",
                     }
                 ),
                 401,
             )
-
-        token = auth_header.split(" ")[1]
         logger.info(f"🔍 AUTH: Token extrait: {token[:10]}...{token[-10:]}")
 
         # Vérifier le format du token (64 caractères hex pour SHA256)
