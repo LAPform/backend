@@ -147,7 +147,7 @@ def create_app():
             import logging as _logging
 
             fst_logger = _logging.getLogger("flask_security")
-            fst_logger.setLevel(_logging.INFO)
+            fst_logger.setLevel(_logging.DEBUG)
             # S'assurer d'avoir un handler vers stdout
             if not fst_logger.handlers:
                 handler = _logging.StreamHandler()
@@ -184,6 +184,70 @@ def create_app():
     app.register_blueprint(security_auth_bp, url_prefix="/api")  # Nouveau blueprint
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(monitoring_bp, url_prefix="/api")
+
+    # Logger dédié pour /api/auth/*
+    try:
+        auth_logger = logging.getLogger("formforge.auth")
+
+        @app.before_request
+        def _auth_log_request():
+            try:
+                from flask import request
+
+                if request.path.startswith("/api/auth"):
+                    payload = None
+                    if request.method in ["POST", "PUT", "PATCH"]:
+                        payload = request.get_json(silent=True)
+                    auth_logger.debug(
+                        "AUTH REQUEST",
+                        extra={
+                            "method": request.method,
+                            "path": request.path,
+                            "remote": request.remote_addr,
+                            "headers": {
+                                k: v
+                                for k, v in request.headers.items()
+                                if k
+                                in [
+                                    "User-Agent",
+                                    "Authorization",
+                                    "Content-Type",
+                                    "X-Forwarded-For",
+                                ]
+                            },
+                            "json": payload,
+                        },
+                    )
+            except Exception:
+                pass
+
+        @app.after_request
+        def _auth_log_response(response):
+            try:
+                from flask import request
+
+                if request.path.startswith("/api/auth"):
+                    resp_preview = None
+                    try:
+                        data = response.get_data(as_text=True)
+                        resp_preview = (data or "")[:1000]
+                    except Exception:
+                        resp_preview = None
+                    auth_logger.debug(
+                        "AUTH RESPONSE",
+                        extra={
+                            "method": request.method,
+                            "path": request.path,
+                            "status": response.status_code,
+                            "response_preview": resp_preview,
+                        },
+                    )
+            except Exception:
+                pass
+            return response
+
+    except Exception as _e:
+        logger.warning(f"Auth request logger setup failed: {_e}")
 
     # Route de santé simple
     @app.route("/api/health")
