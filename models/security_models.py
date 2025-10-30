@@ -60,6 +60,31 @@ class SecurityUserDatastore:
         self.logger = logging.getLogger(__name__)
         self.logger.info("SecurityUserDatastore initialisé")
 
+    # --- Compatibilité Flask-Security-Too ---
+    @property
+    def user_model(self):
+        """Retourne le modèle utilisateur (wrapper minimal)"""
+        return User
+
+    @property
+    def role_model(self):
+        """Retourne le modèle rôle (wrapper minimal)"""
+        return Role
+
+    def get_user(self, identifier: str):
+        """API FST: récupérer un utilisateur par identifiant (email ou id)"""
+        try:
+            if identifier and "@" in str(identifier):
+                return self._get_user_by_email(identifier)
+            return self._get_user_by_id(identifier)
+        except Exception as e:
+            self.logger.error(f"Erreur get_user: {e}")
+            return None
+
+    def commit(self):
+        """API FST: no-op (transactions déjà commitées au niveau des méthodes)"""
+        return True
+
     def find_user(self, **kwargs):
         """Trouver un utilisateur par critères"""
         self.logger.info(f"find_user appelé avec: {kwargs}")

@@ -127,6 +127,7 @@ def create_app():
                 "SECURITY_TRACKABLE": True,
                 "SECURITY_SEND_REGISTER_EMAIL": False,
                 "SECURITY_SEND_PASSWORD_CHANGE_EMAIL": False,
+                "SECURITY_FLASH_MESSAGES": False,
                 "WTF_CSRF_ENABLED": False,
                 "SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS": True,
                 # Ne pas définir les URLs automatiques pour éviter les conflits
@@ -140,6 +141,21 @@ def create_app():
         app.config["SECURITY_EMAIL_SENDER"] = app.config.get(
             "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
         )
+
+        # Logger FST plus verbeux pour Render
+        try:
+            import logging as _logging
+
+            fst_logger = _logging.getLogger("flask_security")
+            fst_logger.setLevel(_logging.INFO)
+            # S'assurer d'avoir un handler vers stdout
+            if not fst_logger.handlers:
+                handler = _logging.StreamHandler()
+                fst_logger.addHandler(handler)
+        except Exception as _e:
+            structured_logger.warning(
+                "Activation logs flask_security échouée", error=str(_e)
+            )
 
         # Seed des rôles par défaut si absents
         try:
