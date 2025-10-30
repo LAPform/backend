@@ -197,7 +197,15 @@ def signin():
 
         logger = logging.getLogger(__name__)
         logger.info(f"🔍 LOGIN: Début processus de connexion")
-        data = request.get_json()
+        # Accepter JSON strict, ou tenter un fallback si Content-Type n'est pas JSON
+        data = request.get_json(silent=True)
+        if not data and request.data:
+            try:
+                import json as _json
+
+                data = _json.loads(request.data.decode("utf-8"))
+            except Exception:
+                data = None
         logger.info(f"🔍 LOGIN: Données reçues: {data}")
 
         if not data or "email" not in data or "password" not in data:

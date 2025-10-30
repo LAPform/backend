@@ -19,7 +19,10 @@ class HttpClient:
         self.opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self.cookie_jar)
         )
-        self.opener.addheaders = [("Content-Type", "application/json")]
+        self.opener.addheaders = [
+            ("Content-Type", "application/json"),
+            ("Accept", "application/json"),
+        ]
         self.token = None
 
     def post_json(self, path: str, data: dict, use_bearer: bool = False):
