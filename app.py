@@ -148,10 +148,11 @@ def create_app():
 
             fst_logger = _logging.getLogger("flask_security")
             fst_logger.setLevel(_logging.DEBUG)
-            # S'assurer d'avoir un handler vers stdout
             if not fst_logger.handlers:
                 handler = _logging.StreamHandler()
+                handler.setLevel(_logging.DEBUG)
                 fst_logger.addHandler(handler)
+            fst_logger.propagate = False
         except Exception as _e:
             structured_logger.warning(
                 "Activation logs flask_security échouée", error=str(_e)
@@ -188,6 +189,12 @@ def create_app():
     # Logger dédié pour /api/auth/*
     try:
         auth_logger = logging.getLogger("formforge.auth")
+        auth_logger.setLevel(logging.DEBUG)
+        if not auth_logger.handlers:
+            _h = logging.StreamHandler()
+            _h.setLevel(logging.DEBUG)
+            auth_logger.addHandler(_h)
+        auth_logger.propagate = False
 
         @app.before_request
         def _auth_log_request():
