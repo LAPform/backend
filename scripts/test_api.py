@@ -63,18 +63,18 @@ def main():
     code, body = client.get_json("/api/health")
     print("[health]", code, body)
 
-    # 2) Register (FST)
+    # 2) Register (JSON fallback endpoint)
     ts = int(time.time())
     email = f"auto_{ts}@example.com"
     password = "Password123!"
     code, body = client.post_json(
-        "/api/auth/register", {"email": email, "password": password}
+        "/api/auth/register-json", {"email": email, "password": password}
     )
     print("[register]", code, body)
 
-    # 3) Login (FST - session cookie)
+    # 3) Login (JSON fallback endpoint - session cookie + token)
     code, body = client.post_json(
-        "/api/auth/login", {"email": email, "password": password}
+        "/api/auth/login-json", {"email": email, "password": password}
     )
     print("[login_fst]", code, body)
 

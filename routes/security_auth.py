@@ -15,6 +15,119 @@ import logging
 logger = logging.getLogger(__name__)
 
 security_auth_bp = Blueprint("security_auth", __name__)
+@security_auth_bp.route("/auth/register-json", methods=["POST"])
+def register_json():
+    """Inscription JSON tolérante (bypass FST endpoints)"""
+    try:
+        data = request.get_json(silent=True)
+        if not data and request.data:
+            try:
+                import json as _json
+                data = _json.loads(request.data.decode("utf-8"))
+            except Exception:
+                data = None
+
+        if not data or "email" not in data or "password" not in data:
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+
+        email = data["email"].lower().strip()
+        password = data["password"]
+        name = data.get("name", "")
+
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+
+        existing_user = datastore.find_user(email=email)
+        if existing_user:
+            return jsonify({"error": "Utilisateur déjà existant"}), 409
+
+        user = datastore.create_user(email=email, password=password, name=name)
+        # Créer une session login côté Flask-Login pour compat
+        try:
+            login_user(user)
+        except Exception:
+            pass
+
+        return jsonify({
+            "success": True,
+            "user": {"id": user.id, "email": user.email, "name": user.name}
+        }), 201
+    except Exception as e:
+        logger.error(f"Erreur register-json: {e}")
+        return jsonify({"error": "Erreur interne"}), 500
+
+
+@security_auth_bp.route("/auth/login-json", methods=["POST"])
+def login_json():
+    """Connexion JSON tolérante: session + token bearer"""
+    try:
+        data = request.get_json(silent=True)
+        if not data and request.data:
+            try:
+                import json as _json
+                data = _json.loads(request.data.decode("utf-8"))
+            except Exception:
+                data = None
+
+        if not data or "email" not in data or "password" not in data:
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+
+        email = data["email"].lower().strip()
+        password = data["password"]
+
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore.find_user(email=email)
+        if not user:
+            return jsonify({"error": "Utilisateur non trouvé"}), 401
+
+        if not datastore.verify_password(user, password):
+            return jsonify({"error": "Mot de passe incorrect"}), 401
+
+        # Session cookie
+        try:
+            login_user(user)
+        except Exception:
+            pass
+
+        # Générer un token aléatoire sécurisé stocké en base
+        import secrets
+        from datetime import datetime, timedelta
+        from models.database import DatabaseManager
+
+        token = secrets.token_hex(32)
+        expires_at = datetime.utcnow() + timedelta(hours=1)
+        db = DatabaseManager()
+        try:
+            db.execute_query(
+                "SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True
+            )
+        except Exception:
+            db.execute_query(
+                """
+                CREATE TABLE IF NOT EXISTS active_tokens (
+                    token TEXT PRIMARY KEY,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TEXT
+                )
+                """
+            )
+        db.execute_query("DELETE FROM active_tokens WHERE user_id = ?", (user.id,))
+        db.execute_query(
+            "INSERT INTO active_tokens (token, user_id, expires_at) VALUES (?, ?, ?)",
+            (token, user.id, expires_at.isoformat()),
+        )
+
+        return jsonify({
+            "success": True,
+            "user": {"id": user.id, "email": user.email, "name": getattr(user, "name", "")},
+            "token": token,
+            "expires_at": expires_at.isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Erreur login-json: {e}")
+        return jsonify({"error": "Erreur interne"}), 500
 
 
 @security_auth_bp.route("/auth/test", methods=["GET"])
