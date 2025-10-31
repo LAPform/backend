@@ -225,8 +225,9 @@ def _validate_sha256_token(token):
 
         # Nettoyer les tokens expirés (maintenance)
         try:
+            now_iso = datetime.utcnow().isoformat()
             deleted_count = db.execute_query(
-                "DELETE FROM active_tokens WHERE expires_at <= datetime('now')"
+                "DELETE FROM active_tokens WHERE expires_at <= ?", (now_iso,)
             )
             logger.info(
                 f"🔍 AUTH: Nettoyage tokens expirés - {deleted_count} tokens supprimés"
@@ -235,14 +236,20 @@ def _validate_sha256_token(token):
             logger.warning(f"🔍 AUTH: Erreur nettoyage tokens expirés: {cleanup_error}")
 
         # Vérifier si le token existe et n'est pas expiré
+        # expires_at est stocké en format ISO (2025-10-31T08:18:54.880320)
+        # On compare avec datetime('now') en format ISO
+        now_iso = datetime.utcnow().isoformat()
+
         query = """
             SELECT user_id, expires_at 
             FROM active_tokens 
-            WHERE token = ? AND expires_at > datetime('now')
+            WHERE token = ? AND expires_at > ?
         """
 
-        logger.info(f"🔍 AUTH: Exécution requête de validation")
-        result = db.execute_query(query, (token,), fetch=True)
+        logger.info(
+            f"🔍 AUTH: Exécution requête de validation avec expires_at > {now_iso}"
+        )
+        result = db.execute_query(query, (token, now_iso), fetch=True)
         logger.info(f"🔍 AUTH: Résultat requête: {result}")
 
         if result and len(result) > 0:
