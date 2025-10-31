@@ -131,3 +131,7 @@ logs/
 # Temporary files
 tmp/
 temp/
+
+# Documentation files (Word)
+*.docx
+*.doc

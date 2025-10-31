@@ -47,6 +47,8 @@ class HttpClient:
 
         req = urllib.request.Request(url, method="POST")
         body = json.dumps(data).encode("utf-8")
+        # Forcer Content-Type: application/json explicitement
+        req.add_header("Content-Type", "application/json")
         if use_bearer and self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
         try:
@@ -125,10 +127,12 @@ def main():
         "/api/auth/signin", {"email": email, "password": password}
     )
     print("[login_custom]", code, body)
-    if (not getattr(client, "token", None)) and isinstance(body, dict):
+    # Toujours mettre à jour le token avec celui du dernier login (rotation)
+    if code == 200 and isinstance(body, dict):
         token = body.get("token")
         if token:
             client.token = token
+            print(f"[DEBUG] Token mis à jour après signin: {token[:20]}...")
 
     # 6) Create form (utilise cookie ou query token)
     payload_form = {
