@@ -132,7 +132,7 @@ def login_json():
             (token, user.id, expires_at.isoformat()),
         )
 
-        return jsonify(
+        resp = jsonify(
             {
                 "success": True,
                 "user": {
@@ -144,6 +144,19 @@ def login_json():
                 "expires_at": expires_at.isoformat(),
             }
         )
+        try:
+            # Déposer le token dans un cookie robuste aux proxies
+            resp.set_cookie(
+                "ff_token",
+                token,
+                max_age=3600,
+                secure=True,
+                httponly=True,
+                samesite="Lax",
+            )
+        except Exception:
+            pass
+        return resp
     except Exception as e:
         logger.error(f"Erreur login-json: {e}")
         return jsonify({"error": "Erreur interne"}), 500
@@ -449,17 +462,26 @@ def signin():
             f"🔍 LOGIN: Token retourné: {sha256_token[:10]}...{sha256_token[-10:]}"
         )
 
-        return (
-            jsonify(
-                {
-                    "success": True,
-                    "message": "Connexion réussie",
-                    "user": user_data,
-                    "token": sha256_token,
-                }
-            ),
-            200,
+        resp = jsonify(
+            {
+                "success": True,
+                "message": "Connexion réussie",
+                "user": user_data,
+                "token": sha256_token,
+            }
         )
+        try:
+            resp.set_cookie(
+                "ff_token",
+                sha256_token,
+                max_age=3600,
+                secure=True,
+                httponly=True,
+                samesite="Lax",
+            )
+        except Exception:
+            pass
+        return resp, 200
 
     except Exception as e:
         import traceback

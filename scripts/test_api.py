@@ -77,6 +77,10 @@ def main():
         "/api/auth/login-json", {"email": email, "password": password}
     )
     print("[login_fst]", code, body)
+    if code == 200 and isinstance(body, dict):
+        token = body.get("token")
+        if token:
+            client.token = token
 
     # 4) Forms list with session cookie
     code, body = client.get_json("/api/forms")
@@ -87,8 +91,10 @@ def main():
         "/api/auth/signin", {"email": email, "password": password}
     )
     print("[login_custom]", code, body)
-    token = body.get("token") if isinstance(body, dict) else None
-    client.token = token
+    if (not getattr(client, "token", None)) and isinstance(body, dict):
+        token = body.get("token")
+        if token:
+            client.token = token
 
     # 6) Create form (session or bearer). Try session first, fallback to bearer
     payload_form = {
@@ -96,9 +102,7 @@ def main():
         "description": "Test POC",
         "settings": {"theme": "blue"},
     }
-    code, body = client.post_json("/api/forms", payload_form)
-    if code == 401 and token:
-        code, body = client.post_json("/api/forms", payload_form, use_bearer=True)
+    code, body = client.post_json("/api/forms", payload_form, use_bearer=True)
     print("[form_create]", code, body)
 
     form_id = None
@@ -114,12 +118,8 @@ def main():
             "order_index": 0,
         }
         code, body = client.post_json(
-            f"/api/forms/{form_id}/questions", question_payload
+            f"/api/forms/{form_id}/questions", question_payload, use_bearer=True
         )
-        if code == 401 and token:
-            code, body = client.post_json(
-                f"/api/forms/{form_id}/questions", question_payload, use_bearer=True
-            )
         print("[question_create]", code, body)
 
         # 8) Submit response
@@ -129,19 +129,13 @@ def main():
             else {}
         )
         resp_payload = {"answers": answers}
-        code, body = client.post_json(f"/api/forms/{form_id}/responses", resp_payload)
-        if code == 401 and token:
-            code, body = client.post_json(
-                f"/api/forms/{form_id}/responses", resp_payload, use_bearer=True
-            )
+        code, body = client.post_json(
+            f"/api/forms/{form_id}/responses", resp_payload, use_bearer=True
+        )
         print("[response_submit]", code, body)
 
         # 9) Analytics
-        code, body = client.get_json(f"/api/forms/{form_id}/analytics")
-        if code == 401 and token:
-            code, body = client.get_json(
-                f"/api/forms/{form_id}/analytics", use_bearer=True
-            )
+        code, body = client.get_json(f"/api/forms/{form_id}/analytics", use_bearer=True)
         print("[analytics]", code, body)
 
 

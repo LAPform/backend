@@ -33,7 +33,7 @@ def require_auth(f):
         except Exception as e:
             logger.warning(f"🔍 AUTH: Impossible d'utiliser current_user: {e}")
 
-        # Vérifier le header Authorization ou récupérer token via fallback (query/body)
+        # Vérifier le header Authorization ou récupérer token via fallback (query/body/cookie)
         auth_header = request.headers.get("Authorization")
         logger.info(
             f"🔍 AUTH: Header Authorization: {auth_header[:20] if auth_header else 'None'}..."
@@ -53,6 +53,12 @@ def require_auth(f):
                     body = None
                 if isinstance(body, dict):
                     token = body.get("token")
+            # Fallback: cookie (plus robuste derrière certains proxies)
+            if not token:
+                try:
+                    token = request.cookies.get("ff_token")
+                except Exception:
+                    token = None
 
         if not token:
             logger.warning(f"🔍 AUTH: Aucun token fourni (header/query/body)")
