@@ -120,19 +120,38 @@ def create_app():
                 "SECURITY_JSON": True,
                 "SECURITY_URL_PREFIX": "/api/auth",
                 "SECURITY_REGISTERABLE": True,
-                "SECURITY_RECOVERABLE": False,
+                "SECURITY_RECOVERABLE": True,  # Activé pour la réinitialisation de mot de passe
                 "SECURITY_CHANGEABLE": True,
                 "SECURITY_RETURN_GENERIC_RESPONSES": True,
                 "SECURITY_CONFIRMABLE": False,
                 "SECURITY_TRACKABLE": True,
                 "SECURITY_SEND_REGISTER_EMAIL": False,
                 "SECURITY_SEND_PASSWORD_CHANGE_EMAIL": False,
+                "SECURITY_SEND_PASSWORD_RESET_EMAIL": True,  # Activer l'envoi d'email de réinitialisation
                 "SECURITY_FLASH_MESSAGES": False,
                 "WTF_CSRF_ENABLED": False,
                 "SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS": True,
+                # Configuration Flask-Mail pour l'envoi d'emails
+                "MAIL_SERVER": os.environ.get("MAIL_SERVER", "smtp.gmail.com"),
+                "MAIL_PORT": int(os.environ.get("MAIL_PORT", 587)),
+                "MAIL_USE_TLS": os.environ.get("MAIL_USE_TLS", "true").lower()
+                == "true",
+                "MAIL_USE_SSL": os.environ.get("MAIL_USE_SSL", "false").lower()
+                == "true",
+                "MAIL_USERNAME": os.environ.get("MAIL_USERNAME"),
+                "MAIL_PASSWORD": os.environ.get("MAIL_PASSWORD"),
+                "MAIL_DEFAULT_SENDER": os.environ.get(
+                    "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
+                ),
                 # Ne pas définir les URLs automatiques pour éviter les conflits
             }
         )
+
+        # Initialiser Flask-Mail pour l'envoi d'emails
+        from flask_mail import Mail
+
+        mail = Mail(app)
+        app.mail = mail
 
         # Initialiser Flask-Security et enregistrer ses blueprints
         security = Security(app, user_datastore, register_blueprint=True)

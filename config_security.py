@@ -32,23 +32,27 @@ class SecurityConfig:
     SECURITY_JSON_ENABLED = True
     SECURITY_JSON = True  # Force les réponses JSON
 
-    # Configuration de l'email (désactivé pour API REST)
-    MAIL_SERVER = None
-    MAIL_PORT = None
-    MAIL_USE_TLS = False
-    MAIL_USERNAME = None
-    MAIL_PASSWORD = None
-    MAIL_DEFAULT_SENDER = "noreply@formforge.com"
+    # Configuration de l'email (activé pour la réinitialisation de mot de passe)
+    MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", 587))
+    MAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_USE_SSL = os.environ.get("MAIL_USE_SSL", "false").lower() == "true"
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_DEFAULT_SENDER = os.environ.get("MAIL_DEFAULT_SENDER", "noreply@formforge.com")
 
-    # Configuration des fonctionnalités pour API REST - Désactivées pour éviter les conflits
+    # Configuration des fonctionnalités pour API REST
     SECURITY_REGISTERABLE = False  # Désactivé - nous gérons l'inscription manuellement
-    SECURITY_RECOVERABLE = False  # Désactivé pour API REST
-    SECURITY_CHANGEABLE = False   # Désactivé - nous gérons le changement manuellement
+    SECURITY_RECOVERABLE = True  # Activé pour la réinitialisation de mot de passe
+    SECURITY_CHANGEABLE = False  # Désactivé - nous gérons le changement manuellement
     SECURITY_CONFIRMABLE = False  # Désactivé pour API REST
     SECURITY_TRACKABLE = True
     SECURITY_SEND_REGISTER_EMAIL = False  # Pas d'email d'inscription
     SECURITY_SEND_PASSWORD_CHANGE_EMAIL = False  # Pas d'email de changement
-    
+    SECURITY_SEND_PASSWORD_RESET_EMAIL = (
+        True  # Activer l'envoi d'email de réinitialisation
+    )
+
     # Configuration pour éviter les erreurs de session
     SECURITY_SESSION_REFRESH_EACH_REQUEST = False
     SECURITY_SESSION_REFRESH_WITHIN = "1 days"
@@ -69,7 +73,7 @@ class SecurityConfig:
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     SECURITY_CSRF_COOKIE = None
     SECURITY_CSRF_COOKIE_NAME = None
-    
+
     # Désactiver les templates pour API REST
     SECURITY_TEMPLATE_DIR = None
     SECURITY_LOGIN_USER_TEMPLATE = None
