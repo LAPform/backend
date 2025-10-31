@@ -25,8 +25,27 @@ class HttpClient:
         ]
         self.token = None
 
-    def post_json(self, path: str, data: dict, use_bearer: bool = False):
-        req = urllib.request.Request(_url(path), method="POST")
+    def post_json(
+        self,
+        path: str,
+        data: dict,
+        use_bearer: bool = False,
+        use_query_token: bool = False,
+    ):
+        # Ajouter le token en query param si demandé (plus fiable que header)
+        url = _url(path)
+        if use_query_token and self.token:
+            # Encoder correctement le token dans les query params
+            from urllib.parse import urlencode, urlparse, urlunparse
+
+            parsed = urlparse(url)
+            query_params = dict(urllib.parse.parse_qsl(parsed.query))
+            query_params["token"] = self.token
+            new_query = urlencode(query_params)
+            url = urlunparse(parsed._replace(query=new_query))
+            print(f"[DEBUG] URL avec token: {url[:100]}...")
+
+        req = urllib.request.Request(url, method="POST")
         body = json.dumps(data).encode("utf-8")
         if use_bearer and self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
@@ -40,8 +59,23 @@ class HttpClient:
         except Exception as e:
             return 0, {"error": str(e)}
 
-    def get_json(self, path: str, use_bearer: bool = False):
-        req = urllib.request.Request(_url(path), method="GET")
+    def get_json(
+        self, path: str, use_bearer: bool = False, use_query_token: bool = False
+    ):
+        # Ajouter le token en query param si demandé (plus fiable que header)
+        url = _url(path)
+        if use_query_token and self.token:
+            # Encoder correctement le token dans les query params
+            from urllib.parse import urlencode, urlparse, urlunparse
+
+            parsed = urlparse(url)
+            query_params = dict(urllib.parse.parse_qsl(parsed.query))
+            query_params["token"] = self.token
+            new_query = urlencode(query_params)
+            url = urlunparse(parsed._replace(query=new_query))
+            print(f"[DEBUG] URL avec token: {url[:100]}...")
+
+        req = urllib.request.Request(url, method="GET")
         if use_bearer and self.token:
             req.add_header("Authorization", f"Bearer {self.token}")
         try:
@@ -96,13 +130,13 @@ def main():
         if token:
             client.token = token
 
-    # 6) Create form (session or bearer). Try session first, fallback to bearer
+    # 6) Create form (utilise cookie ou query token)
     payload_form = {
         "title": f"Formulaire Auto {ts}",
         "description": "Test POC",
         "settings": {"theme": "blue"},
     }
-    code, body = client.post_json("/api/forms", payload_form, use_bearer=True)
+    code, body = client.post_json("/api/forms", payload_form, use_query_token=True)
     print("[form_create]", code, body)
 
     form_id = None
@@ -118,7 +152,7 @@ def main():
             "order_index": 0,
         }
         code, body = client.post_json(
-            f"/api/forms/{form_id}/questions", question_payload, use_bearer=True
+            f"/api/forms/{form_id}/questions", question_payload, use_query_token=True
         )
         print("[question_create]", code, body)
 
@@ -130,12 +164,14 @@ def main():
         )
         resp_payload = {"answers": answers}
         code, body = client.post_json(
-            f"/api/forms/{form_id}/responses", resp_payload, use_bearer=True
+            f"/api/forms/{form_id}/responses", resp_payload, use_query_token=True
         )
         print("[response_submit]", code, body)
 
         # 9) Analytics
-        code, body = client.get_json(f"/api/forms/{form_id}/analytics", use_bearer=True)
+        code, body = client.get_json(
+            f"/api/forms/{form_id}/analytics", use_query_token=True
+        )
         print("[analytics]", code, body)
 
 

@@ -21,6 +21,10 @@ def require_auth(f):
     def decorated_function(*args, **kwargs):
         logger.info(f"🔍 AUTH: Début authentification pour route: {request.endpoint}")
         logger.info(f"🔍 AUTH: Méthode: {request.method}, URL: {request.url}")
+        logger.info(
+            f"🔍 AUTH: Query string: {request.query_string.decode('utf-8') if request.query_string else 'None'}"
+        )
+        logger.info(f"🔍 AUTH: Args ImmutableMultiDict: {dict(request.args)}")
 
         # 0) Accepter la session Flask-Security-Too (cookie) si déjà authentifié
         try:
@@ -42,22 +46,41 @@ def require_auth(f):
         token = None
         if auth_header and auth_header.startswith("Bearer "):
             token = auth_header.split(" ")[1]
+            logger.info(f"🔍 AUTH: Token trouvé dans Authorization header")
         else:
             # Fallback: query param ?token=... ou corps JSON {"token": "..."}
+            logger.info(
+                f"🔍 AUTH: Recherche token dans query params: {dict(request.args)}"
+            )
             token = request.args.get("token")
+            logger.info(
+                f"🔍 AUTH: Token depuis query params: {token[:10] if token else 'None'}..."
+            )
+
             if not token and request.method in ["POST", "PUT", "PATCH"]:
                 body = None
                 try:
                     body = request.get_json(silent=True)
-                except Exception:
+                    logger.info(f"🔍 AUTH: Corps JSON parsé: {type(body)}")
+                except Exception as e:
+                    logger.warning(f"🔍 AUTH: Erreur parsing JSON: {e}")
                     body = None
                 if isinstance(body, dict):
                     token = body.get("token")
+                    logger.info(
+                        f"🔍 AUTH: Token depuis body JSON: {token[:10] if token else 'None'}..."
+                    )
+
             # Fallback: cookie (plus robuste derrière certains proxies)
             if not token:
                 try:
-                    token = request.cookies.get("ff_token")
-                except Exception:
+                    cookie_token = request.cookies.get("ff_token")
+                    logger.info(
+                        f"🔍 AUTH: Cookie ff_token: {cookie_token[:10] if cookie_token else 'None'}..."
+                    )
+                    token = cookie_token
+                except Exception as e:
+                    logger.warning(f"🔍 AUTH: Erreur lecture cookie: {e}")
                     token = None
 
         if not token:
