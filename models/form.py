@@ -27,8 +27,8 @@ class Form:
         settings = settings or {}
 
         query = """
-            INSERT INTO forms (id, title, description, settings, created_by)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO forms (id, title, description, settings, created_by, status)
+            VALUES (?, ?, ?, ?, ?, 'draft')
         """
 
         self.db.execute_query(
@@ -80,7 +80,9 @@ class Form:
         results = self.db.execute_query(query, (form_id, user_id), fetch=True)
         return results and len(results) > 0 and results[0]["count"] > 0
 
-    def get_all(self, limit: int = 100, offset: int = 0, user_id: str = None) -> List[Dict]:
+    def get_all(
+        self, limit: int = 100, offset: int = 0, user_id: str = None
+    ) -> List[Dict]:
         """Récupérer tous les formulaires d'un utilisateur"""
         if user_id:
             query = """
@@ -97,7 +99,7 @@ class Form:
                 LIMIT ? OFFSET ?
             """
             params = (limit, offset)
-        
+
         results = self.db.execute_query(query, params, fetch=True)
         forms = []
         for row in results:
@@ -157,6 +159,76 @@ class Form:
         query = "DELETE FROM forms WHERE id = ?"
         rows_affected = self.db.execute_query(query, (form_id,))
         return rows_affected > 0
+
+    def publish(self, form_id: str) -> Optional[str]:
+        """Finaliser et publier un formulaire - Génère un token public unique"""
+        import secrets
+
+        # Vérifier que le formulaire existe
+        form = self.get_by_id(form_id)
+        if not form:
+            return None
+
+        # Générer un token public unique (32 caractères hex = 16 octets)
+        public_token = secrets.token_urlsafe(
+            24
+        )  # 32 caractères alphanumériques URL-safe
+
+        # Vérifier l'unicité du token (rare mais possible)
+        max_attempts = 5
+        for attempt in range(max_attempts):
+            try:
+                query = """
+                    UPDATE forms 
+                    SET status = 'published', 
+                        public_token = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                """
+                rows_affected = self.db.execute_query(query, (public_token, form_id))
+                if rows_affected > 0:
+                    return public_token
+            except Exception:
+                # Token déjà utilisé, générer un nouveau
+                if attempt < max_attempts - 1:
+                    public_token = secrets.token_urlsafe(24)
+                    continue
+                return None
+
+        return None
+
+    def get_public_link(self, form_id: str) -> Optional[str]:
+        """Récupérer ou générer le lien public d'un formulaire publié"""
+        form = self.get_by_id(form_id)
+        if not form:
+            return None
+
+        # Si déjà publié avec un token, retourner le token
+        if form.get("status") == "published" and form.get("public_token"):
+            return form.get("public_token")
+
+        # Sinon, publier le formulaire et retourner le token
+        public_token = self.publish(form_id)
+        return public_token
+
+    def get_by_public_token(self, public_token: str) -> Optional[Dict]:
+        """Récupérer un formulaire publié par son token public"""
+        query = "SELECT * FROM forms WHERE public_token = ? AND status = 'published'"
+        results = self.db.execute_query(query, (public_token,), fetch=True)
+
+        if results and len(results) > 0:
+            form_data = results[0]
+            # Désérialiser les settings JSON
+            settings_str = form_data.get("settings", "{}")
+            if settings_str and settings_str != "{}":
+                try:
+                    form_data["settings"] = json.loads(settings_str)
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    form_data["settings"] = {}
+            else:
+                form_data["settings"] = {}
+            return form_data
+        return None
 
     def get_with_questions(self, form_id: str) -> Optional[Dict]:
         """Récupérer un formulaire avec ses questions"""

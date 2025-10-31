@@ -136,6 +136,111 @@ def submit_response(form_id, authenticated_user_id=None):
         return jsonify({"error": str(e)}), 500
 
 
+@responses_bp.route("/public/forms/<public_token>/responses", methods=["POST"])
+@rate_limit("responses_submit_public")
+def submit_public_response(public_token):
+    """
+    Soumettre une réponse à un formulaire publié via son token public (accès public, pas d'authentification requise)
+
+    Cet endpoint permet aux répondants de soumettre leurs réponses sans authentification
+    en utilisant le token public du formulaire.
+    """
+    try:
+        data = request.get_json()
+
+        if not data or "answers" not in data:
+            return jsonify({"error": "Réponses requises"}), 400
+
+        # Validation basique des données
+        if not isinstance(data["answers"], dict):
+            return jsonify({"error": "Les réponses doivent être un objet JSON"}), 400
+
+        # Vérifier que le formulaire existe et est publié
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
+
+        # Récupérer le formulaire par son token public
+        form = form_model.get_by_public_token(public_token)
+
+        if not form:
+            return jsonify({"error": "Formulaire non trouvé ou non publié"}), 404
+
+        form_id = form["id"]
+
+        # Récupérer les questions du formulaire
+        question_model = Question(db)
+        questions = question_model.get_by_form_id(form_id)
+
+        # Valider toutes les réponses
+        validation_errors = []
+        for question in questions:
+            question_id = question["id"]
+            answer = data["answers"].get(question_id)
+
+            validation_result = question_model.validate_response(question_id, answer)
+            if not validation_result["valid"]:
+                validation_errors.append(
+                    {
+                        "question_id": question_id,
+                        "question_text": question["text"],
+                        "error": validation_result["error"],
+                    }
+                )
+
+        if validation_errors:
+            return (
+                jsonify(
+                    {
+                        "error": "Erreurs de validation",
+                        "validation_errors": validation_errors,
+                    }
+                ),
+                400,
+            )
+
+        # Créer la réponse
+        try:
+            logger.info(f"Création réponse publique pour formulaire: {form_id}")
+            logger.info(f"Réponses reçues: {data['answers']}")
+
+            response_model = Response(db)
+            user_id = data.get("user_id")  # Optionnel pour les réponses publiques
+            ip_address = request.remote_addr
+
+            logger.info(f"Paramètres: user_id={user_id}, ip_address={ip_address}")
+
+            response_id = response_model.create(
+                form_id=form_id,
+                answers=data["answers"],
+                user_id=user_id,
+                ip_address=ip_address,
+            )
+
+            logger.info(f"Réponse créée avec succès: {response_id}")
+        except Exception as e:
+            logger.error(f"Error creating response: {e}")
+            return jsonify({"error": f"Erreur création réponse: {str(e)}"}), 500
+
+        logger.info(f"Réponse publique soumise: {response_id}")
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "response_id": response_id,
+                    "message": "Réponse soumise avec succès",
+                }
+            ),
+            201,
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur soumission réponse publique: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @responses_bp.route("/forms/<form_id>/responses", methods=["GET"])
 @require_auth
 @rate_limit("responses_get")

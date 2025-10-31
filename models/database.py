@@ -59,11 +59,40 @@ class DatabaseManager:
                     description TEXT,
                     settings TEXT DEFAULT '{}',
                     created_by TEXT,
+                    status TEXT DEFAULT 'draft',
+                    public_token TEXT UNIQUE,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
                 )
             """
             )
+
+            # Ajouter les colonnes status et public_token si elles n'existent pas (migration)
+            try:
+                cursor.execute("PRAGMA table_info(forms)")
+                columns = [row[1] for row in cursor.fetchall()]
+                if "status" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE forms ADD COLUMN status TEXT DEFAULT 'draft'"
+                    )
+                if "public_token" not in columns:
+                    cursor.execute("ALTER TABLE forms ADD COLUMN public_token TEXT")
+                    # Créer un index unique pour public_token
+                    cursor.execute(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS idx_forms_public_token ON forms(public_token)"
+                    )
+            except Exception as e_info:
+                logger.warning(
+                    f"Impossible d'ajouter status/public_token ou migration: {e_info}"
+                )
+
+            # Créer l'index unique pour public_token si la colonne existe déjà
+            try:
+                cursor.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS idx_forms_public_token ON forms(public_token)"
+                )
+            except Exception:
+                pass  # L'index existe peut-être déjà
 
             # Table questions
             cursor.execute(

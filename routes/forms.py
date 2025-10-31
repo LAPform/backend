@@ -115,8 +115,10 @@ def create_form(authenticated_user_id=None, **kwargs):
         # Récupérer l'utilisateur authentifié depuis les kwargs ou la session
         from flask import session
 
-        user_id = authenticated_user_id or kwargs.get("authenticated_user_id") or session.get(
-            "user_id", "unknown_user"
+        user_id = (
+            authenticated_user_id
+            or kwargs.get("authenticated_user_id")
+            or session.get("user_id", "unknown_user")
         )
 
         # Debug: Logger l'utilisateur et les données
@@ -186,7 +188,10 @@ def get_form(form_id, authenticated_user_id=None, **kwargs):
             return jsonify({"error": f"Erreur récupération formulaire: {str(e)}"}), 500
 
         if not form:
-            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
 
         # Récupérer les questions du formulaire
         try:
@@ -226,7 +231,10 @@ def update_form(form_id, authenticated_user_id=None, **kwargs):
 
         # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
         if not form_model.is_owner(form_id, authenticated_user_id):
-            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
 
         # Mettre à jour
         success = form_model.update(
@@ -239,7 +247,9 @@ def update_form(form_id, authenticated_user_id=None, **kwargs):
         if not success:
             return jsonify({"error": "Erreur lors de la mise à jour"}), 500
 
-        logger.info(f"Formulaire mis à jour: {form_id} par utilisateur: {authenticated_user_id}")
+        logger.info(
+            f"Formulaire mis à jour: {form_id} par utilisateur: {authenticated_user_id}"
+        )
 
         return jsonify(
             {"success": True, "message": "Formulaire mis à jour avec succès"}
@@ -267,7 +277,10 @@ def delete_form(form_id, authenticated_user_id=None, **kwargs):
 
         # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
         if not form_model.is_owner(form_id, authenticated_user_id):
-            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
 
         # Supprimer
         success = form_model.delete(form_id)
@@ -275,7 +288,9 @@ def delete_form(form_id, authenticated_user_id=None, **kwargs):
         if not success:
             return jsonify({"error": "Erreur lors de la suppression"}), 500
 
-        logger.info(f"Formulaire supprimé: {form_id} par utilisateur: {authenticated_user_id}")
+        logger.info(
+            f"Formulaire supprimé: {form_id} par utilisateur: {authenticated_user_id}"
+        )
 
         return jsonify({"success": True, "message": "Formulaire supprimé avec succès"})
 
@@ -335,7 +350,10 @@ def get_form_stats(form_id, authenticated_user_id=None, **kwargs):
 
         # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
         if not form_model.is_owner(form_id, authenticated_user_id):
-            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
 
         # Récupérer les statistiques
         stats = form_model.get_stats(form_id)
@@ -365,7 +383,10 @@ def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
 
         # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
         if not form_model.is_owner(form_id, authenticated_user_id):
-            return jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}), 404
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
 
         # Récupérer le formulaire original
         original_form = form_model.get_with_questions(form_id)
@@ -377,7 +398,9 @@ def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
         new_description = original_form.get("description", "")
         new_settings = original_form.get("settings", {})
 
-        new_form_id = form_model.create(new_title, new_description, new_settings, authenticated_user_id)
+        new_form_id = form_model.create(
+            new_title, new_description, new_settings, authenticated_user_id
+        )
 
         # Dupliquer les questions
         for question in original_form.get("questions", []):
@@ -391,16 +414,190 @@ def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
                 order_index=question.get("order_index", 0),
             )
 
-        logger.info(f"Formulaire dupliqué: {form_id} -> {new_form_id} par utilisateur: {authenticated_user_id}")
+        logger.info(
+            f"Formulaire dupliqué: {form_id} -> {new_form_id} par utilisateur: {authenticated_user_id}"
+        )
 
         return jsonify(
             {
                 "success": True,
-                "new_form_id": new_form_id,
+                "data": {"new_form_id": new_form_id},
                 "message": "Formulaire dupliqué avec succès",
             }
         )
 
     except Exception as e:
         logger.error(f"Erreur duplication formulaire: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@forms_bp.route("/forms/<form_id>/publish", methods=["POST"])
+@require_auth
+@rate_limit("forms_publish")
+@audit_log("publish", "form")
+def publish_form(form_id, authenticated_user_id=None, **kwargs):
+    """
+    Finaliser et publier un formulaire
+
+    Génère un token public unique qui permet de répondre au questionnaire
+    via un lien public.
+    """
+    try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
+
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
+
+        # Publier le formulaire (génère le token public)
+        public_token = form_model.publish(form_id)
+
+        if not public_token:
+            return jsonify({"error": "Impossible de publier le formulaire"}), 500
+
+        logger.info(
+            f"Formulaire publié: {form_id} par utilisateur: {authenticated_user_id}"
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "message": "Formulaire publié avec succès",
+                    "data": {
+                        "form_id": form_id,
+                        "status": "published",
+                        "public_token": public_token,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur publication formulaire: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@forms_bp.route("/forms/<form_id>/public-link", methods=["GET"])
+@require_auth
+@rate_limit("forms_public_link")
+@audit_log("read", "form")
+def get_public_link(form_id, authenticated_user_id=None, **kwargs):
+    """
+    Récupérer ou générer le lien public d'un formulaire
+
+    Si le formulaire est déjà publié, retourne le token existant.
+    Sinon, publie le formulaire et génère un nouveau token.
+    """
+    try:
+        # Vérifier que l'utilisateur est authentifié
+        if not authenticated_user_id:
+            return jsonify({"error": "Utilisateur non authentifié"}), 401
+
+        from models.database import DatabaseManager
+        from flask import request
+
+        db = DatabaseManager()
+        form_model = Form(db)
+
+        # Vérifier que le formulaire existe ET que l'utilisateur en est propriétaire
+        if not form_model.is_owner(form_id, authenticated_user_id):
+            return (
+                jsonify({"error": "Formulaire non trouvé ou accès non autorisé"}),
+                404,
+            )
+
+        # Récupérer ou générer le lien public
+        public_token = form_model.get_public_link(form_id)
+
+        if not public_token:
+            return jsonify({"error": "Impossible de générer le lien public"}), 500
+
+        # Construire l'URL complète du lien public
+        base_url = request.host_url.rstrip("/")
+        public_url = f"{base_url}api/public/forms/{public_token}"
+
+        logger.info(f"Lien public généré pour formulaire: {form_id}")
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "form_id": form_id,
+                        "public_token": public_token,
+                        "public_url": public_url,
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur récupération lien public: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@forms_bp.route("/public/forms/<public_token>", methods=["GET"])
+@rate_limit("forms_public_access")
+def get_public_form(public_token):
+    """
+    Récupérer un formulaire publié via son token public (accès public, pas d'authentification requise)
+
+    Cet endpoint permet aux répondants d'accéder au formulaire pour y répondre
+    sans avoir besoin de s'authentifier.
+    """
+    try:
+        from models.database import DatabaseManager
+
+        db = DatabaseManager()
+        form_model = Form(db)
+
+        # Récupérer le formulaire par son token public
+        form = form_model.get_by_public_token(public_token)
+
+        if not form:
+            return jsonify({"error": "Formulaire non trouvé ou non publié"}), 404
+
+        # Récupérer les questions du formulaire
+        form_with_questions = form_model.get_with_questions(form["id"])
+
+        if not form_with_questions:
+            return jsonify({"error": "Formulaire non trouvé"}), 404
+
+        logger.info(
+            f"Formulaire public accédé: {form['id']} via token: {public_token[:10]}..."
+        )
+
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "data": {
+                        "form": {
+                            "id": form_with_questions["id"],
+                            "title": form_with_questions["title"],
+                            "description": form_with_questions.get("description", ""),
+                            "settings": form_with_questions.get("settings", {}),
+                            "questions": form_with_questions.get("questions", []),
+                        }
+                    },
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Erreur récupération formulaire public: {e}")
         return jsonify({"error": str(e)}), 500
