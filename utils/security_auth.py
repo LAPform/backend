@@ -235,10 +235,19 @@ def _validate_sha256_token(token):
         except Exception as cleanup_error:
             logger.warning(f"🔍 AUTH: Erreur nettoyage tokens expirés: {cleanup_error}")
 
+        # Vérifier si le token existe (même expiré d'abord pour debug)
+        query_check = "SELECT user_id, expires_at FROM active_tokens WHERE token = ?"
+        logger.info(
+            f"🔍 AUTH: Vérification existence token: {token[:20]}...{token[-20:]}"
+        )
+        check_result = db.execute_query(query_check, (token,), fetch=True)
+        logger.info(f"🔍 AUTH: Token trouvé en base (même expiré): {check_result}")
+
         # Vérifier si le token existe et n'est pas expiré
         # expires_at est stocké en format ISO (2025-10-31T08:18:54.880320)
         # On compare avec datetime('now') en format ISO
         now_iso = datetime.utcnow().isoformat()
+        logger.info(f"🔍 AUTH: Date actuelle (ISO): {now_iso}")
 
         query = """
             SELECT user_id, expires_at 
@@ -250,7 +259,7 @@ def _validate_sha256_token(token):
             f"🔍 AUTH: Exécution requête de validation avec expires_at > {now_iso}"
         )
         result = db.execute_query(query, (token, now_iso), fetch=True)
-        logger.info(f"🔍 AUTH: Résultat requête: {result}")
+        logger.info(f"🔍 AUTH: Résultat requête (non expiré): {result}")
 
         if result and len(result) > 0:
             user_id = result[0]["user_id"]
