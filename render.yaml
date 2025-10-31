@@ -14,3 +14,6 @@ services:
         value: sqlite:///formforge_prod.db
       - key: PYTHONPATH
         value: .
+      # CORS_ORIGINS : À configurer si votre frontend est sur un autre domaine
+      # Exemple: - key: CORS_ORIGINS
+      #          value: https://votre-frontend.onrender.com

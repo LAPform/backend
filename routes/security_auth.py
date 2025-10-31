@@ -187,12 +187,16 @@ def test_register():
         password = data["password"]
         name = data.get("name", "")
 
-        # Test simple de validation
+        # Validation email basique
         if "@" not in email:
             return jsonify({"error": "Email invalide"}), 400
 
-        if len(password) < 6:
-            return jsonify({"error": "Mot de passe trop court"}), 400
+        # Validation mot de passe renforcée
+        from utils.security_auth import SecurityAuthManager
+
+        is_valid, message = SecurityAuthManager.validate_password_strength(password)
+        if not is_valid:
+            return jsonify({"error": message}), 400
 
         # Test de création d'utilisateur
         from models.security_models import SecurityUserDatastore
@@ -286,12 +290,16 @@ def signup():
         password = data["password"]
         name = data.get("name", "")
 
-        # Test simple de validation
+        # Validation email basique
         if "@" not in email:
             return jsonify({"error": "Email invalide"}), 400
 
-        if len(password) < 6:
-            return jsonify({"error": "Mot de passe trop court"}), 400
+        # Validation mot de passe renforcée
+        from utils.security_auth import SecurityAuthManager
+
+        is_valid, message = SecurityAuthManager.validate_password_strength(password)
+        if not is_valid:
+            return jsonify({"error": message}), 400
 
         # Test de création d'utilisateur
         from models.security_models import SecurityUserDatastore
@@ -568,7 +576,17 @@ def test_token():
 
 @security_auth_bp.route("/auth/debug-tokens", methods=["GET"])
 def debug_tokens():
-    """Debug - Vérifier l'état des tokens en base"""
+    """Debug - Vérifier l'état des tokens en base (désactivé en production)"""
+    from flask import current_app
+    import os
+
+    # Désactiver en production
+    if (
+        not current_app.config.get("DEBUG")
+        and os.environ.get("FLASK_ENV") == "production"
+    ):
+        return jsonify({"error": "Endpoint non disponible en production"}), 403
+
     try:
         logger.info(f"🔍 DEBUG: Début vérification tokens en base")
         from models.database import DatabaseManager
@@ -627,9 +645,19 @@ def debug_tokens():
         return jsonify({"error": f"Erreur debug: {str(e)}"}), 500
 
 
+# Endpoint debug - désactivé en production
 @security_auth_bp.route("/auth/debug-connection", methods=["POST"])
 def debug_connection():
-    """Debug - Tester la connexion étape par étape"""
+    """Debug - Tester la connexion étape par étape (désactivé en production)"""
+    from flask import current_app
+    import os
+
+    # Désactiver en production
+    if (
+        not current_app.config.get("DEBUG")
+        and os.environ.get("FLASK_ENV") == "production"
+    ):
+        return jsonify({"error": "Endpoint non disponible en production"}), 403
     try:
         logger.info(f"🔍 DEBUG CONNECTION: Début test connexion")
 
@@ -730,9 +758,19 @@ def debug_connection():
         return jsonify({"error": f"Erreur générale: {str(e)}"}), 500
 
 
+# Endpoint debug - désactivé en production
 @security_auth_bp.route("/auth/debug-signin", methods=["POST"])
 def debug_signin():
-    """Debug - Tester la connexion avec logs détaillés"""
+    """Debug - Tester la connexion avec logs détaillés (désactivé en production)"""
+    from flask import current_app
+    import os
+
+    # Désactiver en production
+    if (
+        not current_app.config.get("DEBUG")
+        and os.environ.get("FLASK_ENV") == "production"
+    ):
+        return jsonify({"error": "Endpoint non disponible en production"}), 403
     try:
         logger.info(f"🔍 DEBUG SIGNIN: Début test connexion détaillé")
 

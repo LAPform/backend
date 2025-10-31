@@ -10,7 +10,24 @@ class SecurityConfig:
     """Configuration pour Flask-Security-Too"""
 
     # Configuration de base
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    # SECRET_KEY doit être défini en production via variable d'environnement
+    # En développement, utilise une valeur par défaut mais log un avertissement
+    _secret_key = os.environ.get("SECRET_KEY")
+    if not _secret_key:
+        if os.environ.get("FLASK_ENV") == "production":
+            raise ValueError(
+                "SECRET_KEY doit être défini en production via variable d'environnement"
+            )
+        # En développement uniquement, utiliser une valeur par défaut
+        import warnings
+
+        warnings.warn(
+            "SECRET_KEY non défini - utilisation d'une valeur par défaut (développement uniquement)",
+            UserWarning,
+        )
+        _secret_key = "dev-secret-key-change-in-production"
+
+    SECRET_KEY = _secret_key
 
     # Configuration de sécurité
     SECURITY_PASSWORD_SALT = os.environ.get(

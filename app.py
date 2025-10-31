@@ -49,10 +49,40 @@ def create_app():
         logger.info("🔒 Middlewares de sécurité configurés avec succès")
     except Exception as e:
         logger.error(f"Erreur configuration middlewares de sécurité: {e}")
-        # Continuer sans les middlewares de sécurité en cas d'erreur
+        # Fallback sécurisé pour CORS - jamais autoriser toutes les origines
         from flask_cors import CORS
+        import os
 
-        CORS(app)
+        # Récupérer les origines autorisées depuis la configuration ou l'environnement
+        cors_origins = app.config.get("CORS_ORIGINS", [])
+        if isinstance(cors_origins, str):
+            cors_origins = [
+                origin.strip() for origin in cors_origins.split(",") if origin.strip()
+            ]
+
+        # Si aucune origine définie, utiliser des valeurs par défaut sécurisées pour dev
+        if not cors_origins:
+            cors_origins = [
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:5173",
+            ]
+
+        # Toujours configurer CORS avec des origines explicites
+        CORS(
+            app,
+            origins=cors_origins,
+            supports_credentials=True,
+            max_age=3600,
+            allow_headers=[
+                "Content-Type",
+                "Authorization",
+                "X-Requested-With",
+                "Accept",
+            ],
+        )
+        logger.warning("⚠️  CORS configuré en mode fallback avec origines limitées")
 
     # Middleware de diagnostic pour tracer toutes les requêtes
     @app.before_request
@@ -288,39 +318,41 @@ def create_app():
             }
         )
 
-    # Route de diagnostic pour tracer les requêtes
-    @app.route("/api/debug/request", methods=["GET", "POST", "PUT", "DELETE"])
-    def debug_request():
-        """Diagnostic des requêtes entrantes"""
-        from flask import request
-        import logging
+    # Route de diagnostic pour tracer les requêtes (désactivée en production)
+    if app.config.get("DEBUG") or os.environ.get("FLASK_ENV") != "production":
 
-        logger = logging.getLogger(__name__)
+        @app.route("/api/debug/request", methods=["GET", "POST", "PUT", "DELETE"])
+        def debug_request():
+            """Diagnostic des requêtes entrantes"""
+            from flask import request
+            import logging
 
-        logger.info(f"🔍 DEBUG REQUEST: Méthode: {request.method}")
-        logger.info(f"🔍 DEBUG REQUEST: URL: {request.url}")
-        logger.info(f"🔍 DEBUG REQUEST: Headers: {dict(request.headers)}")
-        logger.info(f"🔍 DEBUG REQUEST: Remote Addr: {request.remote_addr}")
-        logger.info(f"🔍 DEBUG REQUEST: User Agent: {request.user_agent}")
+            logger = logging.getLogger(__name__)
 
-        if request.method in ["POST", "PUT"]:
-            try:
-                data = request.get_json()
-                logger.info(f"🔍 DEBUG REQUEST: JSON Data: {data}")
-            except Exception as e:
-                logger.info(f"🔍 DEBUG REQUEST: Erreur JSON: {e}")
-                logger.info(f"🔍 DEBUG REQUEST: Raw Data: {request.get_data()}")
+            logger.info(f"🔍 DEBUG REQUEST: Méthode: {request.method}")
+            logger.info(f"🔍 DEBUG REQUEST: URL: {request.url}")
+            logger.info(f"🔍 DEBUG REQUEST: Headers: {dict(request.headers)}")
+            logger.info(f"🔍 DEBUG REQUEST: Remote Addr: {request.remote_addr}")
+            logger.info(f"🔍 DEBUG REQUEST: User Agent: {request.user_agent}")
 
-        return jsonify(
-            {
-                "success": True,
-                "message": "Requête reçue et loggée",
-                "method": request.method,
-                "url": request.url,
-                "headers": dict(request.headers),
-                "remote_addr": request.remote_addr,
-            }
-        )
+            if request.method in ["POST", "PUT"]:
+                try:
+                    data = request.get_json()
+                    logger.info(f"🔍 DEBUG REQUEST: JSON Data: {data}")
+                except Exception as e:
+                    logger.info(f"🔍 DEBUG REQUEST: Erreur JSON: {e}")
+                    logger.info(f"🔍 DEBUG REQUEST: Raw Data: {request.get_data()}")
+
+            return jsonify(
+                {
+                    "success": True,
+                    "message": "Requête reçue et loggée",
+                    "method": request.method,
+                    "url": request.url,
+                    "headers": dict(request.headers),
+                    "remote_addr": request.remote_addr,
+                }
+            )
 
     # Route de test des headers de sécurité
     @app.route("/api/security/headers", methods=["GET"])

@@ -9,8 +9,23 @@ from pathlib import Path
 class Config:
     """Configuration de base"""
 
-    # Clé secrète Flask
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
+    # Clé secrète Flask - doit être définie via variable d'environnement en production
+    # En développement uniquement, utilise une valeur par défaut
+    _secret_key = os.environ.get("SECRET_KEY")
+    if not _secret_key:
+        if os.environ.get("FLASK_ENV") == "production":
+            raise ValueError(
+                "SECRET_KEY doit être défini en production via variable d'environnement"
+            )
+        import warnings
+
+        warnings.warn(
+            "SECRET_KEY non défini - utilisation d'une valeur par défaut (développement uniquement)",
+            UserWarning,
+        )
+        _secret_key = "dev-secret-key-change-in-production"
+
+    SECRET_KEY = _secret_key
 
     # Configuration base de données
     DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///formforge_poc.db")
@@ -21,18 +36,20 @@ class Config:
 
     # Configuration CORS sécurisée
     CORS_ORIGINS = [
-        "http://localhost:3000", 
+        "http://localhost:3000",
         "http://localhost:5173",
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
     ]
-    
+
     # Configuration de sécurité
     SECURITY_HEADERS_ENABLED = True
     FORCE_HTTPS = os.environ.get("FORCE_HTTPS", "false").lower() == "true"
-    
+
     # Configuration des cookies sécurisés
-    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
+    SESSION_COOKIE_SECURE = (
+        os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
+    )
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
 
