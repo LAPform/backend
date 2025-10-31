@@ -2,24 +2,7 @@
 Documentation API pour FormForge
 """
 
-from .schemas import (
-    FormSchema,
-    QuestionSchema,
-    ResponseSchema,
-    FormCreateSchema,
-    QuestionCreateSchema,
-    ResponseCreateSchema,
-    ErrorSchema,
-    SuccessSchema,
-)
+# Les schémas ont été supprimés car non utilisés
+# Si besoin à l'avenir, ils peuvent être recréés
 
-__all__ = [
-    "FormSchema",
-    "QuestionSchema",
-    "ResponseSchema",
-    "FormCreateSchema",
-    "QuestionCreateSchema",
-    "ResponseCreateSchema",
-    "ErrorSchema",
-    "SuccessSchema",
-]
+__all__ = []
