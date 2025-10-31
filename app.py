@@ -51,7 +51,8 @@ def create_app():
         logger.error(f"Erreur configuration middlewares de sécurité: {e}")
         # Fallback sécurisé pour CORS - jamais autoriser toutes les origines
         from flask_cors import CORS
-        import os
+
+        # os est déjà importé au niveau du module (ligne 5)
 
         # Récupérer les origines autorisées depuis la configuration ou l'environnement
         cors_origins = app.config.get("CORS_ORIGINS", [])
