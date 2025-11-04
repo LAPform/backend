@@ -23,6 +23,9 @@ def signup():
     try:
         data = request.get_json()
 
+        # Debug logging
+        logger.info(f"Signup attempt - data received: {bool(data)}")
+
         if not data or "email" not in data or "password" not in data:
             return jsonify({"error": "Email et mot de passe requis"}), 400
 
@@ -53,8 +56,14 @@ def signup():
         user = datastore.create_user(email=email, password=password, name=name)
 
         # Générer un token d'authentification Flask-Security-Too
-        login_user(user)
-        auth_token = user.get_auth_token()
+        try:
+            login_user(user)
+            logger.info("User logged in successfully")
+            auth_token = user.get_auth_token()
+            logger.info(f"Token generated successfully: {auth_token[:20]}...")
+        except Exception as token_error:
+            logger.error(f"ERREUR GÉNÉRATION TOKEN: {token_error}", exc_info=True)
+            return jsonify({"error": f"Erreur génération token: {str(token_error)}"}), 500
 
         # Créer une réponse sécurisée
         user_data = {
@@ -76,8 +85,10 @@ def signup():
         )
 
     except Exception as e:
-        logger.error(f"Erreur inscription: {e}")
-        return jsonify({"error": "Erreur interne"}), 500
+        logger.error(f"Erreur inscription: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback complet: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur interne: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/signin", methods=["POST"])
@@ -116,10 +127,16 @@ def signin():
             return jsonify({"error": "Mot de passe incorrect"}), 401
 
         # Connexion avec Flask-Security-Too
-        login_user(user)
+        try:
+            login_user(user)
+            logger.info("User logged in successfully for signin")
 
-        # Générer un token d'authentification
-        auth_token = user.get_auth_token()
+            # Générer un token d'authentification
+            auth_token = user.get_auth_token()
+            logger.info(f"Token generated successfully: {auth_token[:20]}...")
+        except Exception as token_error:
+            logger.error(f"ERREUR GÉNÉRATION TOKEN (signin): {token_error}", exc_info=True)
+            return jsonify({"error": f"Erreur génération token: {str(token_error)}"}), 500
 
         # Créer une réponse sécurisée
         user_data = {
@@ -141,8 +158,10 @@ def signin():
         )
 
     except Exception as e:
-        logger.error(f"Erreur connexion: {e}")
-        return jsonify({"error": "Erreur interne"}), 500
+        logger.error(f"Erreur connexion: {e}", exc_info=True)
+        import traceback
+        logger.error(f"Traceback complet: {traceback.format_exc()}")
+        return jsonify({"error": f"Erreur interne: {str(e)}"}), 500
 
 
 @security_auth_bp.route("/auth/logout", methods=["POST"])
