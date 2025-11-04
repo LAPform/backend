@@ -258,3 +258,59 @@ def test_auth():
             "system": "Flask-Security-Too",
         }
     )
+
+
+@security_auth_bp.route("/auth/signup-test", methods=["POST"])
+def signup_test():
+    """Test signup SANS décorateurs pour diagnostiquer le problème"""
+    print("=" * 80, flush=True)
+    print(">>> SIGNUP-TEST ENDPOINT REACHED (NO DECORATORS) <<<", flush=True)
+    print("=" * 80, flush=True)
+    try:
+        data = request.get_json()
+        print(f">>> Data received: {data}", flush=True)
+
+        if not data or "email" not in data or "password" not in data:
+            return jsonify({"error": "Email et mot de passe requis"}), 400
+
+        email = data["email"].lower().strip()
+        password = data["password"]
+
+        print(f">>> Email: {email}", flush=True)
+        print(f">>> Creating user...", flush=True)
+
+        # Créer l'utilisateur
+        from models.security_models import SecurityUserDatastore
+        datastore = SecurityUserDatastore(current_app.db)
+
+        # Vérifier si l'utilisateur existe
+        existing_user = datastore.find_user(email=email)
+        if existing_user:
+            return jsonify({"error": "Utilisateur déjà existant"}), 409
+
+        # Créer l'utilisateur
+        user = datastore.create_user(email=email, password=password, name=data.get("name", ""))
+        print(f">>> User created: {user.id}", flush=True)
+
+        # Login
+        print(f">>> Logging in user...", flush=True)
+        login_user(user)
+        print(f">>> User logged in", flush=True)
+
+        # Générer token
+        print(f">>> Generating token...", flush=True)
+        auth_token = user.get_auth_token()
+        print(f">>> Token generated: {auth_token[:20]}...", flush=True)
+
+        return jsonify({
+            "success": True,
+            "message": "Test signup réussi",
+            "user": {"id": user.id, "email": user.email},
+            "authentication_token": auth_token
+        }), 201
+
+    except Exception as e:
+        print(f">>> EXCEPTION IN SIGNUP-TEST: {type(e).__name__}: {e}", flush=True)
+        import traceback
+        print(f">>> Traceback: {traceback.format_exc()}", flush=True)
+        return jsonify({"error": f"Erreur: {str(e)}"}), 500
