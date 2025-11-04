@@ -1,283 +1,27 @@
 """
-Système d'authentification avec Flask-Security-Too et tokens SHA256 stateless
+Système d'authentification simplifié avec Flask-Security-Too uniquement
 """
 
-from flask import request, jsonify, current_app
-from flask_security import current_user, login_user, logout_user
+from flask import jsonify
+from flask_security import current_user
 from functools import wraps
-import logging
-import hashlib
-import time
-from datetime import datetime, timedelta
-from utils.audit_logger import audit_logger
-
-logger = logging.getLogger(__name__)
 
 
 def require_auth(f):
-    """Décorateur pour protéger les routes avec tokens SHA256 stateless"""
+    """
+    Décorateur de compatibilité qui redirige vers Flask-Security-Too
+    Utilise auth_required de Flask-Security-Too en interne
+    """
+    from flask_security import auth_required
 
     @wraps(f)
+    @auth_required("token", "session")
     def decorated_function(*args, **kwargs):
-        logger.info(f"🔍 AUTH: Début authentification pour route: {request.endpoint}")
-        logger.info(f"🔍 AUTH: Méthode: {request.method}, URL: {request.url}")
-        logger.info(
-            f"🔍 AUTH: Query string: {request.query_string.decode('utf-8') if request.query_string else 'None'}"
-        )
-        logger.info(f"🔍 AUTH: Args ImmutableMultiDict: {dict(request.args)}")
-
-        # 0) Accepter la session Flask-Security-Too (cookie) si déjà authentifié
-        try:
-            if current_user.is_authenticated and hasattr(current_user, "id"):
-                logger.info(
-                    f"🔍 AUTH: Session FST détectée - user_id={current_user.id}"
-                )
-                kwargs["authenticated_user_id"] = current_user.id
-                return f(*args, **kwargs)
-        except Exception as e:
-            logger.warning(f"🔍 AUTH: Impossible d'utiliser current_user: {e}")
-
-        # Vérifier le header Authorization ou récupérer token via fallback (query/body/cookie)
-        auth_header = request.headers.get("Authorization")
-        logger.info(
-            f"🔍 AUTH: Header Authorization: {auth_header[:20] if auth_header else 'None'}..."
-        )
-
-        token = None
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.split(" ")[1]
-            logger.info(f"🔍 AUTH: Token trouvé dans Authorization header")
-        else:
-            # Fallback: query param ?token=... ou corps JSON {"token": "..."}
-            logger.info(
-                f"🔍 AUTH: Recherche token dans query params: {dict(request.args)}"
-            )
-            token = request.args.get("token")
-            logger.info(
-                f"🔍 AUTH: Token depuis query params: {token[:10] if token else 'None'}..."
-            )
-
-            if not token and request.method in ["POST", "PUT", "PATCH"]:
-                body = None
-                try:
-                    body = request.get_json(silent=True)
-                    logger.info(f"🔍 AUTH: Corps JSON parsé: {type(body)}")
-                except Exception as e:
-                    logger.warning(f"🔍 AUTH: Erreur parsing JSON: {e}")
-                    body = None
-                if isinstance(body, dict):
-                    token = body.get("token")
-                    logger.info(
-                        f"🔍 AUTH: Token depuis body JSON: {token[:10] if token else 'None'}..."
-                    )
-
-            # Fallback: cookie (plus robuste derrière certains proxies)
-            if not token:
-                try:
-                    cookie_token = request.cookies.get("ff_token")
-                    logger.info(
-                        f"🔍 AUTH: Cookie ff_token: {cookie_token[:10] if cookie_token else 'None'}..."
-                    )
-                    token = cookie_token
-                except Exception as e:
-                    logger.warning(f"🔍 AUTH: Erreur lecture cookie: {e}")
-                    token = None
-
-        if not token:
-            logger.warning(f"🔍 AUTH: Aucun token fourni (header/query/body)")
-            audit_logger.log_security_event(
-                event_type="unauthorized_access_attempt",
-                details={
-                    "reason": "missing_token",
-                    "endpoint": request.endpoint,
-                    "method": request.method,
-                    "ip": request.remote_addr,
-                },
-                severity="medium",
-            )
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Authentification requise",
-                        "message": "Token manquant (Authorization/paramètre token/corps)",
-                    }
-                ),
-                401,
-            )
-        logger.info(f"🔍 AUTH: Token extrait: {token[:10]}...{token[-10:]}")
-
-        # Vérifier le format du token (64 caractères hex pour SHA256)
-        if len(token) != 64:
-            logger.warning(
-                f"🔍 AUTH: Token de longueur invalide: {len(token)} caractères"
-            )
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Format de token invalide",
-                        "message": "Token malformé",
-                    }
-                ),
-                401,
-            )
-
-        try:
-            logger.info(f"🔍 AUTH: Début validation du token")
-
-            # Vérifier que l'utilisateur existe toujours
-            from models.security_models import SecurityUserDatastore
-
-            datastore = SecurityUserDatastore(current_app.db)
-            logger.info(f"🔍 AUTH: SecurityUserDatastore initialisé")
-
-            # Vérifier si le token est valide et non expiré
-            user_id = _validate_sha256_token(token)
-            logger.info(f"🔍 AUTH: Résultat validation token: user_id = {user_id}")
-
-            if not user_id:
-                logger.warning(f"🔍 AUTH: Token invalide ou expiré")
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": "Token invalide ou expiré",
-                            "message": "Token non reconnu ou expiré",
-                        }
-                    ),
-                    401,
-                )
-
-            # Vérifier que l'utilisateur existe toujours
-            logger.info(f"🔍 AUTH: Vérification existence utilisateur: {user_id}")
-            user = datastore.find_user(id=user_id)
-            logger.info(f"🔍 AUTH: Utilisateur trouvé: {user is not None}")
-
-            if not user:
-                logger.warning(f"🔍 AUTH: Utilisateur non trouvé en base")
-                return (
-                    jsonify(
-                        {
-                            "success": False,
-                            "error": "Utilisateur non trouvé",
-                            "message": "L'utilisateur n'existe plus",
-                        }
-                    ),
-                    401,
-                )
-
-            # Stocker l'user_id dans les kwargs pour l'utiliser dans la fonction
-            kwargs["authenticated_user_id"] = user_id
-            logger.info(f"🔍 AUTH: Authentification réussie pour user_id: {user_id}")
-            return f(*args, **kwargs)
-
-        except Exception as e:
-            logger.error(f"🔍 AUTH: Erreur authentification: {e}")
-            import traceback
-
-            logger.error(f"🔍 AUTH: Traceback: {traceback.format_exc()}")
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Erreur d'authentification",
-                        "message": "Erreur interne du serveur",
-                    }
-                ),
-                500,
-            )
+        # Injecter l'ID utilisateur dans les kwargs pour compatibilité
+        kwargs["authenticated_user_id"] = current_user.id
+        return f(*args, **kwargs)
 
     return decorated_function
-
-
-def _validate_sha256_token(token):
-    """Valider un token SHA256 et retourner l'user_id"""
-    try:
-        logger.info(f"🔍 AUTH: Début validation token SHA256")
-        logger.info(f"🔍 AUTH: Token reçu: {token[:10]}...{token[-10:]}")
-
-        from models.database import DatabaseManager
-
-        db = DatabaseManager()
-        logger.info(f"🔍 AUTH: DatabaseManager initialisé")
-
-        # Vérifier si la table active_tokens existe
-        try:
-            # Test de l'existence de la table
-            db.execute_query("SELECT COUNT(*) FROM active_tokens LIMIT 1", fetch=True)
-            logger.info(f"🔍 AUTH: Table active_tokens existe")
-        except Exception as table_error:
-            # Table n'existe pas, la créer
-            logger.info(f"🔍 AUTH: Table active_tokens n'existe pas, création en cours")
-            logger.info(f"🔍 AUTH: Erreur table: {table_error}")
-            db.execute_query(
-                """
-                CREATE TABLE IF NOT EXISTS active_tokens (
-                    token TEXT PRIMARY KEY,
-                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    expires_at TEXT
-                )
-            """
-            )
-            logger.info(f"🔍 AUTH: Table active_tokens créée avec succès")
-
-        # Nettoyer les tokens expirés (maintenance)
-        try:
-            now_iso = datetime.utcnow().isoformat()
-            deleted_count = db.execute_query(
-                "DELETE FROM active_tokens WHERE expires_at <= ?", (now_iso,)
-            )
-            logger.info(
-                f"🔍 AUTH: Nettoyage tokens expirés - {deleted_count} tokens supprimés"
-            )
-        except Exception as cleanup_error:
-            logger.warning(f"🔍 AUTH: Erreur nettoyage tokens expirés: {cleanup_error}")
-
-        # Vérifier si le token existe (même expiré d'abord pour debug)
-        query_check = "SELECT user_id, expires_at FROM active_tokens WHERE token = ?"
-        logger.info(
-            f"🔍 AUTH: Vérification existence token: {token[:20]}...{token[-20:]}"
-        )
-        check_result = db.execute_query(query_check, (token,), fetch=True)
-        logger.info(f"🔍 AUTH: Token trouvé en base (même expiré): {check_result}")
-
-        # Vérifier si le token existe et n'est pas expiré
-        # expires_at est stocké en format ISO (2025-10-31T08:18:54.880320)
-        # On compare avec datetime('now') en format ISO
-        now_iso = datetime.utcnow().isoformat()
-        logger.info(f"🔍 AUTH: Date actuelle (ISO): {now_iso}")
-
-        query = """
-            SELECT user_id, expires_at 
-            FROM active_tokens 
-            WHERE token = ? AND expires_at > ?
-        """
-
-        logger.info(
-            f"🔍 AUTH: Exécution requête de validation avec expires_at > {now_iso}"
-        )
-        result = db.execute_query(query, (token, now_iso), fetch=True)
-        logger.info(f"🔍 AUTH: Résultat requête (non expiré): {result}")
-
-        if result and len(result) > 0:
-            user_id = result[0]["user_id"]
-            expires_at = result[0]["expires_at"]
-            logger.info(
-                f"🔍 AUTH: Token valide trouvé - user_id: {user_id}, expires_at: {expires_at}"
-            )
-            return user_id
-
-        logger.warning(f"🔍 AUTH: Token non trouvé ou expiré")
-        return None
-
-    except Exception as e:
-        logger.error(f"🔍 AUTH: Erreur validation token: {e}")
-        import traceback
-
-        logger.error(f"🔍 AUTH: Traceback: {traceback.format_exc()}")
-        return None
 
 
 def require_ownership(f):
@@ -290,6 +34,7 @@ def require_ownership(f):
 
         # Vérifier la propriété du formulaire si form_id est dans les kwargs
         if "form_id" in kwargs:
+            from flask import current_app
             from models.form import Form
 
             form_model = Form(current_app.db)
@@ -333,8 +78,6 @@ class SecurityAuthManager:
                 "last_login": getattr(current_user, "last_login", ""),
             }
         return None
-
-    # Fonctions login_user_safe et logout_user_safe supprimées - non utilisées
 
     @staticmethod
     def create_user_response(user):

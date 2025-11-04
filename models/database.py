@@ -173,17 +173,7 @@ class DatabaseManager:
             """
             )
 
-            # Table active_tokens pour les tokens SHA256
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS active_tokens (
-                    token TEXT PRIMARY KEY,
-                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
-                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                    expires_at TEXT
-                )
-            """
-            )
+            # Table active_tokens supprimée - utilisation de Flask-Security-Too uniquement
 
             # Table roles (gestion des rôles)
             cursor.execute(
@@ -274,13 +264,56 @@ class DatabaseManager:
 
             cursor.execute(
                 """
-                CREATE INDEX IF NOT EXISTS idx_responses_user_id 
+                CREATE INDEX IF NOT EXISTS idx_responses_user_id
                 ON responses(user_id)
             """
             )
 
+            # Index composites pour optimiser les requêtes fréquentes
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_forms_created_by_status
+                ON forms(created_by, status)
+            """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_responses_form_user
+                ON responses(form_id, user_id)
+            """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_users_email_lower
+                ON users(LOWER(email))
+            """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_forms_status
+                ON forms(status)
+            """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_user_roles_user
+                ON user_roles(user_id)
+            """
+            )
+
+            cursor.execute(
+                """
+                CREATE INDEX IF NOT EXISTS idx_user_roles_role
+                ON user_roles(role_id)
+            """
+            )
+
             conn.commit()
-            logger.info("Base de données initialisée avec succès")
+            logger.info("Base de données initialisée avec succès - Indexes optimisés")
 
         except Exception as e:
             conn.rollback()

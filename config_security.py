@@ -36,10 +36,14 @@ class SecurityConfig:
     SECURITY_PASSWORD_HASH = "pbkdf2_sha256"
     SECURITY_PASSWORD_SINGLE_HASH = True
 
-    # Configuration des sessions pour API REST (simplifiée)
+    # Configuration des tokens pour API REST (header uniquement)
     SECURITY_TOKEN_AUTHENTICATION_HEADER = "Authorization"
-    SECURITY_TOKEN_AUTHENTICATION_KEY = "token"
+    SECURITY_TOKEN_AUTHENTICATION_KEY = "Authentication-Token"
     SECURITY_TOKEN_MAX_AGE = 3600  # 1 heure
+
+    # Forcer l'utilisation des tokens uniquement via header (pas de query string)
+    SECURITY_TOKEN_IN_QUERY_STRING = False  # Désactiver tokens dans URL
+    SECURITY_USE_VERIFY_PASSWORD_CACHE = False  # Désactiver cache pour sécurité
 
     # Configuration des URLs - Désactivées pour éviter les conflits avec nos routes personnalisées
     # Ne pas définir ces URLs pour éviter que Flask-Security-Too les enregistre automatiquement
