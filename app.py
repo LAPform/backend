@@ -46,7 +46,7 @@ def create_app():
         from utils.security_middleware import setup_security_middleware
 
         setup_security_middleware(app)
-        logger.info("🔒 Middlewares de sécurité configurés avec succès")
+        logger.info("Middlewares de sécurité configurés avec succès")
     except Exception as e:
         logger.error(f"Erreur configuration middlewares de sécurité: {e}")
         # Fallback sécurisé pour CORS - jamais autoriser toutes les origines
@@ -83,38 +83,7 @@ def create_app():
                 "Accept",
             ],
         )
-        logger.warning("⚠️  CORS configuré en mode fallback avec origines limitées")
-
-    # Middleware de diagnostic pour tracer toutes les requêtes
-    @app.before_request
-    def log_request_info():
-        from flask import request
-        import logging
-
-        logger = logging.getLogger(__name__)
-
-        logger.info(f"🔍 REQUEST: {request.method} {request.url}")
-        logger.info(f"🔍 REQUEST: Headers: {dict(request.headers)}")
-        logger.info(f"🔍 REQUEST: Remote: {request.remote_addr}")
-
-        if request.method in ["POST", "PUT"]:
-            try:
-                data = request.get_json()
-                logger.info(f"🔍 REQUEST: JSON: {data}")
-            except Exception as e:
-                logger.info(f"🔍 REQUEST: Raw: {request.get_data()}")
-
-    @app.after_request
-    def log_response_info(response):
-        from flask import request
-        import logging
-
-        logger = logging.getLogger(__name__)
-
-        logger.info(
-            f"🔍 RESPONSE: {response.status_code} - {request.method} {request.url}"
-        )
-        return response
+        logger.warning("CORS configuré en mode fallback avec origines limitées")
 
     # Initialiser la base de données
     try:
@@ -192,21 +161,15 @@ def create_app():
             "MAIL_DEFAULT_SENDER", "noreply@formforge.com"
         )
 
-        # Logger FST plus verbeux pour Render
+        # Configuration logging Flask-Security (WARNING uniquement en production)
         try:
             import logging as _logging
 
             fst_logger = _logging.getLogger("flask_security")
-            fst_logger.setLevel(_logging.DEBUG)
-            if not fst_logger.handlers:
-                handler = _logging.StreamHandler()
-                handler.setLevel(_logging.DEBUG)
-                fst_logger.addHandler(handler)
-            fst_logger.propagate = False
+            log_level = _logging.WARNING if os.environ.get("FLASK_ENV") == "production" else _logging.INFO
+            fst_logger.setLevel(log_level)
         except Exception as _e:
-            structured_logger.warning(
-                "Activation logs flask_security échouée", error=str(_e)
-            )
+            pass
 
         # Seed des rôles par défaut si absents
         try:
@@ -232,79 +195,9 @@ def create_app():
     app.register_blueprint(questions_bp, url_prefix="/api")
     app.register_blueprint(responses_bp, url_prefix="/api")
     app.register_blueprint(docs_bp, url_prefix="/api")
-    app.register_blueprint(security_auth_bp, url_prefix="/api")  # Nouveau blueprint
+    app.register_blueprint(security_auth_bp, url_prefix="/api")
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(monitoring_bp, url_prefix="/api")
-
-    # Logger dédié pour /api/auth/*
-    try:
-        auth_logger = logging.getLogger("formforge.auth")
-        auth_logger.setLevel(logging.DEBUG)
-        if not auth_logger.handlers:
-            _h = logging.StreamHandler()
-            _h.setLevel(logging.DEBUG)
-            auth_logger.addHandler(_h)
-        auth_logger.propagate = False
-
-        @app.before_request
-        def _auth_log_request():
-            try:
-                from flask import request
-
-                if request.path.startswith("/api/auth"):
-                    payload = None
-                    if request.method in ["POST", "PUT", "PATCH"]:
-                        payload = request.get_json(silent=True)
-                    auth_logger.debug(
-                        "AUTH REQUEST",
-                        extra={
-                            "method": request.method,
-                            "path": request.path,
-                            "remote": request.remote_addr,
-                            "headers": {
-                                k: v
-                                for k, v in request.headers.items()
-                                if k
-                                in [
-                                    "User-Agent",
-                                    "Authorization",
-                                    "Content-Type",
-                                    "X-Forwarded-For",
-                                ]
-                            },
-                            "json": payload,
-                        },
-                    )
-            except Exception:
-                pass
-
-        @app.after_request
-        def _auth_log_response(response):
-            try:
-                from flask import request
-
-                if request.path.startswith("/api/auth"):
-                    resp_preview = None
-                    try:
-                        data = response.get_data(as_text=True)
-                        resp_preview = (data or "")[:1000]
-                    except Exception:
-                        resp_preview = None
-                    auth_logger.debug(
-                        "AUTH RESPONSE",
-                        extra={
-                            "method": request.method,
-                            "path": request.path,
-                            "status": response.status_code,
-                            "response_preview": resp_preview,
-                        },
-                    )
-            except Exception:
-                pass
-            return response
-
-    except Exception as _e:
-        logger.warning(f"Auth request logger setup failed: {_e}")
 
     # Route de santé simple
     @app.route("/api/health")
@@ -319,41 +212,6 @@ def create_app():
             }
         )
 
-    # Route de diagnostic pour tracer les requêtes (désactivée en production)
-    if app.config.get("DEBUG") or os.environ.get("FLASK_ENV") != "production":
-
-        @app.route("/api/debug/request", methods=["GET", "POST", "PUT", "DELETE"])
-        def debug_request():
-            """Diagnostic des requêtes entrantes"""
-            from flask import request
-            import logging
-
-            logger = logging.getLogger(__name__)
-
-            logger.info(f"🔍 DEBUG REQUEST: Méthode: {request.method}")
-            logger.info(f"🔍 DEBUG REQUEST: URL: {request.url}")
-            logger.info(f"🔍 DEBUG REQUEST: Headers: {dict(request.headers)}")
-            logger.info(f"🔍 DEBUG REQUEST: Remote Addr: {request.remote_addr}")
-            logger.info(f"🔍 DEBUG REQUEST: User Agent: {request.user_agent}")
-
-            if request.method in ["POST", "PUT"]:
-                try:
-                    data = request.get_json()
-                    logger.info(f"🔍 DEBUG REQUEST: JSON Data: {data}")
-                except Exception as e:
-                    logger.info(f"🔍 DEBUG REQUEST: Erreur JSON: {e}")
-                    logger.info(f"🔍 DEBUG REQUEST: Raw Data: {request.get_data()}")
-
-            return jsonify(
-                {
-                    "success": True,
-                    "message": "Requête reçue et loggée",
-                    "method": request.method,
-                    "url": request.url,
-                    "headers": dict(request.headers),
-                    "remote_addr": request.remote_addr,
-                }
-            )
 
     # Route de test des headers de sécurité
     @app.route("/api/security/headers", methods=["GET"])
