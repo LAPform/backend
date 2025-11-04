@@ -217,10 +217,13 @@ def audit_auth(action: str):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            print(f">>> AUDIT_AUTH DECORATOR: {action} - START", flush=True)
             start_time = time.time()
-            
+
             try:
+                print(f">>> AUDIT_AUTH: Calling function {f.__name__}", flush=True)
                 result = f(*args, **kwargs)
+                print(f">>> AUDIT_AUTH: Function {f.__name__} returned successfully", flush=True)
                 
                 # Extraire l'email depuis la requête
                 email = "unknown"
@@ -239,11 +242,13 @@ def audit_auth(action: str):
                 return result
                 
             except Exception as e:
+                print(f">>> AUDIT_AUTH: EXCEPTION CAUGHT: {type(e).__name__}: {e}", flush=True)
                 # Extraire l'email depuis la requête
                 email = "unknown"
                 if request.is_json:
                     email = request.json.get("email", "unknown")
-                
+
+                print(f">>> AUDIT_AUTH: Logging authentication failure for {email}", flush=True)
                 audit_logger.log_authentication(
                     action=action,
                     email=email,
@@ -253,7 +258,8 @@ def audit_auth(action: str):
                         "execution_time": round(time.time() - start_time, 3)
                     }
                 )
-                
+
+                print(f">>> AUDIT_AUTH: Re-raising exception", flush=True)
                 raise
         
         return decorated_function
