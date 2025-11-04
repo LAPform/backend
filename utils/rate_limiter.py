@@ -250,8 +250,10 @@ def rate_limit(route_name: str):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
+            print(f">>> RATE_LIMIT DECORATOR: {route_name} - START", flush=True)
             # Vérifier le rate limiting
             is_allowed, info = rate_limiter.is_allowed(route_name)
+            print(f">>> RATE_LIMIT: is_allowed={is_allowed}", flush=True)
 
             if not is_allowed:
                 headers = rate_limiter.get_rate_limit_headers(route_name)
