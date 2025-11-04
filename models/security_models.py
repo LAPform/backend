@@ -45,6 +45,40 @@ class User(UserMixin):
     def get_fs_uniquifier(self):
         return getattr(self, "fs_uniquifier", None)
 
+    def get_auth_token(self):
+        """
+        Générer un token d'authentification signé avec itsdangerous
+        Le token contient l'ID utilisateur et le fs_uniquifier pour permettre la révocation
+        """
+        from flask import current_app
+        from itsdangerous import URLSafeTimedSerializer
+
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return serializer.dumps(
+            {
+                'id': self.id,
+                'fs_uniquifier': self.fs_uniquifier or self.id
+            },
+            salt='auth-token-salt'
+        )
+
+    @staticmethod
+    def verify_auth_token(token, max_age=3600):
+        """
+        Vérifier et décoder un token d'authentification
+        Retourne l'ID utilisateur si valide, None sinon
+        max_age en secondes (défaut: 1h)
+        """
+        from flask import current_app
+        from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = serializer.loads(token, salt='auth-token-salt', max_age=max_age)
+            return data.get('id')
+        except (SignatureExpired, BadSignature):
+            return None
+
 
 class Role(RoleMixin):
     """Modèle de rôle pour Flask-Security-Too"""
@@ -316,3 +350,16 @@ class SecurityUserDatastore:
             return [row["name"] for row in results] if results else []
         except Exception:
             return []
+
+    def update_user_password(self, user, new_password: str):
+        """Mettre à jour le mot de passe d'un utilisateur"""
+        from passlib.hash import pbkdf2_sha256
+
+        try:
+            new_hash = pbkdf2_sha256.hash(new_password)
+            query = "UPDATE users SET password_hash = ? WHERE id = ?"
+            self.db.execute_query(query, (new_hash, user.id))
+            user.password_hash = new_hash
+            return True
+        except Exception:
+            return False
