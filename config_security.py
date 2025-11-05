@@ -30,9 +30,31 @@ class SecurityConfig:
     SECRET_KEY = _secret_key
 
     # Configuration de sécurité
-    SECURITY_PASSWORD_SALT = os.environ.get(
-        "SECURITY_PASSWORD_SALT", "dev-salt-change-in-production"
-    )
+    # CRITICAL: Le salt doit être défini en production via variable d'environnement
+    _security_password_salt = os.environ.get("SECURITY_PASSWORD_SALT")
+    if not _security_password_salt:
+        if os.environ.get("FLASK_ENV") == "production":
+            # En production, générer un salt aléatoire si non défini (meilleur que de crasher)
+            # MAIS logger un warning critique pour qu'on le configure
+            import secrets
+            import warnings
+            _security_password_salt = secrets.token_hex(32)
+            warnings.warn(
+                "SECURITY CRITICAL: SECURITY_PASSWORD_SALT non défini en production! "
+                "Un salt temporaire a été généré mais sera perdu au redémarrage. "
+                "Définissez SECURITY_PASSWORD_SALT via variable d'environnement.",
+                SecurityWarning
+            )
+        else:
+            # En développement uniquement
+            import warnings
+            warnings.warn(
+                "SECURITY_PASSWORD_SALT non défini - utilisation d'une valeur par défaut (développement uniquement)",
+                UserWarning,
+            )
+            _security_password_salt = "dev-salt-change-in-production"
+
+    SECURITY_PASSWORD_SALT = _security_password_salt
     SECURITY_PASSWORD_HASH = "pbkdf2_sha256"
     SECURITY_PASSWORD_SINGLE_HASH = True
 

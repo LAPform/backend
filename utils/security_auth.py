@@ -38,12 +38,20 @@ def require_auth(f):
 
 def require_token_auth(f):
     """
-    Décorateur d'authentification par token personnalisé
+    Décorateur d'authentification par token personnalisé - SÉCURISÉ
     Utilise notre propre système de validation de token
+
+    SÉCURITÉ:
+    - En production: INTERDIT les tokens en query string (risque de fuite)
+    - En développement: Autorise pour faciliter les tests
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Récupérer le token depuis le header
+        import os
+
+        is_production = os.environ.get("FLASK_ENV") == "production"
+
+        # Récupérer le token depuis le header UNIQUEMENT
         token = request.headers.get('Authentication-Token')
 
         if not token:
@@ -56,11 +64,42 @@ def require_token_auth(f):
             else:
                 token = auth_header if auth_header else None
 
+        # SÉCURITÉ CRITIQUE: Vérifier si token en query string (INTERDIT en production)
+        query_token = request.args.get('token') or request.args.get('auth_token')
+        if query_token:
+            if is_production:
+                # En production: REJETER IMMÉDIATEMENT
+                logger.error(
+                    f"SECURITY VIOLATION: Token in query string attempted from {request.remote_addr}"
+                )
+                return jsonify({
+                    "success": False,
+                    "error": "Security violation",
+                    "message": "Tokens in query string are forbidden in production. Use Authorization header."
+                }), 403  # 403 Forbidden (pas 401)
+            else:
+                # En développement: Autoriser mais logger un warning
+                logger.warning(
+                    "DEVELOPMENT MODE: Token in query string accepted (will be rejected in production)"
+                )
+                if not token:
+                    token = query_token
+
         logger.info(f">>> TOKEN AUTH: Token present: {bool(token)}")
 
         if not token:
             logger.warning(">>> TOKEN AUTH: No token provided")
             return jsonify({"success": False, "error": "Authentication required", "message": "No authentication token provided"}), 401
+
+        # SÉCURITÉ CRITIQUE: Vérifier si le token est blacklisté (révoqué)
+        from utils.token_blacklist import check_token_blacklist
+        if check_token_blacklist(token):
+            logger.warning(f">>> TOKEN AUTH: Blacklisted token attempted from {request.remote_addr}")
+            return jsonify({
+                "success": False,
+                "error": "Authentication failed",
+                "message": "This token has been revoked"
+            }), 401
 
         # Valider le token avec notre méthode
         from models.security_models import User

@@ -315,7 +315,11 @@ if ($script:AUTH_TOKEN -and $script:FORM_ID) {
             -ErrorAction Stop
 
         $script:QUESTION_ID = $response.question_id
-        Log-Test "Create Question" "PASS" "Question ID: $script:QUESTION_ID"
+        if ($script:QUESTION_ID) {
+            Log-Test "Create Question" "PASS" "Question ID: $($script:QUESTION_ID.Substring(0,30))..."
+        } else {
+            Log-Test "Create Question" "FAIL" "No question_id in response"
+        }
 
     }
     catch {
@@ -406,12 +410,10 @@ if ($script:PUBLIC_TOKEN -and $script:QUESTION_ID) {
     catch {
         Log-Test "Submit Response" "FAIL" "Error: $($_.Exception.Message)"
     }
-}
-else {
+} else {
     if (-not $script:PUBLIC_TOKEN) {
         Log-Test "Submit Response" "FAIL" "No public token available"
-    }
-    elseif (-not $script:QUESTION_ID) {
+    } elseif (-not $script:QUESTION_ID) {
         Log-Test "Submit Response" "FAIL" "No question_id available"
     }
 }
