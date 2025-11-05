@@ -13,10 +13,19 @@ def require_auth(f):
     Utilise auth_required de Flask-Security-Too en interne
     """
     from flask_security import auth_required
+    from flask import request
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     @wraps(f)
     @auth_required("token", "session")
     def decorated_function(*args, **kwargs):
+        # Debug: Logger les headers reçus
+        logger.info(f">>> REQUIRE_AUTH: Headers received: {dict(request.headers)}")
+        logger.info(f">>> REQUIRE_AUTH: Current user authenticated: {current_user.is_authenticated}")
+        logger.info(f">>> REQUIRE_AUTH: Current user ID: {current_user.id if current_user.is_authenticated else 'None'}")
+
         # Injecter l'ID utilisateur dans les kwargs pour compatibilité
         kwargs["authenticated_user_id"] = current_user.id
         return f(*args, **kwargs)
