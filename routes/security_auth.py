@@ -20,13 +20,8 @@ security_auth_bp = Blueprint("security_auth", __name__)
 @audit_auth("signup")
 def signup():
     """Créer un nouveau compte utilisateur"""
-    print("=" * 80, flush=True)
-    print(">>> SIGNUP ENDPOINT REACHED <<<", flush=True)
-    print("=" * 80, flush=True)
     try:
-        print(">>> Getting JSON data...", flush=True)
         data = request.get_json()
-        print(f">>> Data received: {bool(data)}", flush=True)
 
         # Debug logging
         logger.info(f"Signup attempt - data received: {bool(data)}")

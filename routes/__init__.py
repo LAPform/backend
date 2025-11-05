@@ -20,25 +20,20 @@ def register_namespaces(api):
     from routes.forms_ns import api as forms_ns, public_forms_bp
     from routes.questions_ns import api as questions_ns
     from routes.responses_ns import api as responses_ns, public_responses_bp
+    from routes.auth_ns import api as auth_ns
+    from routes.files_ns import api as files_ns
+    from routes.monitoring_ns import api as monitoring_ns
 
     # Enregistrer les namespaces avec leurs préfixes
     api.add_namespace(forms_ns, path='/forms')
     api.add_namespace(questions_ns, path='/questions')
     api.add_namespace(responses_ns, path='/responses')
+    api.add_namespace(auth_ns, path='/auth')
+    api.add_namespace(files_ns, path='/files')
+    api.add_namespace(monitoring_ns, path='/monitoring')
 
-    # Retourner les blueprints supplémentaires à enregistrer
+    # Retourner les blueprints supplémentaires à enregistrer (routes publiques)
     return {
         'public_forms': public_forms_bp,
         'public_responses': public_responses_bp
     }
-
-    # Les autres namespaces seront ajoutés ici au fur et à mesure
-    # from routes.auth_ns import api as auth_ns
-    # from routes.files_ns import api as files_ns
-    # from routes.monitoring_ns import api as monitoring_ns
-    #
-    # api.add_namespace(questions_ns, path='/questions')
-    # api.add_namespace(responses_ns, path='/responses')
-    # api.add_namespace(auth_ns, path='/auth')
-    # api.add_namespace(files_ns, path='/files')
-    # api.add_namespace(monitoring_ns, path='/monitoring')
