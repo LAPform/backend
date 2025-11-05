@@ -127,6 +127,38 @@ class SecurityUserDatastore:
         """API FST: no-op (transactions déjà commitées au niveau des méthodes)"""
         return True
 
+    def put(self, user):
+        """API FST: Sauvegarder/mettre à jour un utilisateur (requis pour le tracking)"""
+        try:
+            if not user or not hasattr(user, 'id'):
+                return False
+
+            # Mettre à jour les champs de tracking dans la base de données
+            query = """
+                UPDATE users
+                SET current_login_at = ?,
+                    last_login_at = ?,
+                    current_login_ip = ?,
+                    last_login_ip = ?,
+                    login_count = ?
+                WHERE id = ?
+            """
+            self.db.execute_query(
+                query,
+                (
+                    getattr(user, 'current_login_at', None),
+                    getattr(user, 'last_login_at', None),
+                    getattr(user, 'current_login_ip', None),
+                    getattr(user, 'last_login_ip', None),
+                    getattr(user, 'login_count', 0),
+                    user.id
+                )
+            )
+            return True
+        except Exception as e:
+            self.logger.error(f"Erreur dans put(): {e}")
+            return False
+
     def find_user(self, **kwargs):
         """Trouver un utilisateur par critères"""
         self.logger.info(f"find_user appelé avec: {kwargs}")
