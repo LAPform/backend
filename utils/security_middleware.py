@@ -108,13 +108,14 @@ class CORSSecurityMiddleware:
             "allow_headers": [
                 "Content-Type",
                 "Authorization",
+                "Authentication-Token",
                 "X-Requested-With",
                 "Accept",
                 "Origin",
                 "Access-Control-Request-Method",
                 "Access-Control-Request-Headers",
             ],
-            "expose_headers": ["Content-Type", "Authorization", "X-Total-Count"],
+            "expose_headers": ["Content-Type", "Authorization", "Authentication-Token", "X-Total-Count"],
             "supports_credentials": True,
             "max_age": 3600,  # Cache preflight pour 1 heure
         }
@@ -225,6 +226,7 @@ def setup_security_middleware(app):
             "allow_headers": [
                 "Content-Type",
                 "Authorization",
+                "Authentication-Token",
                 "X-Requested-With",
                 "Accept",
                 "Origin",

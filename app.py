@@ -79,6 +79,7 @@ def create_app():
             allow_headers=[
                 "Content-Type",
                 "Authorization",
+                "Authentication-Token",
                 "X-Requested-With",
                 "Accept",
             ],
