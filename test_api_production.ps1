@@ -301,7 +301,11 @@ if ($script:AUTH_TOKEN -and $script:FORM_ID) {
             -ErrorAction Stop
 
         $script:QUESTION_ID = $response.data.question_id
-        Log-Test "Create Question" "PASS" "Question ID: $script:QUESTION_ID"
+        if ($script:QUESTION_ID) {
+            Log-Test "Create Question" "PASS" "Question ID: $($script:QUESTION_ID.Substring(0,30))..."
+        } else {
+            Log-Test "Create Question" "FAIL" "No question_id in response"
+        }
 
     } catch {
         Log-Test "Create Question" "FAIL" "Error: $($_.Exception.Message)"
@@ -364,11 +368,13 @@ if ($script:PUBLIC_TOKEN) {
 # ====================================================================
 Write-TestHeader "10. Submit Response - POST /api/public/forms/{token}/responses"
 
-if ($script:PUBLIC_TOKEN) {
+if ($script:PUBLIC_TOKEN -and $script:QUESTION_ID) {
+    # Utiliser le vrai question_id comme cle
+    $answersDict = @{}
+    $answersDict[$script:QUESTION_ID] = "Bleu"
+
     $body = @{
-        answers = @{
-            "question_1" = "Bleu"
-        }
+        answers = $answersDict
     } | ConvertTo-Json
 
     try {
@@ -384,7 +390,11 @@ if ($script:PUBLIC_TOKEN) {
         Log-Test "Submit Response" "FAIL" "Error: $($_.Exception.Message)"
     }
 } else {
-    Log-Test "Submit Response" "FAIL" "No public token available"
+    if (-not $script:PUBLIC_TOKEN) {
+        Log-Test "Submit Response" "FAIL" "No public token available"
+    } elseif (-not $script:QUESTION_ID) {
+        Log-Test "Submit Response" "FAIL" "No question_id available"
+    }
 }
 
 # ====================================================================
