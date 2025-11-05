@@ -149,6 +149,37 @@ class DatabaseManager:
                     )
                     logger.info("Colonne password_changed_at ajoutée à la table users")
 
+                # Colonnes pour le tracking (SECURITY_TRACKABLE)
+                if "current_login_at" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN current_login_at TEXT"
+                    )
+                    logger.info("Colonne current_login_at ajoutée à la table users")
+
+                if "last_login_at" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN last_login_at TEXT"
+                    )
+                    logger.info("Colonne last_login_at ajoutée à la table users")
+
+                if "current_login_ip" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN current_login_ip TEXT"
+                    )
+                    logger.info("Colonne current_login_ip ajoutée à la table users")
+
+                if "last_login_ip" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN last_login_ip TEXT"
+                    )
+                    logger.info("Colonne last_login_ip ajoutée à la table users")
+
+                if "login_count" not in columns:
+                    cursor.execute(
+                        "ALTER TABLE users ADD COLUMN login_count INTEGER DEFAULT 0"
+                    )
+                    logger.info("Colonne login_count ajoutée à la table users")
+
                 # Créer un index unique pour garantir l'unicité de fs_uniquifier
                 cursor.execute(
                     "CREATE UNIQUE INDEX IF NOT EXISTS idx_users_fs_uniquifier ON users(fs_uniquifier)"
