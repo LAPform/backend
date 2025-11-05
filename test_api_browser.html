@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test API FormForge - Production</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            margin-top: 20px;
+        }
+
+        .test-item {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .test-item.pass {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .test-item.fail {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .test-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.pass {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-badge.fail {
+            background: #dc3545;
+            color: white;
+        }
+
+        .test-details {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+            font-family: monospace;
+        }
+
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .summary.show {
+            display: block;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .summary-item {
+            text-align: center;
+        }
+
+        .summary-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .summary-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .config {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .config input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test API FormForge - Production</h1>
+        <p class="subtitle">Test complet de l'API https://backend-skum.onrender.com</p>
+
+        <div class="config">
+            <strong>⚙️ Configuration</strong>
+            <p style="margin: 10px 0;">URL de l'API:</p>
+            <input type="text" id="apiUrl" value="https://backend-skum.onrender.com" />
+        </div>
+
+        <div class="controls">
+            <button onclick="runAllTests()">▶️ Exécuter tous les tests</button>
+            <button onclick="testHealth()">🏥 Health Check</button>
+            <button onclick="testSignup()">📝 Test Inscription</button>
+            <button onclick="testSignin()">🔐 Test Connexion</button>
+            <button onclick="testCreateForm()" id="btnCreateForm" disabled>📋 Créer Formulaire</button>
+            <button onclick="clearResults()">🗑️ Effacer les résultats</button>
+        </div>
+
+        <div id="results" class="results"></div>
+
+        <div id="summary" class="summary">
+            <h3>📊 Résumé des tests</h3>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-value" id="totalTests">0</div>
+                    <div class="summary-label">Total tests</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="passedTests" style="color: #4caf50;">0</div>
+                    <div class="summary-label">✅ Réussis</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="failedTests" style="color: #f44336;">0</div>
+                    <div class="summary-label">❌ Échoués</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-value" id="successRate">0%</div>
+                    <div class="summary-label">Taux de réussite</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let testResults = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            tests: []
+        };
+
+        let authToken = null;
+        let formId = null;
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value;
+        }
+
+        function logTest(name, status, details = '') {
+            testResults.total++;
+            if (status === 'PASS') {
+                testResults.passed++;
+            } else {
+                testResults.failed++;
+            }
+
+            testResults.tests.push({
+                name,
+                status,
+                details,
+                timestamp: new Date().toISOString()
+            });
+
+            const resultsDiv = document.getElementById('results');
+            const testDiv = document.createElement('div');
+            testDiv.className = `test-item ${status.toLowerCase()}`;
+            testDiv.innerHTML = `
+                <div class="test-name">
+                    <span>${status === 'PASS' ? '✅' : '❌'} ${name}</span>
+                    <span class="status-badge ${status.toLowerCase()}">${status}</span>
+                </div>
+                ${details ? `<div class="test-details">${details}</div>` : ''}
+            `;
+            resultsDiv.appendChild(testDiv);
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            document.getElementById('totalTests').textContent = testResults.total;
+            document.getElementById('passedTests').textContent = testResults.passed;
+            document.getElementById('failedTests').textContent = testResults.failed;
+
+            const successRate = testResults.total > 0
+                ? Math.round((testResults.passed / testResults.total) * 100)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('summary').classList.add('show');
+        }
+
+        function clearResults() {
+            testResults = { total: 0, passed: 0, failed: 0, tests: [] };
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('summary').classList.remove('show');
+            authToken = null;
+            formId = null;
+            document.getElementById('btnCreateForm').disabled = true;
+        }
+
+        async function testHealth() {
+            try {
+                const response = await fetch(`${getApiUrl()}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    logTest('Health Check', 'PASS',
+                        `Version: ${data.version || 'N/A'}, Security: ${data.security || 'N/A'}`);
+                    return true;
+                } else {
+                    logTest('Health Check', 'FAIL',
+                        `Status: ${response.status} - ${response.statusText}`);
+                    return false;
+                }
+            } catch (error) {
+                logTest('Health Check', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testSignup() {
+            const testEmail = `test-${Date.now()}@example.com`;
+            const testPassword = 'Test123!@#Secure';
+
+            try {
+                const response = await fetch(`${getApiUrl()}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: testEmail,
+                        password: testPassword,
+                        name: 'Test User'
+                    })
+                });
+
+                if (response.status === 201) {
+                    const data = await response.json();
+                    authToken = data.user?.authentication_token;
+
+                    if (authToken) {
+                        logTest('User Signup', 'PASS',
+                            `Email: ${testEmail}, Token: ${authToken.substring(0, 20)}...`);
+                        document.getElementById('btnCreateForm').disabled = false;
+
+                        // Sauvegarder pour test signin
+                        window.testCredentials = { email: testEmail, password: testPassword };
+                        return true;
+                    } else {
+                        logTest('User Signup', 'FAIL', 'No token in response');
+                        return false;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    logTest('User Signup', 'FAIL',
+                        `Status: ${response.status} - ${errorText.substring(0, 100)}`);
+                    return false;
+                }
+            } catch (error) {
+                logTest('User Signup', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testSignin() {
+            if (!window.testCredentials) {
+                logTest('User Signin', 'FAIL', 'No credentials available. Run Signup first.');
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${getApiUrl()}/api/auth/signin`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(window.testCredentials)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const token = data.user?.authentication_token;
+
+                    if (token) {
+                        authToken = token;
+                        logTest('User Signin', 'PASS', `Token received: ${token.substring(0, 20)}...`);
+                        document.getElementById('btnCreateForm').disabled = false;
+                        return true;
+                    } else {
+                        logTest('User Signin', 'FAIL', 'No token in response');
+                        return false;
+                    }
+                } else {
+                    logTest('User Signin', 'FAIL', `Status: ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                logTest('User Signin', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testCreateForm() {
+            if (!authToken) {
+                logTest('Create Form', 'FAIL', 'No auth token. Run Signup/Signin first.');
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${getApiUrl()}/api/forms`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Authentication-Token': authToken
+                    },
+                    body: JSON.stringify({
+                        title: `Test Form ${Date.now()}`,
+                        description: 'Formulaire de test automatisé depuis navigateur',
+                        settings: { theme: 'default' }
+                    })
+                });
+
+                if (response.status === 201) {
+                    const data = await response.json();
+                    formId = data.data?.form_id;
+
+                    if (formId) {
+                        logTest('Create Form', 'PASS', `Form ID: ${formId.substring(0, 30)}...`);
+                        return true;
+                    } else {
+                        logTest('Create Form', 'FAIL', 'No form_id in response');
+                        return false;
+                    }
+                } else {
+                    const errorText = await response.text();
+                    logTest('Create Form', 'FAIL',
+                        `Status: ${response.status} - ${errorText.substring(0, 100)}`);
+                    return false;
+                }
+            } catch (error) {
+                logTest('Create Form', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testUnauthorizedAccess() {
+            try {
+                const response = await fetch(`${getApiUrl()}/api/forms`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.status === 401 || response.status === 403) {
+                    logTest('Security - Unauthorized Access', 'PASS',
+                        'Protected endpoint correctly blocks unauthorized access');
+                    return true;
+                } else {
+                    logTest('Security - Unauthorized Access', 'FAIL',
+                        `Expected 401/403, got ${response.status}`);
+                    return false;
+                }
+            } catch (error) {
+                logTest('Security - Unauthorized Access', 'FAIL', `Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            clearResults();
+
+            // Désactiver le bouton pendant les tests
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+
+            try {
+                // Test 1: Health Check
+                await testHealth();
+                await sleep(500);
+
+                // Test 2: Security
+                await testUnauthorizedAccess();
+                await sleep(500);
+
+                // Test 3: Signup
+                await testSignup();
+                await sleep(500);
+
+                // Test 4: Signin
+                if (window.testCredentials) {
+                    await testSignin();
+                    await sleep(500);
+                }
+
+                // Test 5: Create Form
+                if (authToken) {
+                    await testCreateForm();
+                    await sleep(500);
+                }
+
+                // Afficher résumé final
+                if (testResults.failed === 0) {
+                    alert('✅ TOUS LES TESTS SONT PASSÉS ! L\'API FONCTIONNE PARFAITEMENT !');
+                } else {
+                    alert(`⚠️ ${testResults.failed} test(s) échoué(s) sur ${testResults.total}. Vérifiez les détails.`);
+                }
+
+            } finally {
+                // Réactiver les boutons
+                buttons.forEach(btn => btn.disabled = false);
+                if (!authToken) {
+                    document.getElementById('btnCreateForm').disabled = true;
+                }
+            }
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Auto-test au chargement (optionnel)
+        // window.addEventListener('load', () => {
+        //     setTimeout(runAllTests, 1000);
+        // });
+    </script>
+</body>
+</html>

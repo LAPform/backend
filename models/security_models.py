@@ -161,6 +161,12 @@ class SecurityUserDatastore:
             user.created_at = user_data["created_at"]
             user.last_login = user_data.get("last_login")
             user.fs_uniquifier = user_data.get("fs_uniquifier")
+            # Attributs de tracking Flask-Security-Too
+            user.current_login_at = user_data.get("current_login_at")
+            user.last_login_at = user_data.get("last_login_at")
+            user.current_login_ip = user_data.get("current_login_ip")
+            user.last_login_ip = user_data.get("last_login_ip")
+            user.login_count = user_data.get("login_count", 0)
             return user
         return None
 
@@ -180,6 +186,12 @@ class SecurityUserDatastore:
             user.created_at = user_data["created_at"]
             user.last_login = user_data.get("last_login")
             user.fs_uniquifier = user_data.get("fs_uniquifier")
+            # Attributs de tracking Flask-Security-Too
+            user.current_login_at = user_data.get("current_login_at")
+            user.last_login_at = user_data.get("last_login_at")
+            user.current_login_ip = user_data.get("current_login_ip")
+            user.last_login_ip = user_data.get("last_login_ip")
+            user.login_count = user_data.get("login_count", 0)
             return user
         return None
 
@@ -228,6 +240,12 @@ class SecurityUserDatastore:
             user.password_hash = password_hash
             user.salt = salt
             user.fs_uniquifier = fs_uniquifier
+            # Initialiser les attributs de tracking
+            user.current_login_at = None
+            user.last_login_at = None
+            user.current_login_ip = None
+            user.last_login_ip = None
+            user.login_count = 0
             self.logger.info(f"Utilisateur créé avec succès: {user_id}")
 
             # Attribuer par défaut le rôle 'creator' sauf indication contraire
