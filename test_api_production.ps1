@@ -15,17 +15,17 @@ $script:Results = @{
 # Couleurs pour l'affichage
 function Write-Success {
     param($Message)
-    Write-Host "✅ $Message" -ForegroundColor Green
+    Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
 function Write-Failure {
     param($Message)
-    Write-Host "❌ $Message" -ForegroundColor Red
+    Write-Host "[FAIL] $Message" -ForegroundColor Red
 }
 
 function Write-Info {
     param($Message)
-    Write-Host "ℹ️  $Message" -ForegroundColor Cyan
+    Write-Host "[INFO] $Message" -ForegroundColor Cyan
 }
 
 function Write-TestHeader {
@@ -35,7 +35,7 @@ function Write-TestHeader {
     Write-Host "========================================" -ForegroundColor Blue
 }
 
-# Fonction pour logger les résultats
+# Fonction pour logger les resultats
 function Log-Test {
     param(
         [string]$Name,
@@ -53,7 +53,7 @@ function Log-Test {
     }
 
     if ($Details) {
-        Write-Host "   Détails: $Details" -ForegroundColor Gray
+        Write-Host "   Details: $Details" -ForegroundColor Gray
     }
 
     $script:Results.Tests += @{
@@ -64,12 +64,12 @@ function Log-Test {
     }
 }
 
-# Bannière
+# Banniere
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║          TEST COMPLET API FORMFORGE - PRODUCTION          ║" -ForegroundColor Green
-Write-Host "║                 backend-skum.onrender.com                 ║" -ForegroundColor Green
-Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "     TEST COMPLET API FORMFORGE - PRODUCTION" -ForegroundColor Green
+Write-Host "          backend-skum.onrender.com" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 Write-Info "Date: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Info "PowerShell Version: $($PSVersionTable.PSVersion)"
@@ -96,13 +96,13 @@ try {
 
 } catch {
     Log-Test "Health Check" "FAIL" "Status: $($_.Exception.Response.StatusCode), Error: $($_.Exception.Message)"
-    Write-Info "L'API semble protégée par un WAF/Firewall. Continuons les tests..."
+    Write-Info "L'API semble protegee par un WAF/Firewall. Continuons les tests..."
 }
 
 # ====================================================================
 # TEST 2: Security - Unauthorized Access
 # ====================================================================
-Write-TestHeader "2. Security - Accès non autorisé"
+Write-TestHeader "2. Security - Acces non autorise"
 
 try {
     $response = Invoke-RestMethod -Uri "$API_URL/api/forms" `
@@ -112,12 +112,12 @@ try {
         } `
         -ErrorAction Stop
 
-    Log-Test "Security - Unauthorized Access" "FAIL" "L'endpoint devrait bloquer l'accès sans authentification"
+    Log-Test "Security - Unauthorized Access" "FAIL" "L'endpoint devrait bloquer l'acces sans authentification"
 
 } catch {
     $statusCode = [int]$_.Exception.Response.StatusCode
     if ($statusCode -eq 401 -or $statusCode -eq 403) {
-        Log-Test "Security - Unauthorized Access" "PASS" "Accès bloqué correctement (Status: $statusCode)"
+        Log-Test "Security - Unauthorized Access" "PASS" "Acces bloque correctement (Status: $statusCode)"
     } else {
         Log-Test "Security - Unauthorized Access" "FAIL" "Status inattendu: $statusCode"
     }
@@ -213,7 +213,7 @@ if ($script:AUTH_TOKEN) {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $body = @{
         title = "Test Form PowerShell $timestamp"
-        description = "Formulaire de test créé depuis PowerShell"
+        description = "Formulaire de test cree depuis PowerShell"
         settings = @{
             theme = "default"
         }
@@ -285,7 +285,7 @@ Write-TestHeader "7. Create Question - POST /api/forms/{id}/questions"
 if ($script:AUTH_TOKEN -and $script:FORM_ID) {
     $body = @{
         type = "text"
-        text = "Quelle est votre couleur préférée ?"
+        text = "Quelle est votre couleur preferee ?"
         required = $true
         order_index = 0
     } | ConvertTo-Json
@@ -388,40 +388,40 @@ if ($script:PUBLIC_TOKEN) {
 }
 
 # ====================================================================
-# RÉSULTATS FINAUX
+# RESULTATS FINAUX
 # ====================================================================
 Write-Host ""
-Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║                    RÉSULTATS DES TESTS                    ║" -ForegroundColor Green
-Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
+Write-Host "                RESULTATS DES TESTS" -ForegroundColor Green
+Write-Host "============================================================" -ForegroundColor Green
 Write-Host ""
 
 Write-Host "Total tests:      " -NoNewline
 Write-Host $script:Results.Total -ForegroundColor Blue
 
-Write-Host "Tests réussis:    " -NoNewline
+Write-Host "Tests reussis:    " -NoNewline
 Write-Host $script:Results.Passed -ForegroundColor Green
 
-Write-Host "Tests échoués:    " -NoNewline
+Write-Host "Tests echoues:    " -NoNewline
 Write-Host $script:Results.Failed -ForegroundColor Red
 
 if ($script:Results.Total -gt 0) {
     $successRate = [math]::Round(($script:Results.Passed / $script:Results.Total) * 100, 1)
-    Write-Host "Taux de réussite: " -NoNewline
+    Write-Host "Taux de reussite: " -NoNewline
     Write-Host "$successRate%" -ForegroundColor $(if ($successRate -ge 80) { "Green" } elseif ($successRate -ge 50) { "Yellow" } else { "Red" })
 }
 
-# Sauvegarder les résultats
+# Sauvegarder les resultats
 $resultsJson = $script:Results | ConvertTo-Json -Depth 5
 $resultsJson | Out-File -FilePath "test_results_powershell.json" -Encoding UTF8
-Write-Host "`n📄 Résultats sauvegardés dans: test_results_powershell.json" -ForegroundColor Cyan
+Write-Host "`n[SAVE] Resultats sauvegardes dans: test_results_powershell.json" -ForegroundColor Cyan
 
 # Message final
 Write-Host ""
 if ($script:Results.Failed -eq 0) {
-    Write-Host "✅ TOUS LES TESTS SONT PASSÉS ! L'API FONCTIONNE PARFAITEMENT !" -ForegroundColor Green
+    Write-Host "SUCCESS: TOUS LES TESTS SONT PASSES ! L'API FONCTIONNE PARFAITEMENT !" -ForegroundColor Green
     exit 0
 } else {
-    Write-Host "⚠️  CERTAINS TESTS ONT ÉCHOUÉ. VÉRIFIER LES LOGS CI-DESSUS." -ForegroundColor Yellow
+    Write-Host "WARNING: CERTAINS TESTS ONT ECHOUE. VERIFIER LES LOGS CI-DESSUS." -ForegroundColor Yellow
     exit 1
 }
