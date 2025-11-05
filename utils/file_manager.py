@@ -159,7 +159,7 @@ class FileManager:
     def get_upload_path(filename: str) -> str:
         """Obtenir le chemin de stockage pour un fichier"""
         # Valider que le nom de fichier ne contient pas de séquences de traversal
-        if ".." in filename or filename.startswith("/") or filename.startswith("\\"):
+        if ".." in filename or filename.startswith("/") or filename.startswith("\\") or ":" in filename:
             raise ValueError("Invalid filename - path traversal detected")
 
         category = FileManager.get_file_category(filename)
