@@ -1,0 +1,670 @@
+{
+  "timestamp": "2025-11-05T14:01:04.494633",
+  "url": "https://backend-skum.onrender.com",
+  "total_time": 17.02286458015442,
+  "functional": {
+    "total": 21,
+    "success": 14,
+    "rate": 66.66666666666666
+  },
+  "security": {
+    "total": 14,
+    "success": 11,
+    "rate": 78.57142857142857
+  },
+  "results": {
+    "functional": [
+      {
+        "name": "Inscription utilisateur",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 201,
+        "expected": 201,
+        "success": true,
+        "time": 0.587238073348999,
+        "data": {
+          "authentication_token": "eyJpZCI6ImMxNDYyODFhLTJkMzAtNDkzNC1iMTU5LTA3OWI3ODcyM2Q5OCIsImZzX3VuaXF1aWZpZXIiOiJ6bkNUUW1pSGtSUGR3XzhfcEpGZ1A2cmIwbzNnN0ROOXgtUHMxR2hOaVRrIn0.aQtYjw.1ssOpHdqPYdo8hmmpmeWjk-ZR0o",
+          "message": "Utilisateur cr\u00e9\u00e9 avec succ\u00e8s",
+          "success": true,
+          "user": {
+            "email": "fulltest_1762351247@test.com",
+            "id": "c146281a-2d30-4934-b159-079b78723d98",
+            "name": "Full Tester"
+          }
+        }
+      },
+      {
+        "name": "Obtenir utilisateur actuel",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/auth/me",
+        "status": 401,
+        "expected": 200,
+        "success": false,
+        "time": 0.2902684211730957,
+        "data": {
+          "meta": {
+            "code": 401
+          },
+          "response": {
+            "errors": [
+              "You must sign in to view this resource."
+            ]
+          }
+        }
+      },
+      {
+        "name": "Cr\u00e9er formulaire",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms",
+        "status": 201,
+        "expected": 201,
+        "success": true,
+        "time": 0.5695891380310059,
+        "data": {
+          "data": {
+            "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880"
+          },
+          "message": "Formulaire cr\u00e9\u00e9 avec succ\u00e8s",
+          "success": true
+        }
+      },
+      {
+        "name": "Lister formulaires",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.29967617988586426,
+        "data": {
+          "forms": [
+            {
+              "created_at": "2025-11-05 14:00:48",
+              "created_by": "c146281a-2d30-4934-b159-079b78723d98",
+              "description": "Test exhaustif API",
+              "id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+              "public_token": null,
+              "settings": {
+                "public": true,
+                "theme": "blue"
+              },
+              "status": "draft",
+              "title": "Formulaire Test Complet",
+              "updated_at": "2025-11-05 14:00:48"
+            }
+          ],
+          "pagination": {
+            "limit": 100,
+            "offset": 0,
+            "total": 1
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "D\u00e9tails formulaire",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.3449704647064209,
+        "data": {
+          "form": {
+            "created_at": "2025-11-05 14:00:48",
+            "created_by": "c146281a-2d30-4934-b159-079b78723d98",
+            "description": "Test exhaustif API",
+            "id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+            "public_token": null,
+            "questions": [],
+            "settings": {
+              "public": true,
+              "theme": "blue"
+            },
+            "status": "draft",
+            "title": "Formulaire Test Complet",
+            "updated_at": "2025-11-05 14:00:48"
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "Modifier formulaire",
+        "category": "FUNCTIONAL",
+        "method": "PUT",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.25899243354797363,
+        "data": {
+          "message": "Formulaire mis \u00e0 jour avec succ\u00e8s",
+          "success": true
+        }
+      },
+      {
+        "name": "Statistiques formulaire",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/stats",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.44175291061401367,
+        "data": {
+          "analytics": {
+            "daily_stats": [],
+            "hourly_stats": [],
+            "total_responses": 0
+          },
+          "stats": {
+            "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+            "total_questions": 0,
+            "total_responses": 0
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "Cr\u00e9er question TEXT",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 503,
+        "expected": 201,
+        "success": false,
+        "time": 0.17235684394836426,
+        "data": {
+          "raw": "upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: TLS_error:|268435581:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAIL"
+        }
+      },
+      {
+        "name": "Cr\u00e9er question EMAIL",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 201,
+        "expected": 201,
+        "success": true,
+        "time": 0.5305423736572266,
+        "data": {
+          "message": "Question cr\u00e9\u00e9e avec succ\u00e8s",
+          "question_id": "2793db27-7a1d-48f5-b72a-3f892572fbe5",
+          "success": true
+        }
+      },
+      {
+        "name": "Cr\u00e9er question CHOICE",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 201,
+        "expected": 201,
+        "success": true,
+        "time": 0.2811601161956787,
+        "data": {
+          "message": "Question cr\u00e9\u00e9e avec succ\u00e8s",
+          "question_id": "fa970aa1-b8f7-445c-a46e-a13fdbfc4df6",
+          "success": true
+        }
+      },
+      {
+        "name": "Lister questions",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.23650026321411133,
+        "data": {
+          "questions": [
+            {
+              "created_at": "2025-11-05 14:00:50",
+              "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+              "id": "2793db27-7a1d-48f5-b72a-3f892572fbe5",
+              "options": [],
+              "order_index": 1,
+              "required": 1,
+              "text": "Votre email?",
+              "type": "email",
+              "validation": {}
+            },
+            {
+              "created_at": "2025-11-05 14:00:51",
+              "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+              "id": "fa970aa1-b8f7-445c-a46e-a13fdbfc4df6",
+              "options": [
+                "Rouge",
+                "Vert",
+                "Bleu"
+              ],
+              "order_index": 2,
+              "required": 0,
+              "text": "Votre couleur pr\u00e9f\u00e9r\u00e9e?",
+              "type": "choice",
+              "validation": {}
+            }
+          ],
+          "success": true
+        }
+      },
+      {
+        "name": "Publier formulaire",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/publish",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.2598602771759033,
+        "data": {
+          "data": {
+            "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+            "public_token": "I6Gu9iracbAVZ90iHIt3snMPxDvlteLm",
+            "status": "published"
+          },
+          "message": "Formulaire publi\u00e9 avec succ\u00e8s",
+          "success": true
+        }
+      },
+      {
+        "name": "Obtenir lien public",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/public-link",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.23453044891357422,
+        "data": {
+          "data": {
+            "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+            "public_token": "I6Gu9iracbAVZ90iHIt3snMPxDvlteLm",
+            "public_url": "https://backend-skum.onrender.comapi/public/forms/I6Gu9iracbAVZ90iHIt3snMPxDvlteLm"
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "Acc\u00e9der formulaire public",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/public/forms/I6Gu9iracbAVZ90iHIt3snMPxDvlteLm",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.5557413101196289,
+        "data": {
+          "data": {
+            "form": {
+              "description": "Description mise \u00e0 jour",
+              "id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+              "questions": [
+                {
+                  "created_at": "2025-11-05 14:00:50",
+                  "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+                  "id": "2793db27-7a1d-48f5-b72a-3f892572fbe5",
+                  "options": [],
+                  "order_index": 1,
+                  "required": 1,
+                  "text": "Votre email?",
+                  "type": "email",
+                  "validation": {}
+                },
+                {
+                  "created_at": "2025-11-05 14:00:51",
+                  "form_id": "6f7a804e-d475-471c-82a1-bd351bdd7880",
+                  "id": "fa970aa1-b8f7-445c-a46e-a13fdbfc4df6",
+                  "options": [
+                    "Rouge",
+                    "Vert",
+                    "Bleu"
+                  ],
+                  "order_index": 2,
+                  "required": 0,
+                  "text": "Votre couleur pr\u00e9f\u00e9r\u00e9e?",
+                  "type": "choice",
+                  "validation": {}
+                }
+              ],
+              "settings": {
+                "public": true,
+                "theme": "blue"
+              },
+              "title": "Formulaire Modifi\u00e9"
+            }
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "Soumettre r\u00e9ponse (authentifi\u00e9e)",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/responses",
+        "status": 400,
+        "expected": 201,
+        "success": false,
+        "time": 0.25780344009399414,
+        "data": {
+          "error": "Erreurs de validation",
+          "validation_errors": [
+            {
+              "error": "Invalid email format",
+              "question_id": "2793db27-7a1d-48f5-b72a-3f892572fbe5",
+              "question_text": "Votre email?"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Soumettre r\u00e9ponse (publique)",
+        "category": "FUNCTIONAL",
+        "method": "POST",
+        "endpoint": "/api/public/forms/I6Gu9iracbAVZ90iHIt3snMPxDvlteLm/responses",
+        "status": 400,
+        "expected": 201,
+        "success": false,
+        "time": 0.2892584800720215,
+        "data": {
+          "error": "Erreurs de validation",
+          "validation_errors": [
+            {
+              "error": "Invalid email format",
+              "question_id": "2793db27-7a1d-48f5-b72a-3f892572fbe5",
+              "question_text": "Votre email?"
+            }
+          ]
+        }
+      },
+      {
+        "name": "Lister r\u00e9ponses",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/responses",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.23313069343566895,
+        "data": {
+          "pagination": {
+            "limit": 100,
+            "offset": 0,
+            "total": 0
+          },
+          "responses": [],
+          "success": true
+        }
+      },
+      {
+        "name": "Analytics formulaire",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/analytics",
+        "status": 200,
+        "expected": 200,
+        "success": true,
+        "time": 0.3468177318572998,
+        "data": {
+          "analytics": {
+            "daily_stats": [],
+            "hourly_stats": [],
+            "total_responses": 0
+          },
+          "success": true
+        }
+      },
+      {
+        "name": "Export CSV",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/export/csv",
+        "status": 404,
+        "expected": 200,
+        "success": false,
+        "time": 0.2504994869232178,
+        "data": {
+          "error": "Aucune r\u00e9ponse \u00e0 exporter"
+        }
+      },
+      {
+        "name": "Export Excel",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/export/excel",
+        "status": 404,
+        "expected": 200,
+        "success": false,
+        "time": 0.23083043098449707,
+        "data": {
+          "error": "Aucune r\u00e9ponse \u00e0 exporter"
+        }
+      },
+      {
+        "name": "Export JSON",
+        "category": "FUNCTIONAL",
+        "method": "GET",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/export/json",
+        "status": 404,
+        "expected": 200,
+        "success": false,
+        "time": 0.2332015037536621,
+        "data": {
+          "error": "Aucune r\u00e9ponse \u00e0 exporter"
+        }
+      }
+    ],
+    "security": [
+      {
+        "name": "Rejet: Trop court (4 caract\u00e8res)",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.2513701915740967,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins 8 caract\u00e8res"
+        }
+      },
+      {
+        "name": "Rejet: Mot de passe commun",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 503,
+        "expected": 400,
+        "success": false,
+        "time": 0.24521589279174805,
+        "data": {
+          "raw": "upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: TLS_error:|268435581:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAIL"
+        }
+      },
+      {
+        "name": "Rejet: Que des chiffres",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.2175157070159912,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins une majuscule"
+        }
+      },
+      {
+        "name": "Rejet: Que des lettres minuscules",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.22820210456848145,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins une majuscule"
+        }
+      },
+      {
+        "name": "Rejet: Que des lettres majuscules",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.23372364044189453,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins une minuscule"
+        }
+      },
+      {
+        "name": "Rejet: Pas de chiffre ni sp\u00e9cial",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 503,
+        "expected": 400,
+        "success": false,
+        "time": 0.1289985179901123,
+        "data": {
+          "raw": "upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: TLS_error:|268435581:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAIL"
+        }
+      },
+      {
+        "name": "Rejet: Pas de caract\u00e8re sp\u00e9cial",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.2413618564605713,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins un caract\u00e8re sp\u00e9cial"
+        }
+      },
+      {
+        "name": "Rejet: Trop court (7 caract\u00e8res)",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.2435002326965332,
+        "data": {
+          "error": "Le mot de passe doit contenir au moins 8 caract\u00e8res"
+        }
+      },
+      {
+        "name": "Acceptation mot de passe fort",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/auth/signup",
+        "status": 201,
+        "expected": 201,
+        "success": true,
+        "time": 0.2611851692199707,
+        "data": {
+          "authentication_token": "eyJpZCI6IjEyMDU1YzFlLTg2YWUtNGVmMy1hODFmLWQ0YTc3NmYwNDY4ZSIsImZzX3VuaXF1aWZpZXIiOiJiaXh2X2FQOEs5YUpUamsyMk1JbzhaaDlaVll4NDNkQm5jbjhsdnJ3VVd3In0.aQtYmA.j8ZW0VdZ788XfcilxhdzRYURCts",
+          "message": "Utilisateur cr\u00e9\u00e9 avec succ\u00e8s",
+          "success": true,
+          "user": {
+            "email": "strong_1762351256@test.com",
+            "id": "12055c1e-86ae-4ef3-a81f-d4a776f0468e",
+            "name": "Strong User"
+          }
+        }
+      },
+      {
+        "name": "Acc\u00e8s sans authentification",
+        "category": "SECURITY",
+        "method": "GET",
+        "endpoint": "/api/forms",
+        "status": 401,
+        "expected": 401,
+        "success": true,
+        "time": 0.31660032272338867,
+        "data": {
+          "error": "Authentication required",
+          "message": "No authentication token provided",
+          "success": false
+        }
+      },
+      {
+        "name": "Rejet token invalide",
+        "success": false,
+        "status": 503
+      },
+      {
+        "name": "Rejet question sans type",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.23019838333129883,
+        "data": {
+          "error": "Donn\u00e9es manquantes"
+        }
+      },
+      {
+        "name": "Rejet type question invalide",
+        "category": "SECURITY",
+        "method": "POST",
+        "endpoint": "/api/forms/6f7a804e-d475-471c-82a1-bd351bdd7880/questions",
+        "status": 400,
+        "expected": 400,
+        "success": true,
+        "time": 0.24072837829589844,
+        "data": {
+          "error": "Type invalide. Types autoris\u00e9s: text, textarea, email, phone, url, date, time, number, choice, multiple_choice, multiple_choices, checkbox, radio, boolean, scale"
+        }
+      },
+      {
+        "name": "CORS restrictif",
+        "success": true
+      }
+    ],
+    "performance": [
+      {
+        "name": "Health Check",
+        "avg_time": 0.24357805252075196,
+        "times": [
+          0.2349708080291748,
+          0.23934435844421387,
+          0.20990371704101562,
+          0.21789073944091797,
+          0.3157806396484375
+        ]
+      },
+      {
+        "name": "Liste formulaires",
+        "avg_time": 0.2638741970062256,
+        "times": [
+          0.33420562744140625,
+          0.24855804443359375,
+          0.2751193046569824,
+          0.2258296012878418,
+          0.2356584072113037
+        ]
+      },
+      {
+        "name": "Stabilit\u00e9",
+        "success_rate": 90.0,
+        "successes": 9,
+        "errors": 1
+      }
+    ]
+  }
+}

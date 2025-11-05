@@ -4,7 +4,7 @@ Routes d'authentification avec Flask-Security-Too uniquement
 
 from flask import Blueprint, request, jsonify, current_app
 from flask_security import current_user, login_user, logout_user, auth_required
-from utils.security_auth import SecurityAuthManager, require_auth
+from utils.security_auth import SecurityAuthManager, require_auth, require_token_auth
 from utils.rate_limiter import rate_limit
 from utils.security_validators import escape_html
 from utils.audit_logger import audit_auth
@@ -182,18 +182,24 @@ def logout():
 
 
 @security_auth_bp.route("/auth/me", methods=["GET"])
-@auth_required("token", "session")
-def get_current_user():
+@require_token_auth
+def get_current_user(authenticated_user_id=None):
     """Récupérer les informations de l'utilisateur actuel"""
     try:
-        if not current_user.is_authenticated:
-            return jsonify({"error": "Non authentifié"}), 401
+        # Charger l'utilisateur depuis l'ID authentifié
+        from models.security_models import SecurityUserDatastore
+
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore._get_user_by_id(authenticated_user_id)
+
+        if not user:
+            return jsonify({"error": "Utilisateur non trouvé"}), 404
 
         # Créer une réponse sécurisée
         user_data = {
-            "id": current_user.id,
-            "email": escape_html(current_user.email),
-            "name": escape_html(getattr(current_user, "name", "")),
+            "id": user.id,
+            "email": escape_html(user.email),
+            "name": escape_html(getattr(user, "name", "")),
         }
 
         return jsonify({"success": True, "user": user_data})
@@ -204,8 +210,8 @@ def get_current_user():
 
 
 @security_auth_bp.route("/auth/change-password", methods=["POST"])
-@auth_required("token", "session")
-def change_password():
+@require_token_auth
+def change_password(authenticated_user_id=None):
     """Changer le mot de passe de l'utilisateur"""
     try:
         data = request.get_json()
@@ -226,16 +232,21 @@ def change_password():
         if not is_valid:
             return jsonify({"error": message}), 400
 
-        # Vérifier le mot de passe actuel
+        # Charger l'utilisateur depuis l'ID authentifié
         from models.security_models import SecurityUserDatastore
 
         datastore = SecurityUserDatastore(current_app.db)
+        user = datastore._get_user_by_id(authenticated_user_id)
 
-        if not datastore.verify_password(current_user, current_password):
+        if not user:
+            return jsonify({"error": "Utilisateur non trouvé"}), 404
+
+        # Vérifier le mot de passe actuel
+        if not datastore.verify_password(user, current_password):
             return jsonify({"error": "Mot de passe actuel incorrect"}), 401
 
         # Mettre à jour le mot de passe
-        datastore.update_user_password(current_user, new_password)
+        datastore.update_user_password(user, new_password)
 
         return (
             jsonify({"success": True, "message": "Mot de passe modifié avec succès"}),
