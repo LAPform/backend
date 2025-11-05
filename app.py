@@ -212,6 +212,23 @@ def create_app():
     app.register_blueprint(files_bp, url_prefix="/api")
     app.register_blueprint(monitoring_bp, url_prefix="/api")
 
+    # Route racine pour les load balancers et health checks externes
+    @app.route("/")
+    def root():
+        """Route racine - Répond aux health checks du load balancer"""
+        return jsonify(
+            {
+                "status": "online",
+                "service": "FormForge API",
+                "version": "2.0.0",
+                "endpoints": {
+                    "health": "/api/health",
+                    "docs": "/api/docs",
+                    "auth": "/api/auth"
+                }
+            }
+        ), 200
+
     # Route de santé simple
     @app.route("/api/health")
     def health():
