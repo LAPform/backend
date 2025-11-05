@@ -7,6 +7,7 @@ import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_security import Security
+from flask_restx import Api
 
 # Configuration du logging structuré
 from utils.logging_middleware import (
@@ -203,7 +204,64 @@ def create_app():
         structured_logger.error(f"Détails de l'erreur: {str(e)}")
         raise
 
+    # Configuration Flask-RESTx pour Swagger
+    try:
+        # Créer une instance Blueprint pour Flask-RESTx
+        from flask import Blueprint
+        api_blueprint = Blueprint('api', __name__, url_prefix='/api')
+
+        # Initialiser Flask-RESTx avec configuration Swagger
+        api = Api(
+            api_blueprint,
+            version='2.0.0',
+            title='FormForge API',
+            description='API REST complète pour FormForge - Clone de Google Forms avec authentification Flask-Security-Too',
+            doc='/docs/',  # Swagger UI sera à /api/docs/
+            authorizations={
+                'Bearer': {
+                    'type': 'apiKey',
+                    'in': 'header',
+                    'name': 'Authorization',
+                    'description': 'Ajouter le token JWT au format: Bearer <token>'
+                },
+                'AuthToken': {
+                    'type': 'apiKey',
+                    'in': 'header',
+                    'name': 'Authentication-Token',
+                    'description': 'Token d\'authentification Flask-Security'
+                }
+            },
+            security='Bearer',
+            validate=True,  # Validation automatique des requêtes
+            ordered=True,   # Garder l'ordre des endpoints
+        )
+
+        # Enregistrer les modèles de documentation
+        from utils.api_models import register_models
+        models = register_models(api)
+        app.config['API_MODELS'] = models
+        app.config['RESTX_API'] = api
+
+        structured_logger.info("Flask-RESTx initialisé avec succès - Swagger UI disponible à /api/docs/")
+
+    except Exception as e:
+        structured_logger.error("Erreur initialisation Flask-RESTx", exception=e)
+        raise
+
+    # Enregistrer les namespaces Flask-RESTx
+    from routes import register_namespaces
+    extra_blueprints = register_namespaces(api)
+
     # Enregistrer les blueprints
+    app.register_blueprint(api_blueprint)  # Blueprint principal avec Swagger UI et tous les namespaces
+
+    # Enregistrer les blueprints supplémentaires (routes publiques, etc.)
+    if extra_blueprints:
+        for bp_name, bp in extra_blueprints.items():
+            app.register_blueprint(bp, url_prefix="/api")
+            structured_logger.info(f"Blueprint supplémentaire enregistré: {bp_name}")
+
+    # Conserver les anciens blueprints pour la compatibilité (seront progressivement migrés vers namespaces)
     app.register_blueprint(forms_bp, url_prefix="/api")
     app.register_blueprint(questions_bp, url_prefix="/api")
     app.register_blueprint(responses_bp, url_prefix="/api")

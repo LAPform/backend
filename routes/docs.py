@@ -196,8 +196,13 @@ Authorization: Bearer [token]
 
 @docs_bp.route("/docs")
 def docs_html():
-    """Documentation HTML simple"""
-    return render_template_string(DOCS_HTML_TEMPLATE)
+    """
+    Redirection vers la documentation Swagger UI interactive
+
+    La documentation Swagger UI est maintenant disponible à /api/docs/
+    """
+    from flask import redirect
+    return redirect('/api/docs/', code=302)
 
 
 @docs_bp.route("/swagger.json")
