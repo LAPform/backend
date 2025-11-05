@@ -41,9 +41,9 @@ def require_admin_role(f):
             token = auth_header.split(" ")[1]
 
             # Valider le token et récupérer l'utilisateur
-            from utils.security_auth import _validate_sha256_token
+            from models.security_models import User
 
-            user_id = _validate_sha256_token(token)
+            user_id = User.verify_auth_token(token, max_age=3600)
 
             if not user_id:
                 logger.warning("🔒 ADMIN: Token invalide")
@@ -145,9 +145,9 @@ def require_monitoring_access(f):
             token = auth_header.split(" ")[1]
 
             # Valider le token et récupérer l'utilisateur
-            from utils.security_auth import _validate_sha256_token
+            from models.security_models import User
 
-            user_id = _validate_sha256_token(token)
+            user_id = User.verify_auth_token(token, max_age=3600)
 
             if not user_id:
                 logger.warning("🔒 MONITORING: Token invalide")
