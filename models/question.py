@@ -218,49 +218,62 @@ class Question:
         validation_rules = question.get("validation", {})
         required = question.get("required", False)
 
-        # Vérifier si la réponse est requise
-        if required and (response is None or response == "" or response == []):
+        # Vérifier si la réponse est vide (None, "", [])
+        is_empty = response is None or response == "" or response == []
+
+        # Si question requise et réponse vide → erreur
+        if required and is_empty:
             return {"valid": False, "error": "This question is required"}
 
-        # Validation selon le type
+        # Si question optionnelle et réponse vide → OK, pas de validation supplémentaire
+        if not required and is_empty:
+            return {"valid": True}
+
+        # Validation selon le type (seulement si réponse non vide)
         if question["type"] == "email":
-            if response and "@" not in str(response):
+            if "@" not in str(response):
                 return {"valid": False, "error": "Invalid email format"}
 
         elif question["type"] == "number":
-            if (
-                response
-                and not str(response).replace(".", "").replace("-", "").isdigit()
-            ):
+            if not str(response).replace(".", "").replace("-", "").isdigit():
                 return {"valid": False, "error": "Invalid number format"}
 
         elif question["type"] == "multiple":
-            if response and response not in question.get("options", []):
+            if response not in question.get("options", []):
                 return {"valid": False, "error": "Invalid option selected"}
 
         elif question["type"] == "checkbox":
-            if response and not all(
-                opt in question.get("options", []) for opt in response
-            ):
+            if not all(opt in question.get("options", []) for opt in response):
                 return {"valid": False, "error": "Invalid options selected"}
 
-        # Validation personnalisée
-        if (
-            "min_length" in validation_rules
-            and len(str(response)) < validation_rules["min_length"]
-        ):
-            return {
-                "valid": False,
-                "error": f'Minimum length: {validation_rules["min_length"]}',
-            }
+        elif question["type"] in ["choice", "radio"]:
+            # Validation pour choix simples
+            options = question.get("options", [])
+            if options and response not in options:
+                return {"valid": False, "error": f"Invalid choice. Must be one of: {', '.join(options)}"}
 
-        if (
-            "max_length" in validation_rules
-            and len(str(response)) > validation_rules["max_length"]
-        ):
-            return {
-                "valid": False,
-                "error": f'Maximum length: {validation_rules["max_length"]}',
-            }
+        elif question["type"] in ["multiple_choice", "multiple_choices"]:
+            # Validation pour choix multiples
+            options = question.get("options", [])
+            if options:
+                if not isinstance(response, list):
+                    return {"valid": False, "error": "Multiple choice responses must be a list"}
+                if not all(opt in options for opt in response):
+                    return {"valid": False, "error": f"Invalid choices. Must be from: {', '.join(options)}"}
+
+        # Validation personnalisée de longueur
+        if "min_length" in validation_rules:
+            if len(str(response)) < validation_rules["min_length"]:
+                return {
+                    "valid": False,
+                    "error": f'Minimum length: {validation_rules["min_length"]}',
+                }
+
+        if "max_length" in validation_rules:
+            if len(str(response)) > validation_rules["max_length"]:
+                return {
+                    "valid": False,
+                    "error": f'Maximum length: {validation_rules["max_length"]}',
+                }
 
         return {"valid": True}
