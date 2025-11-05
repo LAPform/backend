@@ -18,8 +18,15 @@ api = Namespace('files', description='Upload et gestion des fichiers')
 
 # Récupérer les modèles depuis la configuration
 def get_models():
-    """Récupère les modèles de documentation depuis la config de l'app"""
-    return current_app.config.get('API_MODELS', {})
+    """Récupère les modèles de documentation"""
+    # Utiliser les modèles stockés dans le namespace (évite l'accès à current_app pendant l'import)
+    if hasattr(api, '_models'):
+        return api._models
+    # Fallback pour le développement local
+    try:
+        return current_app.config.get('API_MODELS', {})
+    except RuntimeError:
+        return {}
 
 
 @api.route('/upload')
