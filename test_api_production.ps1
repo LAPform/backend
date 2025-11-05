@@ -300,7 +300,7 @@ if ($script:AUTH_TOKEN -and $script:FORM_ID) {
             } `
             -ErrorAction Stop
 
-        $script:QUESTION_ID = $response.data.question_id
+        $script:QUESTION_ID = $response.question_id
         if ($script:QUESTION_ID) {
             Log-Test "Create Question" "PASS" "Question ID: $($script:QUESTION_ID.Substring(0,30))..."
         } else {
