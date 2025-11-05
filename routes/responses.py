@@ -7,7 +7,7 @@ from models.response import Response
 from models.form import Form
 from models.question import Question
 from utils.exporters import CSVExporter
-from utils.security_auth import require_auth
+from utils.security_auth import require_token_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.structured_logger import api_logger
@@ -19,7 +19,7 @@ responses_bp = Blueprint("responses", __name__)
 
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["POST"])
-@require_auth
+@require_token_auth
 @rate_limit("responses_submit")
 def submit_response(form_id, authenticated_user_id=None):
     """Soumettre une réponse à un formulaire"""
@@ -242,7 +242,7 @@ def submit_public_response(public_token):
 
 
 @responses_bp.route("/forms/<form_id>/responses", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("responses_get")
 def get_responses(form_id, authenticated_user_id=None):
     """Récupérer toutes les réponses d'un formulaire"""
@@ -284,7 +284,7 @@ def get_responses(form_id, authenticated_user_id=None):
 
 
 @responses_bp.route("/responses/<response_id>", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("responses_get")
 def get_response(response_id, authenticated_user_id=None):
     """Récupérer une réponse par ID"""
@@ -306,7 +306,7 @@ def get_response(response_id, authenticated_user_id=None):
 
 
 @responses_bp.route("/forms/<form_id>/analytics", methods=["GET"])
-@require_auth
+@require_token_auth
 def get_form_analytics(form_id, authenticated_user_id=None):
     """Récupérer les analytics d'un formulaire"""
     try:
@@ -361,7 +361,7 @@ def get_question_analytics(form_id, question_id, authenticated_user_id=None):
 
 
 @responses_bp.route("/forms/<form_id>/export/csv", methods=["GET"])
-@require_auth
+@require_token_auth
 def export_responses_csv(form_id, authenticated_user_id=None):
     """Exporter les réponses en CSV"""
     try:
@@ -414,7 +414,7 @@ def export_responses_csv(form_id, authenticated_user_id=None):
 
 
 @responses_bp.route("/forms/<form_id>/export/excel", methods=["GET"])
-@require_auth
+@require_token_auth
 def export_responses_excel(form_id, authenticated_user_id=None):
     """Exporter les réponses en Excel"""
     try:
@@ -468,7 +468,7 @@ def export_responses_excel(form_id, authenticated_user_id=None):
 
 
 @responses_bp.route("/forms/<form_id>/export/json", methods=["GET"])
-@require_auth
+@require_token_auth
 def export_responses_json(form_id, authenticated_user_id=None):
     """Exporter les réponses en JSON"""
     try:

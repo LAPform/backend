@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models.form import Form
 from models.question import Question
 from models.response import Response
-from utils.security_auth import require_auth
+from utils.security_auth import require_token_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.audit_logger import audit_log, audit_logger
@@ -24,7 +24,7 @@ forms_bp = Blueprint("forms", __name__)
 
 
 @forms_bp.route("/forms", methods=["POST"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_create")
 @audit_log("create", "form")
 def create_form(authenticated_user_id=None, **kwargs):
@@ -162,7 +162,7 @@ def create_form(authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_get")
 @audit_log("read", "form")
 def get_form(form_id, authenticated_user_id=None, **kwargs):
@@ -210,7 +210,7 @@ def get_form(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>", methods=["PUT"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_update")
 def update_form(form_id, authenticated_user_id=None, **kwargs):
     """Mettre à jour un formulaire (seulement si l'utilisateur en est propriétaire)"""
@@ -261,7 +261,7 @@ def update_form(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>", methods=["DELETE"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_delete")
 def delete_form(form_id, authenticated_user_id=None, **kwargs):
     """Supprimer un formulaire (seulement si l'utilisateur en est propriétaire)"""
@@ -300,7 +300,7 @@ def delete_form(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_get")
 def list_forms(authenticated_user_id=None, **kwargs):
     """Lister tous les formulaires de l'utilisateur authentifié"""
@@ -334,7 +334,7 @@ def list_forms(authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>/stats", methods=["GET"])
-@require_auth
+@require_token_auth
 def get_form_stats(form_id, authenticated_user_id=None, **kwargs):
     """Récupérer les statistiques d'un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
@@ -367,7 +367,7 @@ def get_form_stats(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>/duplicate", methods=["POST"])
-@require_auth
+@require_token_auth
 def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
     """Dupliquer un formulaire (seulement si l'utilisateur en est propriétaire)"""
     try:
@@ -432,7 +432,7 @@ def duplicate_form(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>/publish", methods=["POST"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_publish")
 @audit_log("publish", "form")
 def publish_form(form_id, authenticated_user_id=None, **kwargs):
@@ -490,7 +490,7 @@ def publish_form(form_id, authenticated_user_id=None, **kwargs):
 
 
 @forms_bp.route("/forms/<form_id>/public-link", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("forms_public_link")
 @audit_log("read", "form")
 def get_public_link(form_id, authenticated_user_id=None, **kwargs):

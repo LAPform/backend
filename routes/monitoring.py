@@ -3,7 +3,7 @@ Routes de monitoring et métriques pour FormForge
 """
 
 from flask import Blueprint, jsonify, current_app
-from utils.security_auth import require_auth
+from utils.security_auth import require_token_auth
 from utils.admin_auth import require_admin_role, require_monitoring_access, sanitize_system_metrics, get_user_role
 from utils.rate_limiter import rate_limit
 from utils.metrics_collector import metrics_collector
@@ -95,7 +95,7 @@ def get_performance_stats(authenticated_user_id=None, monitoring_user=None):
 
 
 @monitoring_bp.route("/monitoring/health", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("monitoring_health")
 def get_health_status(authenticated_user_id=None):
     """Obtenir le statut de santé de l'API"""
@@ -261,7 +261,7 @@ def get_system_metrics(authenticated_user_id=None, admin_user=None):
 
 
 @monitoring_bp.route("/monitoring/slow-queries", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("monitoring_slow_queries")
 def get_slow_queries(authenticated_user_id=None):
     """Obtenir les requêtes lentes détectées"""
@@ -329,7 +329,7 @@ def _get_optimization_recommendations(stats):
 
 
 @monitoring_bp.route("/monitoring/api-metrics", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("monitoring_api_metrics")
 def get_api_metrics(authenticated_user_id=None):
     """Obtenir les métriques API détaillées"""
@@ -365,7 +365,7 @@ def get_api_metrics(authenticated_user_id=None):
 
 
 @monitoring_bp.route("/monitoring/health-detailed", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("monitoring_health_detailed")
 def get_detailed_health(authenticated_user_id=None):
     """Obtenir un rapport de santé détaillé"""
@@ -583,7 +583,7 @@ def get_admin_users(authenticated_user_id=None, admin_user=None):
 
 
 @monitoring_bp.route("/monitoring/admin/check-role", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("check_role")
 def check_user_role(authenticated_user_id=None):
     """Vérifier le rôle de l'utilisateur actuel"""

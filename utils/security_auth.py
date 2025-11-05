@@ -2,9 +2,12 @@
 Système d'authentification simplifié avec Flask-Security-Too uniquement
 """
 
-from flask import jsonify
+from flask import jsonify, request
 from flask_security import current_user
 from functools import wraps
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def require_auth(f):
@@ -28,6 +31,63 @@ def require_auth(f):
 
         # Injecter l'ID utilisateur dans les kwargs pour compatibilité
         kwargs["authenticated_user_id"] = current_user.id
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+def require_token_auth(f):
+    """
+    Décorateur d'authentification par token personnalisé
+    Utilise notre propre système de validation de token
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Récupérer le token depuis le header
+        token = request.headers.get('Authentication-Token')
+
+        if not token:
+            # Essayer aussi Authorization header
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header.replace('Bearer ', '')
+            elif auth_header.startswith('Token '):
+                token = auth_header.replace('Token ', '')
+            else:
+                token = auth_header if auth_header else None
+
+        logger.info(f">>> TOKEN AUTH: Token present: {bool(token)}")
+
+        if not token:
+            logger.warning(">>> TOKEN AUTH: No token provided")
+            return jsonify({"success": False, "error": "Authentication required", "message": "No authentication token provided"}), 401
+
+        # Valider le token avec notre méthode
+        from models.security_models import User
+        user_id = User.verify_auth_token(token, max_age=3600)
+
+        logger.info(f">>> TOKEN AUTH: Token validation result: {user_id}")
+
+        if not user_id:
+            logger.warning(">>> TOKEN AUTH: Invalid or expired token")
+            return jsonify({"success": False, "error": "Authentication failed", "message": "Invalid or expired token"}), 401
+
+        # Charger l'utilisateur
+        from flask import current_app
+        from models.security_models import SecurityUserDatastore
+
+        datastore = SecurityUserDatastore(current_app.db)
+        user = datastore._get_user_by_id(user_id)
+
+        if not user:
+            logger.warning(f">>> TOKEN AUTH: User {user_id} not found")
+            return jsonify({"success": False, "error": "Authentication failed", "message": "User not found"}), 401
+
+        logger.info(f">>> TOKEN AUTH: User authenticated: {user.email}")
+
+        # Injecter l'ID utilisateur dans les kwargs
+        kwargs["authenticated_user_id"] = user.id
+
         return f(*args, **kwargs)
 
     return decorated_function

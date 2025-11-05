@@ -5,7 +5,7 @@ Routes API pour la gestion des questions
 from flask import Blueprint, request, jsonify, current_app
 from models.question import Question
 from models.form import Form
-from utils.security_auth import require_auth
+from utils.security_auth import require_token_auth
 from utils.validators import DataValidator
 from utils.rate_limiter import rate_limit
 from utils.error_handler import (
@@ -22,7 +22,7 @@ questions_bp = Blueprint("questions", __name__)
 
 
 @questions_bp.route("/forms/<form_id>/questions", methods=["POST"])
-@require_auth
+@require_token_auth
 @rate_limit("questions_create")
 def create_question(form_id, authenticated_user_id=None):
     """Créer une nouvelle question - Version simplifiée pour debug"""
@@ -116,7 +116,7 @@ def create_question(form_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("questions_get")
 def get_question(question_id, authenticated_user_id=None):
     """Récupérer une question par ID"""
@@ -138,7 +138,7 @@ def get_question(question_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["PUT"])
-@require_auth
+@require_token_auth
 @rate_limit("questions_update")
 def update_question(question_id, authenticated_user_id=None):
     """Mettre à jour une question"""
@@ -183,7 +183,7 @@ def update_question(question_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/questions/<question_id>", methods=["DELETE"])
-@require_auth
+@require_token_auth
 @rate_limit("questions_delete")
 def delete_question(question_id, authenticated_user_id=None):
     """Supprimer une question"""
@@ -214,7 +214,7 @@ def delete_question(question_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/forms/<form_id>/questions", methods=["GET"])
-@require_auth
+@require_token_auth
 @rate_limit("questions_get")
 def list_questions(form_id, authenticated_user_id=None):
     """Lister toutes les questions d'un formulaire"""
@@ -239,7 +239,7 @@ def list_questions(form_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/forms/<form_id>/questions/reorder", methods=["PUT"])
-@require_auth
+@require_token_auth
 def reorder_questions(form_id, authenticated_user_id=None):
     """Réorganiser les questions d'un formulaire"""
     try:
@@ -279,7 +279,7 @@ def reorder_questions(form_id, authenticated_user_id=None):
 
 
 @questions_bp.route("/questions/<question_id>/validate", methods=["POST"])
-@require_auth
+@require_token_auth
 def validate_question_response(question_id, authenticated_user_id=None):
     """Valider une réponse à une question"""
     try:
