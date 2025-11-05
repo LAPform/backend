@@ -250,7 +250,7 @@ def create_app():
 
     # Enregistrer les namespaces Flask-RESTx
     from routes import register_namespaces
-    extra_blueprints = register_namespaces(api)
+    extra_blueprints = register_namespaces(api, models)
 
     # Enregistrer les blueprints
     app.register_blueprint(api_blueprint)  # Blueprint principal avec Swagger UI et tous les namespaces

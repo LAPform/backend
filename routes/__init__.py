@@ -9,12 +9,13 @@ from .responses import responses_bp
 __all__ = ["forms_bp", "questions_bp", "responses_bp", "register_namespaces"]
 
 
-def register_namespaces(api):
+def register_namespaces(api, models):
     """
     Enregistre tous les namespaces Flask-RESTx dans l'API principale
 
     Args:
         api: Instance de flask_restx.Api
+        models: Dictionnaire des modèles de documentation
     """
     # Importer tous les namespaces
     from routes.forms_ns import api as forms_ns, public_forms_bp
@@ -23,6 +24,10 @@ def register_namespaces(api):
     from routes.auth_ns import api as auth_ns
     from routes.files_ns import api as files_ns
     from routes.monitoring_ns import api as monitoring_ns
+
+    # Stocker les modèles dans chaque namespace pour éviter d'accéder à current_app
+    for ns in [forms_ns, questions_ns, responses_ns, auth_ns, files_ns, monitoring_ns]:
+        ns._models = models
 
     # Enregistrer les namespaces avec leurs préfixes
     api.add_namespace(forms_ns, path='/forms')
