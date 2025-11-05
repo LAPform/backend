@@ -6,10 +6,10 @@
 # Configuration
 $API_URL = "https://backend-skum.onrender.com"
 $script:Results = @{
-    Total = 0
+    Total  = 0
     Passed = 0
     Failed = 0
-    Tests = @()
+    Tests  = @()
 }
 
 # Couleurs pour l'affichage
@@ -47,7 +47,8 @@ function Log-Test {
     if ($Status -eq "PASS") {
         $script:Results.Passed++
         Write-Success "$Name : $Status"
-    } else {
+    }
+    else {
         $script:Results.Failed++
         Write-Failure "$Name : $Status"
     }
@@ -57,9 +58,9 @@ function Log-Test {
     }
 
     $script:Results.Tests += @{
-        Name = $Name
-        Status = $Status
-        Details = $Details
+        Name      = $Name
+        Status    = $Status
+        Details   = $Details
         Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     }
 }
@@ -85,16 +86,17 @@ try {
     $response = Invoke-RestMethod -Uri "$API_URL/api/health" `
         -Method Get `
         -Headers @{
-            "Accept" = "application/json"
-            "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        } `
+        "Accept"     = "application/json"
+        "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    } `
         -ErrorAction Stop
     $stopwatch.Stop()
 
     Log-Test "Health Check" "PASS" "Version: $($response.version), Temps: $($stopwatch.ElapsedMilliseconds)ms"
     Write-Host ($response | ConvertTo-Json) -ForegroundColor Gray
 
-} catch {
+}
+catch {
     Log-Test "Health Check" "FAIL" "Status: $($_.Exception.Response.StatusCode), Error: $($_.Exception.Message)"
     Write-Info "L'API semble protegee par un WAF/Firewall. Continuons les tests..."
 }
@@ -108,17 +110,19 @@ try {
     $response = Invoke-RestMethod -Uri "$API_URL/api/forms" `
         -Method Get `
         -Headers @{
-            "Accept" = "application/json"
-        } `
+        "Accept" = "application/json"
+    } `
         -ErrorAction Stop
 
     Log-Test "Security - Unauthorized Access" "FAIL" "L'endpoint devrait bloquer l'acces sans authentification"
 
-} catch {
+}
+catch {
     $statusCode = [int]$_.Exception.Response.StatusCode
     if ($statusCode -eq 401 -or $statusCode -eq 403) {
         Log-Test "Security - Unauthorized Access" "PASS" "Acces bloque correctement (Status: $statusCode)"
-    } else {
+    }
+    else {
         Log-Test "Security - Unauthorized Access" "FAIL" "Status inattendu: $statusCode"
     }
 }
@@ -136,9 +140,9 @@ $script:TEST_NAME = "Test User PowerShell"
 Write-Info "Creating user: $script:TEST_EMAIL"
 
 $body = @{
-    email = $script:TEST_EMAIL
+    email    = $script:TEST_EMAIL
     password = $script:TEST_PASSWORD
-    name = $script:TEST_NAME
+    name     = $script:TEST_NAME
 } | ConvertTo-Json
 
 try {
@@ -147,20 +151,22 @@ try {
         -ContentType "application/json" `
         -Body $body `
         -Headers @{
-            "Accept" = "application/json"
-            "User-Agent" = "Mozilla/5.0"
-        } `
+        "Accept"     = "application/json"
+        "User-Agent" = "Mozilla/5.0"
+    } `
         -ErrorAction Stop
 
     $script:AUTH_TOKEN = $response.authentication_token
 
     if ($script:AUTH_TOKEN) {
         Log-Test "User Signup" "PASS" "Email: $script:TEST_EMAIL, Token: $($script:AUTH_TOKEN.Substring(0,20))..."
-    } else {
+    }
+    else {
         Log-Test "User Signup" "FAIL" "No token in response"
     }
 
-} catch {
+}
+catch {
     $errorMessage = $_.Exception.Message
     if ($_.ErrorDetails.Message) {
         $errorMessage = $_.ErrorDetails.Message
@@ -177,7 +183,7 @@ if ($script:TEST_EMAIL -and $script:TEST_PASSWORD) {
     Write-Info "Logging in with: $script:TEST_EMAIL"
 
     $body = @{
-        email = $script:TEST_EMAIL
+        email    = $script:TEST_EMAIL
         password = $script:TEST_PASSWORD
     } | ConvertTo-Json
 
@@ -193,14 +199,17 @@ if ($script:TEST_EMAIL -and $script:TEST_PASSWORD) {
         if ($newToken) {
             $script:AUTH_TOKEN = $newToken
             Log-Test "User Signin" "PASS" "Token: $($newToken.Substring(0,20))..."
-        } else {
+        }
+        else {
             Log-Test "User Signin" "FAIL" "No token in response"
         }
 
-    } catch {
+    }
+    catch {
         Log-Test "User Signin" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "User Signin" "FAIL" "No credentials available from signup"
 }
 
@@ -212,9 +221,9 @@ Write-TestHeader "5. Create Form - POST /api/forms"
 if ($script:AUTH_TOKEN) {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $body = @{
-        title = "Test Form PowerShell $timestamp"
+        title       = "Test Form PowerShell $timestamp"
         description = "Formulaire de test cree depuis PowerShell"
-        settings = @{
+        settings    = @{
             theme = "default"
         }
     } | ConvertTo-Json
@@ -225,23 +234,26 @@ if ($script:AUTH_TOKEN) {
             -ContentType "application/json" `
             -Body $body `
             -Headers @{
-                "Authentication-Token" = $script:AUTH_TOKEN
-                "Accept" = "application/json"
-            } `
+            "Authentication-Token" = $script:AUTH_TOKEN
+            "Accept"               = "application/json"
+        } `
             -ErrorAction Stop
 
         $script:FORM_ID = $response.data.form_id
 
         if ($script:FORM_ID) {
             Log-Test "Create Form" "PASS" "Form ID: $($script:FORM_ID.Substring(0,30))..."
-        } else {
+        }
+        else {
             Log-Test "Create Form" "FAIL" "No form_id in response"
         }
 
-    } catch {
+    }
+    catch {
         Log-Test "Create Form" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "Create Form" "FAIL" "No auth token available"
 }
 
@@ -255,9 +267,9 @@ if ($script:AUTH_TOKEN) {
         $response = Invoke-RestMethod -Uri "$API_URL/api/forms" `
             -Method Get `
             -Headers @{
-                "Authentication-Token" = $script:AUTH_TOKEN
-                "Accept" = "application/json"
-            } `
+            "Authentication-Token" = $script:AUTH_TOKEN
+            "Accept"               = "application/json"
+        } `
             -ErrorAction Stop
 
         $formsCount = $response.forms.Count
@@ -270,10 +282,12 @@ if ($script:AUTH_TOKEN) {
             }
         }
 
-    } catch {
+    }
+    catch {
         Log-Test "List Forms" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "List Forms" "FAIL" "No auth token available"
 }
 
@@ -284,9 +298,9 @@ Write-TestHeader "7. Create Question - POST /api/forms/{id}/questions"
 
 if ($script:AUTH_TOKEN -and $script:FORM_ID) {
     $body = @{
-        type = "text"
-        text = "Quelle est votre couleur preferee ?"
-        required = $true
+        type        = "text"
+        text        = "Quelle est votre couleur preferee ?"
+        required    = $true
         order_index = 0
     } | ConvertTo-Json
 
@@ -296,17 +310,19 @@ if ($script:AUTH_TOKEN -and $script:FORM_ID) {
             -ContentType "application/json" `
             -Body $body `
             -Headers @{
-                "Authentication-Token" = $script:AUTH_TOKEN
-            } `
+            "Authentication-Token" = $script:AUTH_TOKEN
+        } `
             -ErrorAction Stop
 
-        $script:QUESTION_ID = $response.data.question_id
+        $script:QUESTION_ID = $response.question_id
         Log-Test "Create Question" "PASS" "Question ID: $script:QUESTION_ID"
 
-    } catch {
+    }
+    catch {
         Log-Test "Create Question" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "Create Question" "FAIL" "Missing auth token or form_id"
 }
 
@@ -320,17 +336,19 @@ if ($script:AUTH_TOKEN -and $script:FORM_ID) {
         $response = Invoke-RestMethod -Uri "$API_URL/api/forms/$($script:FORM_ID)/publish" `
             -Method Post `
             -Headers @{
-                "Authentication-Token" = $script:AUTH_TOKEN
-            } `
+            "Authentication-Token" = $script:AUTH_TOKEN
+        } `
             -ErrorAction Stop
 
         $script:PUBLIC_TOKEN = $response.data.public_token
         Log-Test "Publish Form" "PASS" "Public Token: $($script:PUBLIC_TOKEN.Substring(0,20))..."
 
-    } catch {
+    }
+    catch {
         Log-Test "Publish Form" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "Publish Form" "FAIL" "Missing auth token or form_id"
 }
 
@@ -344,18 +362,20 @@ if ($script:PUBLIC_TOKEN) {
         $response = Invoke-RestMethod -Uri "$API_URL/api/public/forms/$($script:PUBLIC_TOKEN)" `
             -Method Get `
             -Headers @{
-                "Accept" = "application/json"
-            } `
+            "Accept" = "application/json"
+        } `
             -ErrorAction Stop
 
         $formTitle = $response.data.form.title
         $questionsCount = $response.data.form.questions.Count
         Log-Test "Get Public Form" "PASS" "Title: $formTitle, Questions: $questionsCount"
 
-    } catch {
+    }
+    catch {
         Log-Test "Get Public Form" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Log-Test "Get Public Form" "FAIL" "No public token available"
 }
 
@@ -364,11 +384,13 @@ if ($script:PUBLIC_TOKEN) {
 # ====================================================================
 Write-TestHeader "10. Submit Response - POST /api/public/forms/{token}/responses"
 
-if ($script:PUBLIC_TOKEN) {
+if ($script:PUBLIC_TOKEN -and $script:QUESTION_ID) {
+    # Utiliser le vrai question_id comme cle
+    $answersDict = @{}
+    $answersDict[$script:QUESTION_ID] = "Bleu"
+
     $body = @{
-        answers = @{
-            "question_1" = "Bleu"
-        }
+        answers = $answersDict
     } | ConvertTo-Json
 
     try {
@@ -380,11 +402,18 @@ if ($script:PUBLIC_TOKEN) {
 
         Log-Test "Submit Response" "PASS" "Response submitted successfully"
 
-    } catch {
+    }
+    catch {
         Log-Test "Submit Response" "FAIL" "Error: $($_.Exception.Message)"
     }
-} else {
-    Log-Test "Submit Response" "FAIL" "No public token available"
+}
+else {
+    if (-not $script:PUBLIC_TOKEN) {
+        Log-Test "Submit Response" "FAIL" "No public token available"
+    }
+    elseif (-not $script:QUESTION_ID) {
+        Log-Test "Submit Response" "FAIL" "No question_id available"
+    }
 }
 
 # ====================================================================
@@ -421,7 +450,8 @@ Write-Host ""
 if ($script:Results.Failed -eq 0) {
     Write-Host "SUCCESS: TOUS LES TESTS SONT PASSES ! L'API FONCTIONNE PARFAITEMENT !" -ForegroundColor Green
     exit 0
-} else {
+}
+else {
     Write-Host "WARNING: CERTAINS TESTS ONT ECHOUE. VERIFIER LES LOGS CI-DESSUS." -ForegroundColor Yellow
     exit 1
 }
