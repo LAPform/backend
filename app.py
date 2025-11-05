@@ -74,12 +74,12 @@ def create_app():
                 "http://127.0.0.1:5173",
             ]
 
-        # Toujours configurer CORS avec des origines explicites
+        # Toujours configurer CORS avec des origines explicites (SÉCURISÉ)
         CORS(
             app,
             origins=cors_origins,
             supports_credentials=True,
-            max_age=3600,
+            max_age=3600,  # Cache preflight 1h
             allow_headers=[
                 "Content-Type",
                 "Authorization",
@@ -87,6 +87,14 @@ def create_app():
                 "X-Requested-With",
                 "Accept",
             ],
+            expose_headers=[
+                "X-RateLimit-Limit",
+                "X-RateLimit-Remaining",
+                "X-RateLimit-Reset",
+            ],
+            methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
+            send_wildcard=False,  # Never send '*'
+            vary_header=True,  # Add Vary: Origin header
         )
         logger.warning("CORS configuré en mode fallback avec origines limitées")
 
