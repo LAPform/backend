@@ -25,6 +25,7 @@ from routes.files import files_bp
 from routes.monitoring import monitoring_bp
 from config import Config
 from config_security import SecurityConfig
+from debug_headers_middleware import log_all_requests
 
 
 def create_app():
@@ -40,6 +41,9 @@ def create_app():
 
     # Logger pour debug
     logger = logging.getLogger(__name__)
+
+    # Middleware de debug pour logger tous les headers (temporaire)
+    log_all_requests(app)
 
     # Configuration CORS sécurisée et headers de sécurité
     try:
