@@ -1,0 +1,408 @@
+{
+  "timestamp": "2025-11-05T12:07:29.968731",
+  "base_url": "https://backend-skum.onrender.com",
+  "total_tests": 20,
+  "successful_tests": 16,
+  "failed_tests": 4,
+  "success_rate": 80.0,
+  "total_time": 7.128110885620117,
+  "results": [
+    {
+      "name": "Health Check",
+      "method": "GET",
+      "endpoint": "/api/health",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.351874,
+      "response_data": {
+        "message": "FormForge POC Backend with Flask-Security-Too is running",
+        "security": "Flask-Security-Too",
+        "status": "healthy",
+        "version": "2.0.0"
+      }
+    },
+    {
+      "name": "Inscription (signup)",
+      "method": "POST",
+      "endpoint": "/api/auth/signup",
+      "status_code": 201,
+      "expected_status": 201,
+      "success": true,
+      "response_time": 0.431671,
+      "response_data": {
+        "authentication_token": "eyJpZCI6ImY0MzU0ZDNhLTdhNTMtNDA4My1hMTJmLTFmZjQ5OTVjODUyMSIsImZzX3VuaXF1aWZpZXIiOiJPbjlLY2txSHFkWGk0dENlZnRadktXYV9aUVJjdTFlQldDeFM1anZxN1kwIn0.aQs9-w.X3Z4X_zZoa86c70zlMQGsT-Lj6M",
+        "message": "Utilisateur cr\u00e9\u00e9 avec succ\u00e8s",
+        "success": true,
+        "user": {
+          "email": "expert_test_1762344443@test.com",
+          "id": "f4354d3a-7a53-4083-a12f-1ff4995c8521",
+          "name": "Expert Tester"
+        }
+      }
+    },
+    {
+      "name": "Obtenir utilisateur actuel",
+      "method": "GET",
+      "endpoint": "/api/auth/me",
+      "status_code": 503,
+      "expected_status": 200,
+      "success": false,
+      "response_time": 0.275105,
+      "response_data": {
+        "raw": "upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: TLS_error:|268435581:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end"
+      }
+    },
+    {
+      "name": "Cr\u00e9er un formulaire",
+      "method": "POST",
+      "endpoint": "/api/forms",
+      "status_code": 201,
+      "expected_status": 201,
+      "success": true,
+      "response_time": 0.538484,
+      "response_data": {
+        "data": {
+          "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b"
+        },
+        "message": "Formulaire cr\u00e9\u00e9 avec succ\u00e8s",
+        "success": true
+      }
+    },
+    {
+      "name": "Lister les formulaires",
+      "method": "GET",
+      "endpoint": "/api/forms",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.248769,
+      "response_data": {
+        "forms": [
+          {
+            "created_at": "2025-11-05 12:07:24",
+            "created_by": "f4354d3a-7a53-4083-a12f-1ff4995c8521",
+            "description": "Test complet de l'API",
+            "id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+            "public_token": null,
+            "settings": {
+              "public": true,
+              "theme": "blue"
+            },
+            "status": "draft",
+            "title": "Formulaire de test expert",
+            "updated_at": "2025-11-05 12:07:24"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 1
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "R\u00e9cup\u00e9rer un formulaire",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.530388,
+      "response_data": {
+        "form": {
+          "created_at": "2025-11-05 12:07:24",
+          "created_by": "f4354d3a-7a53-4083-a12f-1ff4995c8521",
+          "description": "Test complet de l'API",
+          "id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+          "public_token": null,
+          "questions": [],
+          "settings": {
+            "public": true,
+            "theme": "blue"
+          },
+          "status": "draft",
+          "title": "Formulaire de test expert",
+          "updated_at": "2025-11-05 12:07:24"
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "Mettre \u00e0 jour un formulaire",
+      "method": "PUT",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.495453,
+      "response_data": {
+        "message": "Formulaire mis \u00e0 jour avec succ\u00e8s",
+        "success": true
+      }
+    },
+    {
+      "name": "Cr\u00e9er une question texte",
+      "method": "POST",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/questions",
+      "status_code": 201,
+      "expected_status": 201,
+      "success": true,
+      "response_time": 0.384203,
+      "response_data": {
+        "message": "Question cr\u00e9\u00e9e avec succ\u00e8s",
+        "question_id": "dc5085b2-4e1d-4121-af4f-5bbc7b4cdcfd",
+        "success": true
+      }
+    },
+    {
+      "name": "Cr\u00e9er une question choix multiple",
+      "method": "POST",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/questions",
+      "status_code": 201,
+      "expected_status": 201,
+      "success": true,
+      "response_time": 0.442237,
+      "response_data": {
+        "message": "Question cr\u00e9\u00e9e avec succ\u00e8s",
+        "question_id": "a8a4a56c-b3bb-472e-839a-a5712d7b3a3f",
+        "success": true
+      }
+    },
+    {
+      "name": "Lister les questions",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/questions",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.245896,
+      "response_data": {
+        "questions": [
+          {
+            "created_at": "2025-11-05 12:07:25",
+            "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+            "id": "dc5085b2-4e1d-4121-af4f-5bbc7b4cdcfd",
+            "options": [],
+            "order_index": 0,
+            "required": 1,
+            "text": "Quel est votre nom?",
+            "type": "text",
+            "validation": {}
+          },
+          {
+            "created_at": "2025-11-05 12:07:26",
+            "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+            "id": "a8a4a56c-b3bb-472e-839a-a5712d7b3a3f",
+            "options": [
+              "Rouge",
+              "Bleu",
+              "Vert",
+              "Jaune"
+            ],
+            "order_index": 1,
+            "required": 0,
+            "text": "Quelle est votre couleur pr\u00e9f\u00e9r\u00e9e?",
+            "type": "choice",
+            "validation": {}
+          }
+        ],
+        "success": true
+      }
+    },
+    {
+      "name": "Publier le formulaire",
+      "method": "POST",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/publish",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.263221,
+      "response_data": {
+        "data": {
+          "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+          "public_token": "4DKbi993-qahwFOpQOtL4ZSxZ5DdCWZH",
+          "status": "published"
+        },
+        "message": "Formulaire publi\u00e9 avec succ\u00e8s",
+        "success": true
+      }
+    },
+    {
+      "name": "Obtenir le lien public",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/public-link",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.221205,
+      "response_data": {
+        "data": {
+          "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+          "public_token": "4DKbi993-qahwFOpQOtL4ZSxZ5DdCWZH",
+          "public_url": "https://backend-skum.onrender.comapi/public/forms/4DKbi993-qahwFOpQOtL4ZSxZ5DdCWZH"
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "Acc\u00e9der au formulaire public",
+      "method": "GET",
+      "endpoint": "/api/public/forms/4DKbi993-qahwFOpQOtL4ZSxZ5DdCWZH",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.222603,
+      "response_data": {
+        "data": {
+          "form": {
+            "description": "Description mise \u00e0 jour",
+            "id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+            "questions": [
+              {
+                "created_at": "2025-11-05 12:07:25",
+                "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+                "id": "dc5085b2-4e1d-4121-af4f-5bbc7b4cdcfd",
+                "options": [],
+                "order_index": 0,
+                "required": 1,
+                "text": "Quel est votre nom?",
+                "type": "text",
+                "validation": {}
+              },
+              {
+                "created_at": "2025-11-05 12:07:26",
+                "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+                "id": "a8a4a56c-b3bb-472e-839a-a5712d7b3a3f",
+                "options": [
+                  "Rouge",
+                  "Bleu",
+                  "Vert",
+                  "Jaune"
+                ],
+                "order_index": 1,
+                "required": 0,
+                "text": "Quelle est votre couleur pr\u00e9f\u00e9r\u00e9e?",
+                "type": "choice",
+                "validation": {}
+              }
+            ],
+            "settings": {
+              "public": true,
+              "theme": "blue"
+            },
+            "title": "Formulaire de test expert (modifi\u00e9)"
+          }
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "Soumettre une r\u00e9ponse",
+      "method": "POST",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/responses",
+      "status_code": 503,
+      "expected_status": 201,
+      "success": false,
+      "response_time": 0.182893,
+      "response_data": {
+        "raw": "upstream connect error or disconnect/reset before headers. reset reason: remote connection failure, transport failure reason: TLS_error:|268435581:SSL routines:OPENSSL_internal:CERTIFICATE_VERIFY_FAILED:TLS_error_end"
+      }
+    },
+    {
+      "name": "R\u00e9cup\u00e9rer les r\u00e9ponses",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/responses",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.497324,
+      "response_data": {
+        "pagination": {
+          "limit": 100,
+          "offset": 0,
+          "total": 0
+        },
+        "responses": [],
+        "success": true
+      }
+    },
+    {
+      "name": "Analytics du formulaire",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/analytics",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.379734,
+      "response_data": {
+        "analytics": {
+          "daily_stats": [],
+          "hourly_stats": [],
+          "total_responses": 0
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "Export CSV",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/export/csv",
+      "status_code": 404,
+      "expected_status": 200,
+      "success": false,
+      "response_time": 0.530639,
+      "response_data": {
+        "error": "Aucune r\u00e9ponse \u00e0 exporter"
+      }
+    },
+    {
+      "name": "Export Excel",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/export/excel",
+      "status_code": 404,
+      "expected_status": 200,
+      "success": false,
+      "response_time": 0.22004,
+      "response_data": {
+        "error": "Aucune r\u00e9ponse \u00e0 exporter"
+      }
+    },
+    {
+      "name": "Statistiques du formulaire",
+      "method": "GET",
+      "endpoint": "/api/forms/b04c817b-53f3-4b60-818c-41e067891a1b/stats",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.275153,
+      "response_data": {
+        "analytics": {
+          "daily_stats": [],
+          "hourly_stats": [],
+          "total_responses": 0
+        },
+        "stats": {
+          "form_id": "b04c817b-53f3-4b60-818c-41e067891a1b",
+          "total_questions": 2,
+          "total_responses": 0
+        },
+        "success": true
+      }
+    },
+    {
+      "name": "Supprimer une question",
+      "method": "DELETE",
+      "endpoint": "/api/questions/dc5085b2-4e1d-4121-af4f-5bbc7b4cdcfd",
+      "status_code": 200,
+      "expected_status": 200,
+      "success": true,
+      "response_time": 0.332436,
+      "response_data": {
+        "message": "Question supprim\u00e9e avec succ\u00e8s",
+        "success": true
+      }
+    }
+  ]
+}
