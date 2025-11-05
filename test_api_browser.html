@@ -356,7 +356,7 @@
 
                 if (response.status === 201) {
                     const data = await response.json();
-                    authToken = data.user?.authentication_token;
+                    authToken = data.authentication_token;
 
                     if (authToken) {
                         logTest('User Signup', 'PASS',
@@ -400,7 +400,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    const token = data.user?.authentication_token;
+                    const token = data.authentication_token;
 
                     if (token) {
                         authToken = token;

@@ -83,7 +83,7 @@ def test_signup():
 
         if response.status_code == 201:
             data = response.json()
-            token = data.get('user', {}).get('authentication_token')
+            token = data.get('authentication_token')
             if token:
                 log_test("User Signup", "PASS", f"Token length: {len(token)}")
                 return token
@@ -111,7 +111,7 @@ def test_signin():
 
         if response.status_code == 200:
             data = response.json()
-            token = data.get('user', {}).get('authentication_token')
+            token = data.get('authentication_token')
             if token:
                 log_test("User Signin", "PASS", f"Token received")
                 return token

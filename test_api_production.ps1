@@ -152,7 +152,7 @@ try {
         } `
         -ErrorAction Stop
 
-    $script:AUTH_TOKEN = $response.user.authentication_token
+    $script:AUTH_TOKEN = $response.authentication_token
 
     if ($script:AUTH_TOKEN) {
         Log-Test "User Signup" "PASS" "Email: $script:TEST_EMAIL, Token: $($script:AUTH_TOKEN.Substring(0,20))..."
@@ -188,7 +188,7 @@ if ($script:TEST_EMAIL -and $script:TEST_PASSWORD) {
             -Body $body `
             -ErrorAction Stop
 
-        $newToken = $response.user.authentication_token
+        $newToken = $response.authentication_token
 
         if ($newToken) {
             $script:AUTH_TOKEN = $newToken
